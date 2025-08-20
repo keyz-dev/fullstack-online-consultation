@@ -36,6 +36,7 @@
     "axios": "^1.11.0",
     "base-64": "^1.0.0",
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.0",
     "concurrently": "^9.2.0",
     "cors": "^2.8.5",
