@@ -1,0 +1,70 @@
+{
+  "name": "online_consultation_backend",
+  "version": "1.0.0",
+  "main": "src/app.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "online_consultation_backend",
+    "medical services",
+    "online consultation",
+    "online consultation backend",
+    "medical consultation system",
+    "healthcare",
+    "doctor consultation app",
+    "doctor",
+    "patient"
+  ],
+  "author": "Afanyuy Caleb",
+  "license": "ISC",
+  "description": "The node js backend for our online consulation application",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keyz-dev/online_consultation_backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/keyz-dev/online_consultation_backend/issues"
+  },
+  "homepage": "https://github.com/keyz-dev/online_consultation_backend#readme",
+  "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
+    "axios": "^1.11.0",
+    "base-64": "^1.0.0",
+    "bcrypt": "^5.1.1",
+    "cloudinary": "^2.6.0",
+    "concurrently": "^9.2.0",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-winston": "^4.2.0",
+    "google-auth-library": "^10.2.1",
+    "handlebars": "^4.7.8",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^6.10.0",
+    "pg": "^8.14.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.6",
+    "sequelize-cli": "^6.6.2",
+    "socket.io": "^4.8.1",
+    "streamifier": "^0.1.1",
+    "uuid": "^11.1.0",
+    "validator": "^13.12.0",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.22.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.5.3"
+  }
+}

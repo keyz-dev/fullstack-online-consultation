@@ -1,0 +1,221 @@
+require("dotenv").config();
+const nodemailer = require("nodemailer");
+const logger = require("../utils/logger");
+const handlebars = require("handlebars");
+const fs = require("fs").promises;
+const path = require("path");
+
+class EmailService {
+  constructor() {
+    this.transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE === "true" ? true : false,
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+  }
+
+  /**
+   * Load and compile a Handlebars template
+   * @param {string} templateName - Name of the template file (without extension)
+   * @param {Object} data - Data to inject into the template
+   * @returns {Promise<string>} - Compiled HTML
+   */
+
+  async compileTemplate(templateName, data) {
+    try {
+      const templatePath = path.join(
+        __dirname,
+        "../email_templates/",
+        `${templateName}.hbs`
+      );
+      const template = await fs.readFile(templatePath, "utf-8");
+      const compiledTemplate = handlebars.compile(template);
+      return compiledTemplate(data);
+    } catch (error) {
+      logger.error("Error compiling email template", { error, templateName });
+      throw new Error(`Failed to compile email template: ${templateName}`);
+    }
+  }
+
+  async sendEmail({ to, subject, template, data, html, text }) {
+    try {
+      let finalHtml = html;
+
+      // If template is provided, compile it
+      if (template) {
+        finalHtml = await this.compileTemplate(template, data || {});
+      }
+
+      const mailOptions = {
+        from: `"DrogCine Team" <${process.env.SMTP_EMAIL}>`,
+        to,
+        subject,
+        text,
+        html: finalHtml,
+      };
+
+      // Add logo attachment for doctor emails
+      if (
+        template &&
+        (template.includes("doctor") || template.includes("Doctor"))
+      ) {
+        mailOptions.attachments = [
+          {
+            filename: "logo.png",
+            path: require("path").join(
+              __dirname,
+              "../email_templates/assets/logo.png"
+            ),
+            cid: "logo",
+          },
+        ];
+      }
+
+      const info = await this.transporter.sendMail(mailOptions);
+
+      logger.info("Email sent successfully", { messageId: info.messageId });
+      return info;
+    } catch (error) {
+      logger.error("Error sending email", { error });
+      throw error;
+    }
+  }
+
+  // Email templates
+  async sendWelcomeEmail(user) {
+    return this.sendEmail({
+      to: user.email,
+      subject: "Welcome to DrogCine!",
+      html: `
+        <h1>Welcome to DrogCine, ${user.firstName}!</h1>
+        <p>Thank you for registering with us. We're excited to have you on board.</p>
+      `,
+    });
+  }
+
+  async sendBookingConfirmation(booking) {
+    return this.sendEmail({
+      to: booking.passengerDetails.email,
+      subject: "Booking Confirmation - DrogCine",
+      html: `
+        <h1>Booking Confirmed!</h1>
+        <p>Your booking has been confirmed. Booking ID: ${booking.bookingNumber}</p>
+        <p>Details:</p>
+        <ul>
+          <li>From: ${booking.trip.route.startStation.name}</li>
+          <li>To: ${booking.trip.route.endStation.name}</li>
+          <li>Date: ${new Date(booking.trip.departureDate).toLocaleDateString()}</li>
+          <li>Seats: ${booking.seats.join(", ")}</li>
+        </ul>
+      `,
+    });
+  }
+
+  async sendVerificationEmail(user, verificationCode) {
+    return this.sendEmail({
+      to: user.email,
+      subject: "Verify your email",
+      template: "emailVerification",
+      data: {
+        name: user.fullName,
+        verificationCode,
+      },
+    });
+  }
+
+  // Doctor application confirmation email
+  async sendDoctorAppConfirmation(doctorApp, user) {
+    return this.sendEmail({
+      to: user.email,
+      subject: "Doctor Application Submitted Successfully - DrogCine",
+      template: "doctorApplicationConfirmation",
+      data: {
+        userName: user.name,
+        userEmail: user.email,
+        applicationId: doctorApp._id,
+        applicationVersion: doctorApp.applicationVersion,
+        businessName: doctorApp.businessName,
+        submittedDate: new Date(doctorApp.createdAt).toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        ),
+        status: doctorApp.status,
+        homeUrl: `${process.env.FRONTEND_URL}`,
+      },
+    });
+  }
+
+  // Doctor application approval email
+  async sendDoctorAppApproval(doctorApp, user, adminRemarks = null) {
+    return this.sendEmail({
+      to: user.email,
+      subject:
+        "🎉 Congratulations! Your Doctor Application is Approved - DrogCine",
+      template: "doctorApplicationApproval",
+      data: {
+        userName: user.name,
+        userEmail: user.email,
+        applicationId: doctorApp._id,
+        applicationVersion: doctorApp.applicationVersion,
+        businessName: doctorApp.businessName,
+        approvalDate: new Date(doctorApp.approvedAt).toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        ),
+        status: doctorApp.status,
+        adminRemarks: adminRemarks,
+        homeUrl: `${process.env.FRONTEND_URL}`,
+      },
+    });
+  }
+
+  // Doctor application rejection email
+  async sendDoctorAppRejection(
+    doctorApp,
+    user,
+    rejectionReason,
+    adminRemarks = null
+  ) {
+    return this.sendEmail({
+      to: user.email,
+      subject: "Doctor Application Status Update - DrogCine",
+      template: "doctorApplicationRejection",
+      data: {
+        userName: user.name,
+        userEmail: user.email,
+        applicationId: doctorApp._id,
+        applicationVersion: doctorApp.applicationVersion,
+        businessName: doctorApp.businessName,
+        reviewDate: new Date(doctorApp.rejectedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: doctorApp.status,
+        rejectionReason: rejectionReason,
+        adminRemarks: adminRemarks,
+        homeUrl: `${process.env.FRONTEND_URL}`,
+      },
+    });
+  }
+}
+
+module.exports = new EmailService();
