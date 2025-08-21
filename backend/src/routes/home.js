@@ -14,4 +14,13 @@ router.get("/specialties/:id", homeController.getSpecialtyDetails);
 // Get all symptoms
 router.get("/symptoms", homeController.getSymptoms);
 
+// Search specialties
+router.get("/specialties/search", homeController.searchSpecialties);
+
+// Get doctors by specialty
+router.get(
+  "/doctors/by-specialty/:specialtyId",
+  homeController.getDoctorsBySpecialty
+);
+
 module.exports = router;

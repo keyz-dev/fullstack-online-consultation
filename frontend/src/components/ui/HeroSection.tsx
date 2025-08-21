@@ -10,14 +10,14 @@ interface HeroSectionProps {
   children?: React.ReactNode;
 }
 
-export default function HeroSection({
+const HeroSection: React.FC<HeroSectionProps> = ({
   title,
   subtitle,
   breadcrumbs = [],
   backgroundImage = "/images/hero-bg.jpg",
   className = "",
   children,
-}: HeroSectionProps) {
+}) => {
   return (
     <section
       className={`relative w-full h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden ${className}`}
@@ -29,7 +29,7 @@ export default function HeroSection({
       }}
     >
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/40 z-10"></div>
+      <div className="absolute inset-0 bg-black/60 z-10"></div>
 
       {/* Content */}
       <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -77,4 +77,6 @@ export default function HeroSection({
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
     </section>
   );
-}
+};
+
+export default HeroSection;

@@ -6,6 +6,7 @@ export interface Specialty {
   description?: string;
   icon?: string;
   isActive: boolean;
+  doctorCount?: number;
 }
 
 export interface Symptom {
@@ -87,6 +88,54 @@ export const homeApi = {
   // Get all symptoms
   getSymptoms: async (): Promise<{ success: boolean; data: Symptom[] }> => {
     const response = await api.get("/home/symptoms");
+    return response.data;
+  },
+
+  // Search specialties
+  searchSpecialties: async (
+    query: string,
+    limit?: number
+  ): Promise<{
+    success: boolean;
+    data: Specialty[];
+  }> => {
+    const params = new URLSearchParams();
+    if (query) params.append("q", query);
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await api.get(`/home/specialties/search?${params}`);
+    return response.data;
+  },
+
+  // Get doctors by specialty
+  getDoctorsBySpecialty: async (
+    specialtyId: number,
+    page?: number,
+    limit?: number
+  ): Promise<{
+    success: boolean;
+    data: {
+      doctors: any[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+      specialty: {
+        id: number;
+        name: string;
+        description?: string;
+      };
+    };
+  }> => {
+    const params = new URLSearchParams();
+    if (page) params.append("page", page.toString());
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await api.get(
+      `/home/doctors/by-specialty/${specialtyId}?${params}`
+    );
     return response.data;
   },
 };

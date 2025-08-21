@@ -10,10 +10,10 @@ interface NavLinksProps {
 
 const navBarItems = [
   { title: "Home", path: "/" },
-  { title: "Services", path: "/services" },
-  { title: "About Us", path: "/about" },
-  { title: "Pages", path: "/pages" },
-  { title: "Contact", path: "/contact" },
+  { title: "Specialties", path: "/specialties" },
+  { title: "Doctors", path: "/doctors" },
+  { title: "Pharmacies", path: "/pharmacies" },
+  { title: "Medications", path: "/medications" },
 ];
 
 const NavLinks: React.FC<NavLinksProps> = ({ mobile = false }) => {
@@ -31,7 +31,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ mobile = false }) => {
         <li
           key={link.title}
           className={`list-none m-0 p-1 ${
-            mobile ? "" : "ml-5"
+            mobile ? "" : "ml-5 sm:ml-2"
           } dark:text-white`}
         >
           <Link

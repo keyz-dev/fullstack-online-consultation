@@ -272,6 +272,126 @@ class HomeController {
       });
     }
   }
+
+  // Search specialties
+  async searchSpecialties(req, res) {
+    try {
+      const { q, limit = 10 } = req.query;
+
+      let whereClause = {
+        isActive: true,
+      };
+
+      if (q) {
+        whereClause.name = {
+          [Op.iLike]: `%${q}%`,
+        };
+      }
+
+      const specialties = await Specialty.findAll({
+        where: whereClause,
+        limit: parseInt(limit),
+        order: [["name", "ASC"]],
+      });
+
+      // Get doctor count for each specialty
+      const specialtiesWithCount = await Promise.all(
+        specialties.map(async (specialty) => {
+          const doctorCount = await Doctor.count({
+            where: {
+              isActive: true,
+              isApproved: true,
+              specialties: {
+                [Op.overlap]: [specialty.name],
+              },
+            },
+          });
+
+          return {
+            ...specialty.toJSON(),
+            doctorCount,
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: specialtiesWithCount,
+      });
+    } catch (error) {
+      console.error("Error searching specialties:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to search specialties",
+        error: error.message,
+      });
+    }
+  }
+
+  // Get doctors by specialty
+  async getDoctorsBySpecialty(req, res) {
+    try {
+      const { specialtyId } = req.params;
+      const { page = 1, limit = 10 } = req.query;
+
+      const specialty = await Specialty.findByPk(specialtyId);
+      if (!specialty) {
+        return res.status(404).json({
+          success: false,
+          message: "Specialty not found",
+        });
+      }
+
+      const offset = (page - 1) * limit;
+
+      const doctors = await Doctor.findAndCountAll({
+        where: {
+          isActive: true,
+          isApproved: true,
+          specialties: {
+            [Op.overlap]: [specialty.name],
+          },
+        },
+        include: [
+          {
+            model: require("../db/models").User,
+            as: "user",
+            attributes: ["id", "firstName", "lastName", "email", "avatar"],
+          },
+        ],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [["createdAt", "DESC"]],
+      });
+
+      const totalPages = Math.ceil(doctors.count / limit);
+
+      res.json({
+        success: true,
+        data: {
+          doctors: doctors.rows,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: doctors.count,
+            totalPages,
+          },
+          specialty: {
+            id: specialty.id,
+            name: specialty.name,
+            description: specialty.description,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching doctors by specialty:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch doctors by specialty",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = new HomeController();

@@ -1,85 +1,114 @@
 import React from "react";
-import Image from "next/image";
 import { useHome } from "../../contexts";
-import { SubHeading } from "../ui";
+import { ChevronRight } from "lucide-react";
+import { SubHeading, Button } from "../ui";
+import { useRouter } from "next/navigation";
 
 const SpecialtiesSection = () => {
   const { homeData, loading } = useHome();
+  const router = useRouter();
 
   if (loading) {
     return (
-      <section className="py-10 bg-light_bg dark:bg-gray-900">
-        <div className="container mx-auto px-4">
+      <section className="w-screen bg-slate-100 dark:bg-gray-900">
+        <section className="container py-10 flex flex-col gap-5">
           <SubHeading
-            tagline="Medical Specialties"
-            title="Expert Care in Every Field"
-            description="Our doctors specialize in various medical fields to provide comprehensive healthcare."
+            tagline="Our Specialties"
+            title="Medical Specialties"
+            description="Find the right specialist for your healthcare needs"
           />
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-12">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <p className="text-center text-secondary dark:text-gray-300 text-sm md:w-[40%] mx-auto">
+            More than 200 Doctors trained doctors on DrogCine providing video
+            consultancy and easy appointment
+          </p>
+          <div className="w-full grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-gray-200 dark:bg-gray-700 h-32 rounded-lg mb-3"></div>
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="bg-gray-200 dark:bg-gray-700 h-32 rounded-md"></div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </section>
     );
   }
 
   const specialties = homeData?.specialties || [];
 
+  const handleViewMore = () => {
+    router.push("/specialties");
+  };
+
   return (
-    <section className="py-10 bg-light_bg dark:bg-gray-900">
-      <div className="container mx-auto px-4">
+    <section className="w-screen bg-slate-100 dark:bg-gray-900">
+      <section className="container py-10 flex flex-col gap-5">
         <SubHeading
-          tagline="Medical Specialties"
-          title="Expert Care in Every Field"
-          description="Our doctors specialize in various medical fields to provide comprehensive healthcare."
+          tagline="Our Specialties"
+          title="Medical Specialties"
+          description="More than 200 Doctors trained doctors on DrogCine providing video
+          consultancy and easy appointment"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-12">
-          {specialties.map((specialty, index) => (
-            <div
-              key={specialty.id || index}
-              className="group cursor-pointer hover:transform hover:scale-105 transition-all duration-300"
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="flex justify-center mb-4">
+        <div className="flex w-full items-center justify-between">
+          <h2 className="text-lg font-medium text-primary dark:text-white">
+            Topping Specialties
+          </h2>
+          <Button
+            onClickHandler={handleViewMore}
+            additionalClasses="border border-line_clr dark:border-white text-secondary"
+            text="VIEW MORE"
+            trailingIcon={
+              <ChevronRight className="w-4 h-4 text-secondary dark:text-gray-300 hover:text-white" />
+            }
+          />
+        </div>
+
+        <section className="w-full grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {specialties.length > 0 ? (
+            specialties.map((specialty) => (
+              <div
+                key={specialty.id}
+                className="w-full p-4 flex flex-col justify-center items-center border-2 border-transparent hover:border-accent hover:shadow-lg rounded-md bg-white dark:bg-gray-800 cursor-pointer transition-all duration-200"
+                onClick={() =>
+                  router.push(`/doctors?specialty=${specialty.id}`)
+                }
+              >
+                {/* Icon */}
+                <div className="w-[60px] h-[60px] flex items-center justify-center mb-4">
                   {specialty.icon ? (
-                    <div className="relative w-16 h-16">
-                      <Image
-                        src={specialty.icon}
-                        alt={specialty.name}
-                        fill
-                        className="object-contain"
-                        placeholder="blur"
-                        blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                      />
-                    </div>
+                    <img
+                      src={specialty.icon}
+                      alt={specialty.name}
+                      className="w-full h-full object-contain"
+                    />
                   ) : (
-                    <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center">
+                    <div className="w-full h-full bg-accent/10 rounded-full flex items-center justify-center">
                       <span className="text-accent text-2xl font-bold">
-                        {specialty.name.charAt(0)}
+                        {specialty.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
                 </div>
-                <h3 className="text-lg font-bold text-primary dark:text-white text-center mb-2 group-hover:text-accent transition-colors duration-300">
+
+                {/* Title */}
+                <h2 className="text-lg text-center font-semibold text-primary dark:text-white mb-2">
                   {specialty.name}
-                </h3>
-                {specialty.description && (
-                  <p className="text-sm text-secondary dark:text-gray-300 text-center leading-relaxed">
-                    {specialty.description}
-                  </p>
-                )}
+                </h2>
+
+                {/* Doctor Count */}
+                <p className="text-sm text-center text-secondary dark:text-gray-300">
+                  {specialty.doctorCount || 0}{" "}
+                  <span className="underline p-2">Doctors</span> &gt;
+                </p>
               </div>
+            ))
+          ) : (
+            <div className="w-full col-span-5 h-[100px] flex items-center justify-center text-secondary dark:text-gray-400">
+              There are no specialties available
             </div>
-          ))}
-        </div>
-      </div>
+          )}
+        </section>
+      </section>
     </section>
   );
 };
