@@ -44,7 +44,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     <div className={`relative ${className}`} ref={languageRef}>
       <button
         type="button"
-        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-yellow-100 dark:hover:bg-gray-800 dark:text-white"
+        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-accent-light dark:hover:bg-gray-800 dark:text-white"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -59,7 +59,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           {languageOptions.map((option) => (
             <li key={option.code}>
               <button
-                className="w-full text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-gray-700 dark:text-white"
+                className="w-full text-left px-3 py-2 hover:bg-accent-light dark:hover:bg-gray-700 dark:text-white"
                 onClick={() => handleLanguageSelect(option)}
               >
                 {option.name}

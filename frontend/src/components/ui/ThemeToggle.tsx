@@ -37,7 +37,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "" }) => {
     <div className={`relative ${className}`} ref={themeRef}>
       <button
         type="button"
-        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-yellow-100 dark:hover:bg-gray-800 dark:text-white"
+        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-accent-light dark:hover:bg-gray-800 dark:text-white"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -50,7 +50,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "" }) => {
           {themes.map((t) => (
             <li key={t.key}>
               <button
-                className="w-full flex items-center gap-2 text-left px-3 py-2 hover:bg-yellow-100 dark:hover:bg-gray-700 dark:text-white"
+                className="w-full flex items-center gap-2 text-left px-3 py-2 hover:bg-accent-light dark:hover:bg-gray-700 dark:text-white"
                 onClick={() => {
                   setTheme(t.key as "light" | "dark" | "system");
                   setOpen(false);

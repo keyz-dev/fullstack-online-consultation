@@ -1,72 +1,85 @@
 import React from "react";
-import { CheckCircle, Calendar, MessageSquare, CreditCard } from "lucide-react";
+import {
+  LogIn,
+  UserCheck,
+  Stethoscope,
+  MessageSquare,
+  FileText,
+  Truck,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 import SubHeading from "../ui/SubHeading";
 
 const StepsSection = () => {
   const steps = [
     {
-      icon: <Calendar className="w-8 h-8 text-accent" />,
-      title: "Book Appointment",
-      description:
-        "Choose your preferred doctor and schedule a consultation at your convenience.",
+      icon: <LogIn className="w-16 h-16 text-accent" />,
+      title: "Sign Up Or Log In",
+      description: "Using your smartphone, tablet or computer",
+      number: 1,
     },
     {
-      icon: <MessageSquare className="w-8 h-8 text-accent" />,
-      title: "Consult with Doctor",
+      icon: <MessageSquare className="w-16 h-16 text-accent" />,
+      title: "Choose & Consult Doctor",
       description:
-        "Have a secure video consultation with our experienced healthcare professionals.",
+        "Review doctor profiles and connect for a secure video consultation.",
+      number: 2,
     },
     {
-      icon: <CheckCircle className="w-8 h-8 text-accent" />,
+      icon: <FileText className="w-16 h-16 text-accent" />,
       title: "Get Prescription",
       description:
         "Receive your prescription and treatment plan from qualified doctors.",
+      number: 3,
     },
     {
-      icon: <CreditCard className="w-8 h-8 text-accent" />,
-      title: "Order Medications",
+      icon: <Truck className="w-16 h-16 text-accent" />,
+      title: "Medication Delivery",
       description:
-        "Order your medications from our partner pharmacies with fast delivery.",
+        "Order medications from our partner pharmacies with fast delivery.",
+      number: 4,
     },
   ];
 
   return (
-    <section className="py-10 bg-light_bg dark:bg-gray-900">
-      <div className="container mx-auto px-4">
+    <section className="w-screen bg-white dark:bg-gray-900">
+      <section className="container py-10 w-full flex flex-col gap-8 justify-center items-center">
         <SubHeading
           tagline="How It Works"
           title="Simple Steps to Better Health"
           description="Get the care you need in just a few easy steps. Our platform makes healthcare accessible and convenient."
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {steps.map((step, index) => (
-            <div
-              key={index}
-              className="text-center group hover:transform hover:scale-105 transition-all duration-300"
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="flex justify-center mb-4">
-                  <div className="bg-accent-light dark:bg-accent/20 rounded-full p-4 group-hover:bg-accent/30 transition-colors duration-300">
-                    {step.icon}
-                  </div>
-                </div>
-                <div className="flex items-center justify-center mb-3">
-                  <span className="bg-accent text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
-                    {index + 1}
+            <React.Fragment key={index}>
+              <div className="flex flex-col gap-5 justify-center items-center">
+                <div className="flex justify-center relative">
+                  {step.icon}
+                  <span className="absolute -top-2 -right-2 bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                    {step.number}
                   </span>
-                  <h3 className="text-xl font-bold text-primary dark:text-white">
-                    {step.title}
-                  </h3>
                 </div>
-                <p className="text-secondary dark:text-gray-300 leading-relaxed">
+                <h3 className="text-xl font-bold text-primary dark:text-white text-center">
+                  {step.title}
+                </h3>
+                <p className="text-center text-sm font-thin w-3/4 text-secondary dark:text-gray-300">
                   {step.description}
                 </p>
               </div>
-            </div>
+
+              {/* Arrow separator - only show if not the last item */}
+              {index < steps.length - 1 && (
+                <>
+                  <ChevronRight className="hidden md:block w-10 h-10 text-accent" />
+                  <ChevronDown className="md:hidden w-10 h-10 text-accent" />
+                </>
+              )}
+            </React.Fragment>
           ))}
         </div>
-      </div>
+      </section>
     </section>
   );
 };

@@ -126,7 +126,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
     >
       <Link href="/login">
         <button
-          className={`bg-transparent text-black dark:text-white min-w-fit hover:bg-yellow-100 dark:hover:bg-gray-800 w-[90px] rounded px-2 py-1 ${
+          className={`bg-transparent text-black dark:text-white min-w-fit hover:bg-accent-light dark:hover:bg-gray-800 w-[90px] rounded px-2 py-1 ${
             mobile && "text-left"
           }`}
         >
@@ -136,7 +136,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
       <hr className="w-0 lg:w-[2px] lg:h-8 border-none bg-slate-200 dark:bg-accent"></hr>
       <Link href="/register">
         <button
-          className={`bg-transparent text-black dark:text-white min-w-fit hover:bg-yellow-100 dark:hover:bg-gray-800 w-[90px] rounded px-2 py-1 ${
+          className={`bg-transparent text-black dark:text-white min-w-fit hover:bg-accent-light dark:hover:bg-gray-800 w-[90px] rounded px-2 py-1 ${
             mobile && "text-left"
           }`}
         >

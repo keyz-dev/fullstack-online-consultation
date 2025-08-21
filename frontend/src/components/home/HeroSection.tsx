@@ -10,7 +10,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-[80vh] bg-light_bg dark:bg-gray-900 overflow-hidden">
+    <section className="relative h-[80vh] bg-light_bg dark:bg-gray-900 overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-10 w-20 h-20 bg-accent-light rounded-full opacity-30"></div>
@@ -19,37 +19,42 @@ const HeroSection = () => {
         <div className="absolute bottom-40 right-10 w-12 h-12 bg-orange-100 rounded-full opacity-40"></div>
       </div>
 
-      <div className="container mx-auto px-4 py-16 relative z-10">
+      <div className="container mx-auto px-4 py-10 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left side - Content */}
-          <div className="space-y-8 text-center lg:text-left relative z-20">
-            <div className="space-y-4">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-primary dark:text-white leading-tight select-text">
-                Our{" "}
-                <span className="text-accent font-hero">Expert Doctors</span>{" "}
-                Meet
-                <span className="text-accent font-hero"> Every Need</span>
+          <div className="space-y-8 flex flex-col gap-5 items-center sm:items-start  text-center lg:text-left relative z-20">
+            <div className="text-[42px] flex flex-col items-center text-center sm:items-start sm:text-left sm:text-[64px] sm:leading-[70px]">
+              <h1 className="font-custom text-primary">
+                <p>
+                  Our{" "}
+                  <span className="text-accent font-semibold font-hero">
+                    HealthCare
+                  </span>{" "}
+                  <br />
+                  Solutions Meet <br />
+                  <span className="text-accent font-semibold font-hero">
+                    Every
+                  </span>{" "}
+                  Need
+                </p>
               </h1>
-
-              <p className="text-lg md:text-xl text-secondary dark:text-gray-300 leading-relaxed select-text">
+              <p className="text-secondary mt-10 text-sm w-[90%] md:w-[65%]">
                 With a team of experienced healthcare professionals and
                 cutting-edge technology, we strive to empower individuals with
-                accessible, quality medical care tailored to their unique needs.
+                accessible, quality medical care.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button
-                className="primarybtn px-4 py-2 text-sm font-semibold rounded-xs flex items-center gap-2 transition-all duration-300 transform hover:scale-105 border-0 w-full sm:w-auto"
-                trailingIcon={<ArrowRight size={14} />}
-                onClickHandler={handleBookAppointment}
-              >
-                BOOK APPOINTMENT
-              </Button>
-            </div>
+            <Button
+              additionalClasses="primarybtn max-w-fit"
+              trailingIcon={<ArrowRight size={14} />}
+              onClickHandler={handleBookAppointment}
+            >
+              BOOK APPOINTMENT
+            </Button>
 
             {/* Statistics */}
-            <div className="grid grid-cols-3 gap-6 pt-8">
+            <div className="grid grid-cols-3 gap-6 bg-white dark:bg-accent2 rounded-xs p-4">
               <div className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-accent mb-2">
                   100+

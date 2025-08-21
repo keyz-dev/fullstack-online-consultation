@@ -94,7 +94,7 @@ class HomeController {
           specialties: specialtiesWithCount,
           symptoms,
           testimonials,
-          qAndAs,
+          qa: qAndAs,
           stats,
           services,
         },
