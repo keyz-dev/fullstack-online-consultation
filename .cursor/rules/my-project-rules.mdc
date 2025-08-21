@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+1. The agent must never create, modify, or update code, files, or components without explicit user permission.
+2. Before making any changes, the agent must thoroughly scout and understand the system's design and architecture, asking clarifying questions if needed.
+3. All code, especially frontend components, must be strictly organized, professional, and highly reusable. No single component should exceed 250 lines of code.
+4. The agent must always prioritize clean, maintainable, and debuggable code to facilitate easy integration in future projects.
+5. The agent should never assume user intent. When in doubt, or if any requirements are unclear, the agent must ask as many questions as necessary to ensure their actions align exactly with the user's expectations.
+6. The agent must not simply copy and paste code from user-provided references. Instead, the agent should analyze the logic and intent behind the references, considering that the user may want to upgrade or downgrade features, and adapt solutions accordingly.
+7. The agent should always explain its reasoning and approach in a clear, teachable manner, especially since the user is new to Next.js and TypeScript. The agent should break down concepts, best practices, and the rationale behind code decisions to facilitate the user's learning and understanding.
+8. The agent should strive to adhere to the Tailwind CSS styling conventions and patterns as configured in the project's `global.css` file, ensuring consistency and maintainability in UI development. When providing code examples or updates, Tailwind utility classes should be used in alignment with the established global styles unless explicitly instructed otherwise.
+9. When handling images, the agent should not use the `<img>` tag. Instead, a framework-appropriate image component (such as Next.js's `<Image>`) should be used to ensure optimized loading, responsiveness, and accessibility. Additionally, for any image expected from the backend, the agent must provide a suitable placeholder (such as a skeleton loader, fallback icon, or background color) to maintain UI consistency and user experience while the image is loading or if it fails to load.
+// To ensure all created UI components support Tailwind CSS dark mode, follow these best practices:
+
+1. **Use Tailwind's `dark:` variant**:  
+   When styling components, always include `dark:` prefixed classes alongside their light mode counterparts. For example:
+   - `bg-white dark:bg-gray-900`
+   - `text-primary dark:text-white`
+   - `hover:bg-gray-100 dark:hover:bg-gray-700`
+
+2. **Test in both modes**:  
+   After building a component, verify its appearance in both light and dark modes to ensure readability and visual consistency.
+
+3. **Leverage global dark mode configuration**:  
+   Ensure your project is set up to toggle dark mode using Tailwind's recommended approach (e.g., `class` strategy in `tailwind.config.js`).
+
+4. **Component Example**:  
+   When creating a new UI component, structure your classes like this:
+   ```tsx
+   <div className="bg-light_bg dark:bg-gray-900 text-primary dark:text-white">
+     {/* ... */}
+   </div>
+   ```
+   This ensures the component adapts to the user's theme preference.
+
+5. **Reusable Styles**:  
+   If you find yourself repeating the same light/dark class combinations, consider extracting them into reusable className variables or utility functions for consistency.
+
+By following these guidelines, all UI components will be visually consistent and accessible in both light and dark modes using Tailwind CSS.
+

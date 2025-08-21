@@ -8,16 +8,16 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // Testimonial belongs to a user (patient who wrote the testimonial)
+      // Testimonial belongs to a user (who wrote the testimonial)
       Testimonial.belongsTo(models.User, {
         foreignKey: "userId",
         as: "user",
       });
 
-      // Testimonial can belong to a doctor (if it's about a doctor)
+      // Testimonial can be about a user (doctor or patient being reviewed)
       Testimonial.belongsTo(models.User, {
         foreignKey: "doctorId",
-        as: "doctor",
+        as: "reviewedUser",
       });
 
       // Testimonial can belong to a pharmacy (if it's about a pharmacy)

@@ -1,0 +1,79 @@
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 300;
+  src: local("Euclid Circular Light"),
+    url("Euclid Circular A Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 300;
+  src: local("Euclid Circular Light Italic"),
+    url("Euclid Circular A Light Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Euclid Circular Regular"),
+    url("Euclid Circular A Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 400;
+  src: local("Euclid Circular Italic"),
+    url("Euclid Circular A Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 500;
+  src: local("Euclid Circular Medium"),
+    url("Euclid Circular A Medium.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 500;
+  src: local("Euclid Circular Medium Italic"),
+    url("Euclid Circular A Medium Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 600;
+  src: local("Euclid Circular SemiBold"),
+    url("Euclid Circular A SemiBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 600;
+  src: local("Euclid Circular SemiBold Italic"),
+    url("Euclid Circular A SemiBold Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Euclid Circular Bold"),
+    url("Euclid Circular A Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 700;
+  src: local("Euclid Circular Bold Italic"),
+    url("Euclid Circular A Bold Italic.ttf") format("truetype");
+}

@@ -15,11 +15,9 @@ module.exports = (sequelize, DataTypes) => {
         as: "symptoms",
       });
 
-      // Specialty has many doctors
-      Specialty.hasMany(models.Doctor, {
-        foreignKey: "specialtyId",
-        as: "doctors",
-      });
+      // Note: Doctor model stores specialties as an array of strings
+      // No direct foreign key relationship exists
+      // The relationship is handled through the specialties array field in Doctor model
     }
   }
 

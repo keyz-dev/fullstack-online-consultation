@@ -1,1 +1,244 @@
 @import "tailwindcss";
+
+/* Custom Font Declarations */
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 300;
+  src: local("Euclid Circular Light"),
+    url("/fonts/euclid/Euclid Circular A Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 300;
+  src: local("Euclid Circular Light Italic"),
+    url("/fonts/euclid/Euclid Circular A Light Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Euclid Circular Regular"),
+    url("/fonts/euclid/Euclid Circular A Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 400;
+  src: local("Euclid Circular Italic"),
+    url("/fonts/euclid/Euclid Circular A Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 500;
+  src: local("Euclid Circular Medium"),
+    url("/fonts/euclid/Euclid Circular A Medium.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 500;
+  src: local("Euclid Circular Medium Italic"),
+    url("/fonts/euclid/Euclid Circular A Medium Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 600;
+  src: local("Euclid Circular SemiBold"),
+    url("/fonts/euclid/Euclid Circular A SemiBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 600;
+  src: local("Euclid Circular SemiBold Italic"),
+    url("/fonts/euclid/Euclid Circular A SemiBold Italic.ttf")
+      format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Euclid Circular Bold"),
+    url("/fonts/euclid/Euclid Circular A Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Euclid Circular";
+  font-style: italic;
+  font-weight: 700;
+  src: local("Euclid Circular Bold Italic"),
+    url("/fonts/euclid/Euclid Circular A Bold Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Recoleta";
+  src: url("/fonts/recoleta/Recoleta-RegularDEMO.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  font-family: "Euclid Circular", "Sofia Pro Regular", "sans serif";
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 0.87rem;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Dark mode support */
+.dark {
+  --color-primary: #ffffff;
+  --color-secondary: #d1d5db;
+  --color-secondary-bg: #1f2937;
+  --color-light_bg: #111827;
+  --color-dark_bg: #f9fafb;
+}
+
+@theme {
+  --font-hero: "Recoleta", "Sofia Pro Light", "Euclid Circular";
+  --font-custom: "Sofia Pro Light", "Euclid Circular";
+
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1540px;
+  --breakpoint-3xl: 1920px;
+
+  --color-accent: #3e8cff;
+  --color-accent-light: #e7f5ffd9;
+  --color-accent-bg: #94a3bb;
+  --color-accent2: #162241;
+  --color-primary: #212121;
+  --color-primary-bg: #f4eeeb;
+  --color-secondary: #6a6a6a;
+  --color-secondary-bg: #f6f6f6;
+  --color-light_bg: #f6f8fa;
+  --color-placeholder: #adadad;
+  --color-dark_bg: #1f2937;
+
+  --color-success: #4dc281;
+  --color-success-bg: #c5f1de;
+  --color-success-bg-light: #e1f2ee;
+  --color-pending: #5e63ff;
+  --color-pending-bg: #adb0fd6b;
+  --color-pending-bg-light: #edf0f7;
+  --color-pending1: #713dc9;
+  --color-pending1-bg: #e1cffd5b;
+  --color-pending1-bg-light: #eae6f8;
+  --color-warning: #e2796c;
+  --text-warning: #e2796c;
+  --color-warning-bg: #f6d4ca;
+  --color-warning-bg-light: #f3f1f2;
+  --color-warning-bg-dark: #f6d4ca;
+  --color-error: #ff5540;
+  --color-error-bg: #ffc9cac1;
+  --color-error-bg-light: #f4e2ee;
+  --color-error-bg-dark: #f42311;
+  --color-error-text-dark: #f42311;
+  --color-border_clr: "#C2C21C2";
+  --color-line_clr: #dcdee3;
+}
+
+@layer components {
+  .container {
+    @apply mx-auto px-1 max-w-[840px];
+  }
+
+  .btn {
+    @apply px-4 py-2 font-medium rounded-xs text-base min-w-32 min-h-[45px] transition duration-150 ease-in-out hover:opacity-75 border-0;
+  }
+
+  .primarybtn {
+    @apply bg-accent text-white hover:opacity-75;
+  }
+
+  .secondarybtn {
+    @apply bg-primary text-white hover:opacity-75 border border-border_clr;
+  }
+}
+
+@layer utilities {
+  .default_transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .flexbox {
+    @apply flex items-center justify-center;
+  }
+
+  .form_container {
+    @apply min-w-sm lg:min-w-lg mx-auto flex flex-col;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+.nav_active,
+.nav_item:hover {
+  color: var(--color-accent);
+  position: relative;
+}
+
+.nav_active::after,
+.nav_item:hover::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-accent);
+  border-radius: 1px;
+}
+
+/* Custom smooth spin animation for loading spinner */
+@keyframes smooth-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.smooth-spin {
+  animation: smooth-spin 1s linear infinite;
+  will-change: transform;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
