@@ -3,7 +3,7 @@ const { UnauthorizedError, NotFoundError } = require("../utils/errors");
 const { User } = require("../db/models");
 
 // Authentication middleware
-const authenticateUser = async (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -12,8 +12,8 @@ const authenticateUser = async (req, res, next) => {
   }
 
   try {
-    const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findByPk(decoded.id);
     if (!user) {
       return next(new NotFoundError("User not found."));
     }
@@ -23,6 +23,9 @@ const authenticateUser = async (req, res, next) => {
     return next(new UnauthorizedError("Invalid or expired token."));
   }
 };
+
+// Legacy function name for backward compatibility
+const authenticateUser = authenticate;
 
 // Role-based authorization middleware
 const authorizeRoles = (roles) => {
@@ -44,11 +47,8 @@ const optionalAuth = async (req, res, next) => {
   if (token) {
     // If token exists, try to authenticate
     try {
-      const jwt = require("jsonwebtoken");
-      const User = require("../models/user");
-
-      const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findByPk(decoded.id);
 
       if (user) {
         req.authUser = user;
@@ -67,4 +67,9 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-module.exports = { authenticateUser, authorizeRoles, optionalAuth };
+module.exports = {
+  authenticate,
+  authenticateUser,
+  authorizeRoles,
+  optionalAuth,
+};

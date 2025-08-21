@@ -168,6 +168,11 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
+      documents: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        defaultValue: {},
+      },
       isVerified: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

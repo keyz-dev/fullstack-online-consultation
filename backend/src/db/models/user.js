@@ -71,6 +71,19 @@ module.exports = (sequelize, DataTypes) => {
     isPharmacy() {
       return this.role === "pharmacy";
     }
+
+    // Generate JWT token for authentication
+    generateAuthToken() {
+      const jwt = require("jsonwebtoken");
+      const payload = {
+        id: this.id,
+        email: this.email,
+        role: this.role,
+      };
+      return jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_TIME || "7d",
+      });
+    }
   }
   User.init(
     {
