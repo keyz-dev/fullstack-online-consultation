@@ -22,6 +22,12 @@ module.exports = (sequelize, DataTypes) => {
         as: "doctor",
       });
 
+      // User has one pharmacy profile
+      User.hasOne(models.Pharmacy, {
+        foreignKey: "userId",
+        as: "pharmacy",
+      });
+
       // User has many testimonials
       User.hasMany(models.Testimonial, {
         foreignKey: "userId",
@@ -70,6 +76,32 @@ module.exports = (sequelize, DataTypes) => {
     // Helper method to check if user is a pharmacy
     isPharmacy() {
       return this.role === "pharmacy";
+    }
+
+    // Helper method to check if user is a pending doctor
+    isPendingDoctor() {
+      return this.role === "pending_doctor";
+    }
+
+    // Helper method to check if user is a pending pharmacy
+    isPendingPharmacy() {
+      return this.role === "pending_pharmacy";
+    }
+
+    // Helper method to check if user has any pending application
+    hasPendingApplication() {
+      return this.role === "pending_doctor" || this.role === "pending_pharmacy";
+    }
+
+    // Helper method to check if user can reapply
+    canReapply() {
+      return (
+        this.role === "patient" ||
+        (this.role === "pending_doctor" &&
+          this.doctor?.status === "rejected") ||
+        (this.role === "pending_pharmacy" &&
+          this.pharmacy?.status === "rejected")
+      );
     }
 
     // Generate JWT token for authentication
@@ -163,9 +195,6 @@ module.exports = (sequelize, DataTypes) => {
       avatar: {
         type: DataTypes.STRING(500),
         allowNull: true,
-        validate: {
-          isUrl: true,
-        },
       },
       authProvider: {
         type: DataTypes.ENUM("local", "google", "facebook", "apple"),

@@ -10,7 +10,9 @@ interface PhoneInputProps {
   additionalClasses?: string;
   disabled?: boolean;
   required?: boolean;
-  onChangeHandler: (event: { target: { name: string; value: string } }) => void;
+  onChangeHandler: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   labelClasses?: string;
   value?: string;
   error?: string;

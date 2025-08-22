@@ -22,14 +22,6 @@ const parseFormData = (body, fieldsToParse) => {
   return parsedBody;
 };
 
-/**
- * Parse admin registration form data
- * @param {Object} body - The request body
- * @returns {Object} - Parsed body
- */
-const parseAdminRegistration = (body) => {
-  return parseFormData(body, ["address"]);
-};
 
 /**
  * Parse patient registration form data
@@ -89,7 +81,6 @@ const parseDocumentNames = (body) => {
 
 module.exports = {
   parseFormData,
-  parseAdminRegistration,
   parsePatientRegistration,
   parseDoctorRegistration,
   parsePharmacyRegistration,

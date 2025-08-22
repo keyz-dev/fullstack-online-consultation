@@ -211,6 +211,48 @@ module.exports = (sequelize, DataTypes) => {
           len: [0, 1000],
         },
       },
+      // Application status fields
+      status: {
+        type: DataTypes.ENUM(
+          "pending",
+          "under_review",
+          "approved",
+          "rejected",
+          "suspended"
+        ),
+        allowNull: false,
+        defaultValue: "pending",
+        validate: {
+          isIn: [
+            ["pending", "under_review", "approved", "rejected", "suspended"],
+          ],
+        },
+      },
+      applicationVersion: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        validate: {
+          min: 1,
+        },
+      },
+      adminReview: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+      },
+      submittedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      approvedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      rejectedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       sequelize,
@@ -244,6 +286,15 @@ module.exports = (sequelize, DataTypes) => {
         {
           fields: ["paymentMethods"],
           using: "gin",
+        },
+        {
+          fields: ["status"],
+        },
+        {
+          fields: ["userId", "status"],
+        },
+        {
+          fields: ["submittedAt"],
         },
       ],
       hooks: {

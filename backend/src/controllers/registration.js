@@ -10,7 +10,6 @@ const { handleFileUploads } = require("../utils/documentUtil");
 const { cleanUpFileImages } = require("../utils/imageCleanup");
 const { sendVerificationEmail } = require("../utils/sendVerificationEmail");
 const {
-  parseAdminRegistration,
   parsePatientRegistration,
   parseDoctorRegistration,
   parsePharmacyRegistration,
@@ -21,7 +20,11 @@ const {
 exports.registerAdmin = async (req, res, next) => {
   try {
     // Parse form data before validation
-    const parsedBody = parseAdminRegistration(req.body);
+    if (req.body.address) {
+      req.body.address = JSON.parse(req.body.address);
+    }
+
+    const parsedBody = req.body;
 
     const { error } = adminRegisterSchema.validate(parsedBody);
     if (error) throw new BadRequestError(error.details[0].message);
@@ -170,7 +173,7 @@ exports.registerDoctor = async (req, res, next) => {
       ...userData,
       email,
       avatar: uploadedFiles.avatar,
-      role: "doctor",
+      role: "pending_doctor", // Use pending role
       authProvider: "local",
       emailVerified: false,
       isApproved: false, // Doctors need approval
@@ -193,6 +196,8 @@ exports.registerDoctor = async (req, res, next) => {
       consultationDuration: consultationDuration || 30,
       paymentMethods: paymentMethods || {},
       documents: uploadedFiles.documents || {},
+      status: "pending", // Set initial status
+      submittedAt: new Date(),
     };
 
     await Doctor.create(doctorData);
@@ -258,7 +263,7 @@ exports.registerPharmacy = async (req, res, next) => {
       ...userData,
       email,
       avatar: uploadedFiles.avatar,
-      role: "pharmacy",
+      role: "pending_pharmacy", // Use pending role
       authProvider: "local",
       emailVerified: false,
       isApproved: false, // Pharmacies need approval
@@ -278,6 +283,8 @@ exports.registerPharmacy = async (req, res, next) => {
       deliveryInfo: deliveryInfo || {},
       paymentMethods: paymentMethods || ["cash"],
       documents: uploadedFiles.documents || {},
+      status: "pending", // Set initial status
+      submittedAt: new Date(),
     };
 
     await Pharmacy.create(pharmacyData);

@@ -169,7 +169,7 @@ html {
   }
 
   .secondarybtn {
-    @apply bg-primary text-white hover:opacity-75 border border-border_clr;
+    @apply bg-primary dark:bg-accent2 text-white hover:opacity-75 border border-line_clr;
   }
 }
 

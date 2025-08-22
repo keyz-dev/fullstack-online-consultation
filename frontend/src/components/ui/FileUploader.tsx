@@ -31,7 +31,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   return (
     <div
       className={
-        "flex min-w-[35%] flex-col items-center justify-center border-2 border-dashed border-line_clr dark:border-secondary rounded-xs min-h-[120px] sm:min-h-[140px] cursor-pointer bg-blue-50/30 dark:bg-dark_bg relative overflow-hidden " +
+        "flex min-w-[35%] flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xs min-h-[120px] sm:min-h-[140px] cursor-pointer bg-blue-50/30 dark:bg-gray-800 relative overflow-hidden " +
         className
       }
       onClick={() => fileInputRef.current?.click()}
@@ -52,12 +52,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           />
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center text-accent">
+        <div className="flex flex-col items-center justify-center text-gray-600 dark:text-gray-300">
           <UploadCloud className="w-6 h-6 sm:w-8 sm:h-8 mb-1" />
-          <span className="text-xs text-secondary">
-            Drop or <span className="text-accent underline">Upload</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Drop or{" "}
+            <span className="text-blue-600 dark:text-blue-400 underline">
+              Upload
+            </span>
           </span>
-          <span className="text-xs text-secondary">{`${
+          <span className="text-xs text-gray-500 dark:text-gray-400">{`${
             text ? text : "file"
           }`}</span>
         </div>

@@ -1,0 +1,25 @@
+---
+alwaysApply: true
+---
+
+1. All UI components must fully support Tailwind CSS dark mode by utilizing the `dark:` variant alongside their default (light) styles. For example:
+
+   - `bg-white dark:bg-gray-900`
+   - `text-primary dark:text-white`
+   - `hover:bg-gray-100 dark:hover:bg-gray-700`
+
+2. When creating or updating UI components, always ensure that every color, background, border, and text style adapts appropriately to both light and dark themes.
+
+3. Test all components in both light and dark modes to guarantee visual consistency and accessibility.
+
+4. If you find yourself repeating the same light/dark class combinations, extract them into reusable className variables or utility functions for maintainability.
+
+5. Example usage:
+
+   ```tsx
+   <div className="bg-light_bg dark:bg-gray-900 text-primary dark:text-white">
+     {/* ... */}
+   </div>
+   ```
+
+6. Leverage the project's global dark mode configuration (e.g., Tailwind's `class` strategy) to ensure theme toggling works as expected across all components.

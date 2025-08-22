@@ -36,7 +36,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           onChange={onChange}
           className={`w-full px-3 py-2 border ${
             error ? "border-red-500" : "border-gray-300"
-          } rounded-xs focus:outline-none focus:ring-accent focus:border-accent bg-light_bg ${additionalClasses}`}
+          } rounded-xs focus:outline-none focus:ring-accent focus:border-accent bg-white dark:bg-gray-800 dark:text-white ${additionalClasses}`}
           required={required}
           {...props}
         >

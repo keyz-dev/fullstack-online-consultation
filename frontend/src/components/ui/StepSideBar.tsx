@@ -7,6 +7,7 @@ interface Step {
   title: string;
   description: string;
   icon: React.ReactNode;
+  completed: boolean;
 }
 
 interface StepSideBarProps {

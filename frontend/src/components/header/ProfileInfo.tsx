@@ -15,7 +15,7 @@ import { Button } from "../ui";
 import Link from "next/link";
 
 const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const imagePlaceholder =
     "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541";
 
@@ -43,6 +43,19 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
     };
   }, []);
 
+  // Show loading state to prevent hydration mismatch
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+        <div className="hidden lg:block">
+          <div className="w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="w-16 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-1"></div>
+        </div>
+      </div>
+    );
+  }
+
   if (user) {
     return (
       <div className="relative" ref={dropdownRef}>
@@ -69,7 +82,25 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
         {showUserDropdown && (
           <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-sm shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-10">
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => {
+                setShowUserDropdown(false);
+                switch (user.role) {
+                  case "admin":
+                    router.push("/admin");
+                    break;
+                  case "doctor":
+                    router.push("/doctor");
+                    break;
+                  case "patient":
+                    router.push("/patient");
+                    break;
+                  case "pharmacy":
+                    router.push("/pharmacy");
+                    break;
+                  default:
+                    router.push("/");
+                }
+              }}
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
             >
               <LayoutDashboard size={16} />
@@ -89,18 +120,18 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
               <User size={16} />
               My Profile
             </button>
-            {user.role !== "vendor" && (
+            {user.role === "patient" && (
               <>
                 <hr className="my-2 text-line_clr" />
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    router.push("/vendor-setup");
+                    router.push("/register/doctor");
                   }}
                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   <Store size={16} />
-                  Become a Vendor
+                  Become a Doctor
                 </button>
               </>
             )}
@@ -145,7 +176,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
       </Link>
       <hr className="w-0 lg:w-[2px] lg:h-8 border-none bg-slate-200 dark:bg-accent"></hr>
       <Button
-        onClickHandler={() => router.push("/pharmacy-setup")}
+        onClickHandler={() => router.push("/register/pharmacy")}
         additionalClasses={`primarybtn min-h-fit ${
           mobile ? "text-left justify-start" : "justify-center"
         }`}

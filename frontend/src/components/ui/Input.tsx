@@ -10,7 +10,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       name,
       id,
       placeholder,
-      additionalClasses = "border-transparent",
+      additionalClasses = "border-transparent dark:border-gray-700",
       disabled = false,
       icon,
       onClickHandler,
@@ -51,7 +51,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={id}
             value={value}
             placeholder={placeholder}
-            className={`placeholder:text-xs placeholder:text-[#ADADAD] placeholder:font-normal bg-light_bg dark:bg-dark_bg outline-none p-2 w-full border-2 focus:border-accent transition-all ease-in-out text-secondary dark:text-light_bg text-md duration-600 rounded-xs ${additionalClasses} ${
+            className={`placeholder:text-xs placeholder:text-[#ADADAD] placeholder:font-normal bg-light_bg dark:bg-accent2 outline-none p-2 w-full border-2 focus:border-accent transition-all ease-in-out dark:text-white text-secondary text-md duration-600 rounded-xs ${additionalClasses} ${
               error && "border-error"
             }`}
             disabled={disabled}

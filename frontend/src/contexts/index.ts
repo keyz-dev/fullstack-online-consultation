@@ -6,3 +6,11 @@ export {
   BaseSpecialtyProvider,
   useBaseSpecialty,
 } from "./BaseSpecialtyContext";
+export {
+  BaseDashboardProvider,
+  useBaseDashboard,
+} from "./BaseDashboardContext";
+export {
+  NotificationProvider,
+  useNotificationContext,
+} from "./NotificationContext";

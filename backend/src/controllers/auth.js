@@ -38,46 +38,22 @@ exports.login = async (req, res, next) => {
 
     if (!user) return next(new UnauthorizedError("Invalid email or password"));
 
-    if (user.authProvider === "google" && !user.password) {
-      throw new UnauthorizedError("Please continue with Google Sign In");
-    }
-
     const match = await user.comparePassword(password);
     if (!match) return next(new UnauthorizedError("Invalid email or password"));
 
     if (!user.isActive)
       return next(new ForbiddenError("Your account is not active"));
 
-    if (!user.emailVerified) {
-      // Resend verification email
-      try {
-        await sendVerificationEmail(user, email, user.name);
-      } catch (err) {
-        return next(new BadRequestError("Failed to send verification email"));
-      }
+    await sendVerificationEmail(user, email, user.name);
 
-      return res.status(209).json({
-        status: "success",
-        message:
-          "Please verify your email before logging in. Verification email sent.",
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-          },
-        },
-      });
-    }
-
-    // Generate token
-    const authToken = user.generateAuthToken();
-
-    res.json({
+    return res.status(209).json({
       status: "success",
-      message: "Login successful",
+      message: "Login successful. Please verify your email.",
       data: {
-        user: formatUserData(user),
-        token: authToken,
+        user: {
+          id: user.id,
+          email: user.email,
+        },
       },
     });
   } catch (err) {

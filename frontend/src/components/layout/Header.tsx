@@ -17,7 +17,7 @@ const Header = () => {
   return (
     <header className="w-full sticky top-0 z-50">
       {/* Main navigation */}
-      <nav className="bg-white dark:bg-gray-900 shadow-sm backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
+      <nav className="bg-white dark:bg-gray-900 shadow-sm backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-24">
             {/* Logo */}

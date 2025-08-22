@@ -7,78 +7,308 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatar?: string;
-}
+import { useRouter } from "next/navigation";
+import {
+  authAPI,
+  User,
+  AdminRegisterRequest,
+  PatientRegisterRequest,
+  DoctorRegisterRequest,
+  PharmacyRegisterRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  VerifyEmailRequest,
+} from "../api";
+import { useGoogleLogin } from "@react-oauth/google";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  authError: string | null;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; user: User }>;
+  registerAdmin: (
+    userData: AdminRegisterRequest
+  ) => Promise<{ success: boolean; user: User }>;
+  registerPatient: (
+    userData: PatientRegisterRequest
+  ) => Promise<{ success: boolean; user: User }>;
+  registerDoctor: (
+    userData: DoctorRegisterRequest
+  ) => Promise<{ success: boolean; user: User }>;
+  registerPharmacy: (
+    userData: PharmacyRegisterRequest
+  ) => Promise<{ success: boolean; user: User }>;
+  handleGoogleLogin: () => void;
+  forgotPassword: (
+    emailData: ForgotPasswordRequest
+  ) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (
+    resetData: ResetPasswordRequest
+  ) => Promise<{ success: boolean; message: string }>;
+  verifyEmail: (
+    verifyData: VerifyEmailRequest
+  ) => Promise<{ success: boolean; message: string; user: User }>;
   logout: () => void;
-  register: (userData: any) => Promise<void>;
+  setAuthError: (error: string | null) => void;
+  clearError: () => void;
+  setUserAndToken: (user: User, token: string) => void;
+  invalidateToken: () => void;
+  redirectBasedOnRole: (user: User) => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("userData");
+      return storedUser ? JSON.parse(storedUser) : null;
+    }
+    return null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("token");
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const router = useRouter();
 
+  // Helper methods
+  const invalidateToken = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userData");
+    }
+    setUser(null);
+    setToken(null);
+  };
+
+  const setUserAndToken = (userData: User, userToken: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("token", userToken);
+      localStorage.setItem("userData", JSON.stringify(userData));
+    }
+    setUser(userData);
+    setToken(userToken);
+  };
+
+  const redirectBasedOnRole = (userData: User) => {
+    switch (userData.role) {
+      case "admin":
+        router.push("/admin");
+        break;
+      case "doctor":
+        router.push("/doctor");
+        break;
+      case "patient":
+        router.push("/patient");
+        break;
+      case "pharmacy":
+        router.push("/pharmacy");
+        break;
+      default:
+        router.push("/");
+    }
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("userData", JSON.stringify(updatedUser));
+    }
+  };
+
+  // Check for existing token on mount
   useEffect(() => {
-    // Check for existing auth token and validate it
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        if (token) {
-          // TODO: Validate token with backend
-          // For now, we'll just check if token exists
-          // const response = await fetch("/api/auth/validate", {
-          //   headers: { Authorization: `Bearer ${token}` }
-          // });
-          // if (response.ok) {
-          //   const userData = await response.json();
-          //   setUser(userData);
-          // }
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        localStorage.removeItem("authToken");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
+    const token = authAPI.getToken();
+    if (token) {
+      verifyToken(token);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const verifyToken = async (token: string) => {
     try {
-      setLoading(true);
-      // TODO: Implement actual login API call
-      // const response = await fetch("/api/auth/login", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ email, password })
-      // });
-      // const data = await response.json();
-      // if (response.ok) {
-      //   localStorage.setItem("authToken", data.token);
-      //   setUser(data.user);
-      // } else {
-      //   throw new Error(data.message);
-      // }
+      const data = await authAPI.verifyToken(token);
+      if (data.status === "success") {
+        setUserAndToken(data.data.user, token);
+      } else {
+        invalidateToken();
+      }
     } catch (error) {
-      console.error("Login failed:", error);
+      invalidateToken();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.login({ email, password });
+
+      if (data.status === "success") {
+        return { success: true, user: data.data.user };
+      } else {
+        throw new Error(data.message || "Login failed");
+      }
+    } catch (error: any) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const registerAdmin = async (userData: AdminRegisterRequest) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.registerAdmin(userData);
+      return { success: true, user: data.data.user };
+    } catch (error: any) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const registerPatient = async (userData: PatientRegisterRequest) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.registerPatient(userData);
+      return { success: true, user: data.data.user };
+    } catch (error: any) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const registerDoctor = async (userData: DoctorRegisterRequest) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.registerDoctor(userData);
+      return { success: true, user: data.data.user };
+    } catch (error: any) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const registerPharmacy = async (userData: PharmacyRegisterRequest) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.registerPharmacy(userData);
+      return { success: true, user: data.data.user };
+    } catch (error: any) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = useGoogleLogin({
+    scope: "profile email openid",
+    onSuccess: async (tokenResponse) => {
+      const { access_token } = tokenResponse;
+      if (access_token) {
+        try {
+          const response = await authAPI.googleLogin({ access_token });
+          if (response.data) {
+            const { user, token } = response.data;
+            setUserAndToken(user, token || "");
+            setAuthError(null);
+            redirectBasedOnRole(user);
+          }
+        } catch (error: any) {
+          setAuthError(
+            error.response?.data?.message ||
+              "Google login failed. Please try again."
+          );
+        }
+      }
+    },
+    onError: (error: any) => {
+      setAuthError(error.message || "Google login failed. Please try again.");
+    },
+  });
+
+  const forgotPassword = async (emailData: ForgotPasswordRequest) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.forgotPassword(emailData);
+      return { success: true, message: data.message };
+    } catch (error: any) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (resetData: ResetPasswordRequest) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.resetPassword(resetData);
+      return { success: true, message: data.message };
+    } catch (error: any) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyEmail = async (verifyData: VerifyEmailRequest) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.verifyEmail(verifyData);
+      setUserAndToken(data.data.user, data.data.token);
+
+      return { success: true, message: data.message, user: data.data.user };
+    } catch (error: any) {
+      setAuthError(error.message);
       throw error;
     } finally {
       setLoading(false);
@@ -86,49 +316,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("authToken");
-    setUser(null);
+    invalidateToken();
+    router.push("/login");
   };
 
-  const register = async (userData: any) => {
-    try {
-      setLoading(true);
-      // TODO: Implement actual register API call
-      // const response = await fetch("/api/auth/register", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(userData)
-      // });
-      // const data = await response.json();
-      // if (response.ok) {
-      //   localStorage.setItem("authToken", data.token);
-      //   setUser(data.user);
-      // } else {
-      //   throw new Error(data.message);
-      // }
-    } catch (error) {
-      console.error("Registration failed:", error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  const clearError = () => {
+    setAuthError(null);
   };
 
   const value: AuthContextType = {
     user,
     loading,
+    authError,
     login,
+    registerAdmin,
+    registerPatient,
+    registerDoctor,
+    registerPharmacy,
+    handleGoogleLogin,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
     logout,
-    register,
+    setAuthError,
+    clearError,
+    setUserAndToken,
+    invalidateToken,
+    redirectBasedOnRole,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 };

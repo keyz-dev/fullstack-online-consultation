@@ -1,9 +1,10 @@
 import React from "react";
 import { ArrowRight, Stethoscope, Users, Clock, Shield } from "lucide-react";
-import { Button } from "../ui";
-import SubHeading from "../ui/SubHeading";
+import { Button, SubHeading } from "../ui";
+import { useRouter } from "next/navigation";
 
 const DoctorLinkSection = () => {
+  const router = useRouter();
   const benefits = [
     {
       icon: <Users className="w-6 h-6 text-accent" />,
@@ -51,11 +52,11 @@ const DoctorLinkSection = () => {
 
             <div className="mt-8">
               <Button
-                className="bg-white text-accent hover:bg-gray-100 px-6 py-3 text-base font-semibold rounded-xs flex items-center gap-2 transition-all duration-300 transform hover:scale-105 border-0"
+                additionalClasses="primarybtn bg-white text-accent"
                 trailingIcon={<ArrowRight size={16} />}
-              >
-                JOIN AS DOCTOR
-              </Button>
+                onClickHandler={() => router.push("/register/doctor")}
+                text="JOIN AS DOCTOR"
+              />
             </div>
           </div>
 

@@ -12,11 +12,10 @@ const logger = require('./logger');
 async function sendVerificationEmail(user, email, name, template='emailVerification') {
   // Generate verification code
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-  await user.updateOne({
-    emailVerificationCode: verificationCode,
-    emailVerificationCodeExpiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
-  });
-  // Send verification email
+  // Update user instance for Sequelize/PostgreSQL
+  user.emailVerificationCode = verificationCode;
+  user.emailVerificationExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 mins
+  await user.save();
   try {
     await emailService.sendEmail({
       to: email,

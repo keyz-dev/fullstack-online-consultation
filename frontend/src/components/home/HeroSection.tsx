@@ -10,15 +10,10 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative h-[80vh] bg-light_bg dark:bg-gray-900 overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-20 h-20 bg-accent-light rounded-full opacity-30"></div>
-        <div className="absolute top-40 right-20 w-16 h-16 bg-orange-200 rounded-full opacity-30"></div>
-        <div className="absolute bottom-20 left-1/4 w-24 h-24 bg-accent-light rounded-full opacity-40"></div>
-        <div className="absolute bottom-40 right-10 w-12 h-12 bg-orange-100 rounded-full opacity-40"></div>
-      </div>
-
+    <section
+      className="relative h-[80vh] bg-light_bg dark:bg-gray-900 overflow-hidden bg-cover"
+      style={{ backgroundImage: `url(/images/hero/bg.png)` }}
+    >
       <div className="container mx-auto px-4 py-10 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left side - Content */}

@@ -2,9 +2,9 @@ import axios from "axios";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-let API_BASE_URL;
+let API_BASE_URL: string;
 if (isProduction) {
-  API_BASE_URL = process.env.NEXT_PUBLIC_REMOTE_BACKEND_API_URL;
+  API_BASE_URL = process.env.NEXT_PUBLIC_REMOTE_BACKEND_API_URL || "";
 } else {
   API_BASE_URL =
     process.env.NEXT_PUBLIC_LOCAL_BACKEND_API_URL || "http://localhost:4501";
@@ -34,19 +34,25 @@ api.interceptors.request.use(
   }
 );
 
-// Add a response interceptor
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-
 export default api;
+
+// Export auth API and types
+export { default as authAPI } from "./auth";
+export type {
+  User,
+  Address,
+  ContactInfo,
+  PaymentMethod,
+  LoginRequest,
+  GoogleLoginRequest,
+  BaseUserData,
+  AdminRegisterRequest,
+  PatientRegisterRequest,
+  DoctorRegisterRequest,
+  PharmacyRegisterRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  VerifyEmailRequest,
+  AuthResponse,
+  VerifyTokenResponse,
+} from "./auth";

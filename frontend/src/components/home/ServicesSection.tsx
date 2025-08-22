@@ -29,7 +29,6 @@ const ServicesSection = () => {
     );
   }
 
-  console.log("Home data services:", homeData?.services);
   const services = homeData?.services || [
     {
       name: "Video Consultation",

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider, LanguageProvider, AuthProvider } from "../contexts";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export const metadata: Metadata = {
   title: "DrogCine - Home",
@@ -24,11 +27,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider>
-          <LanguageProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
+        >
+          <ThemeProvider>
+            <LanguageProvider>
+              <AuthProvider>
+                <ToastContainer />
+                {children}
+              </AuthProvider>
+            </LanguageProvider>
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

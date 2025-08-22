@@ -28,7 +28,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseButtonStyles =
       "btn flexbox gap-2 cursor-pointer disabled:cursor-not-allowed";
     const disabledStyles =
-      "opacity-50 bg-gray-300 cursor-not-allowed text-secondary";
+      "opacity-50 bg-gray-300 cursor-not-allowed text-secondary dark:text-white";
     const loadingStyles =
       "relative text-transparent transition-none hover:text-transparent";
 

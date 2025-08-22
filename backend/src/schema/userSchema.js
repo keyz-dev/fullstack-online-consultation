@@ -1,5 +1,52 @@
 const Joi = require("joi");
 
+const addressSchema = Joi.object({
+  street: Joi.string().optional(),
+  city: Joi.string().optional(),
+  state: Joi.string().optional(),
+  country: Joi.string().optional(),
+  postalCode: Joi.string().optional(),
+  fullAddress: Joi.string().optional(),
+  coordinates: Joi.object({
+    lat: Joi.number().optional(),
+    lng: Joi.number().optional(),
+  }).optional(),
+});
+
+const contactInfoSchema = Joi.object({
+  type: Joi.string()
+    .valid(
+      "phone",
+      "whatsapp",
+      "email",
+      "facebook",
+      "instagram",
+      "website",
+      "business_email"
+    )
+    .required(),
+  value: Joi.string().required(),
+});
+
+const paymentMethodSchema = Joi.object({
+  method: Joi.string()
+    .valid(
+      "MoMo",
+      "OrangeMoney",
+      "OM",
+      "MTN",
+      "bank_transfer",
+      "cash_on_delivery"
+    )
+    .required(),
+  value: Joi.object({
+    accountNumber: Joi.string().required(),
+    accountName: Joi.string().required(),
+    bankName: Joi.string().optional(),
+    accountType: Joi.string().optional(),
+  }).required(),
+});
+
 // Base user validation schema
 const baseUserSchema = Joi.object({
   name: Joi.string().min(2).max(100).required().messages({
@@ -19,13 +66,7 @@ const baseUserSchema = Joi.object({
   dob: Joi.date().max("now").optional().messages({
     "date.max": "Date of birth cannot be in the future",
   }),
-  address: Joi.object({
-    street: Joi.string().optional(),
-    city: Joi.string().optional(),
-    state: Joi.string().optional(),
-    country: Joi.string().optional(),
-    postalCode: Joi.string().optional(),
-  }).optional(),
+  address: addressSchema.optional(),
 });
 
 // Admin registration schema
@@ -89,25 +130,11 @@ const doctorRegisterSchema = baseUserSchema.keys({
     "array.min": "At least one specialty must be specified",
     "any.required": "Specialties are required",
   }),
-  clinicAddress: Joi.object({
-    street: Joi.string().optional(),
-    city: Joi.string().optional(),
-    state: Joi.string().optional(),
-    country: Joi.string().optional(),
-    postalCode: Joi.string().optional(),
-  }).optional(),
+  clinicAddress: addressSchema.optional(),
   operationalHospital: Joi.string().max(200).optional().messages({
     "string.max": "Operational hospital name cannot exceed 200 characters",
   }),
-  contactInfo: Joi.object({
-    phoneNumber: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
-      .required(),
-    whatsapp: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
-      .optional(),
-    website: Joi.string().uri().optional(),
-  }).required(),
+  contactInfo: Joi.array().items(contactInfoSchema).optional().allow(null, ""),
   consultationFee: Joi.number().positive().required().messages({
     "number.base": "Consultation fee must be a number",
     "number.positive": "Consultation fee must be positive",
@@ -124,12 +151,10 @@ const doctorRegisterSchema = baseUserSchema.keys({
       "number.min": "Consultation duration must be at least 15 minutes",
       "number.max": "Consultation duration cannot exceed 120 minutes",
     }),
-  paymentMethods: Joi.object({
-    mobile_money: Joi.boolean().default(false),
-    card: Joi.boolean().default(false),
-    bank_transfer: Joi.boolean().default(false),
-    cash: Joi.boolean().default(false),
-  }).optional(),
+  paymentMethods: Joi.array()
+    .items(paymentMethodSchema)
+    .optional()
+    .allow(null, ""),
   documentNames: Joi.array().items(Joi.string()).optional(),
 });
 
@@ -153,23 +178,8 @@ const pharmacyRegisterSchema = baseUserSchema.keys({
   description: Joi.string().max(2000).optional().messages({
     "string.max": "Description cannot exceed 2000 characters",
   }),
-  address: Joi.object({
-    street: Joi.string().required(),
-    city: Joi.string().required(),
-    state: Joi.string().optional(),
-    country: Joi.string().required(),
-    postalCode: Joi.string().optional(),
-  }).required(),
-  contactInfo: Joi.object({
-    phoneNumber: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
-      .required(),
-    email: Joi.string().email().required(),
-    whatsapp: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
-      .optional(),
-    website: Joi.string().uri().optional(),
-  }).required(),
+  address: addressSchema.required(),
+  contactInfo: Joi.array().items(contactInfoSchema).optional().allow(null, ""),
   deliveryInfo: Joi.object({
     deliveryRadius: Joi.number().positive().optional(),
     deliveryFee: Joi.number().min(0).optional(),
@@ -177,17 +187,9 @@ const pharmacyRegisterSchema = baseUserSchema.keys({
     freeDeliveryThreshold: Joi.number().min(0).optional(),
   }).optional(),
   paymentMethods: Joi.array()
-    .items(
-      Joi.string().valid(
-        "cash",
-        "card",
-        "mobile_money",
-        "bank_transfer",
-        "wallet"
-      )
-    )
-    .default(["cash"])
-    .optional(),
+    .items(paymentMethodSchema)
+    .optional()
+    .allow(null, ""),
   documentNames: Joi.array().items(Joi.string()).optional(),
 });
 
