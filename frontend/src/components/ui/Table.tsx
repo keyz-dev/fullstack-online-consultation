@@ -42,30 +42,33 @@ export default function Table({
   if (isLoading) {
     return (
       <div className="p-6">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               {columns.map((col, index) => (
                 <th
                   key={index}
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {col.Header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {[...Array(5)].map((_, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-50">
+              <tr
+                key={rowIndex}
+                className="hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
                 {columns.map((col, colIndex) => (
                   <td
                     key={colIndex}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-700"
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300"
                   >
                     <div className="animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                     </div>
                   </td>
                 ))}
@@ -79,7 +82,7 @@ export default function Table({
 
   if (!data || data.length === 0) {
     return (
-      <div className="p-6 text-center text-gray-500">
+      <div className="p-6 text-center text-gray-500 dark:text-gray-400">
         {emptyStateMessage || "No data available."}
       </div>
     );
@@ -87,26 +90,26 @@ export default function Table({
 
   return (
     <div className="">
-      <table className="w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
             {columns.map((col, index) => (
               <th
                 key={index}
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
                 {col.Header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           {data.map((row, rowIndex) => (
             <tr
               key={rowIndex}
               className={cn(
-                "hover:bg-gray-50",
+                "hover:bg-gray-50 dark:hover:bg-gray-800",
                 clickableRows && onRowClick && "cursor-pointer"
               )}
               onClick={
@@ -116,7 +119,7 @@ export default function Table({
               {columns.map((col, index) => (
                 <TableCell
                   key={index}
-                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-700"
+                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300"
                 >
                   {col.Cell ? col.Cell({ row }) : row[col.accessor]}
                 </TableCell>

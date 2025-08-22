@@ -9,12 +9,7 @@ const { formatImageUrl } = require("../imageUtils");
 const formatSpecialtyData = (specialty, options = {}) => {
   if (!specialty) return null;
 
-  const {
-    includeStats = false,
-    doctorCount = 0,
-    consultationCount = 0,
-    symptomCount = 0,
-  } = options;
+  const { includeStats = false, doctorCount = 0, symptomCount = 0 } = options;
 
   // Base specialty data
   const formattedSpecialty = {
@@ -31,7 +26,6 @@ const formatSpecialtyData = (specialty, options = {}) => {
   if (includeStats) {
     formattedSpecialty.stats = {
       doctorCount,
-      consultationCount,
       symptomCount,
     };
   }
@@ -41,9 +35,8 @@ const formatSpecialtyData = (specialty, options = {}) => {
     formattedSpecialty.symptoms = specialty.symptoms.map((symptom) => ({
       id: symptom.id,
       name: symptom.name,
-      description: symptom.description,
-      severity: symptom.severity,
-      isActive: symptom.isActive,
+      iconUrl: symptom.iconUrl,
+      specialtyId: symptom.specialtyId,
     }));
   }
 

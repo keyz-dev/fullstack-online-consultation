@@ -203,7 +203,7 @@ const VerifyAccountPage = () => {
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
-                className={`w-12 h-12 text-2xl text-center border-2 rounded-sm focus:outline-none transition-all duration-200 ${getInputStyle()}`}
+                className={`w-12 h-12 text-2xl text-center dark:text-white border-2 rounded-sm focus:outline-none transition-all duration-200 ${getInputStyle()}`}
                 value={digit}
                 onChange={(e) => handleChange(e, idx)}
                 onKeyDown={(e) => handleKeyDown(e, idx)}

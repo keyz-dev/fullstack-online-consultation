@@ -38,6 +38,7 @@ export default api;
 
 // Export auth API and types
 export { default as authAPI } from "./auth";
+export { default as specialtiesAPI } from "./specialties";
 export type {
   User,
   Address,
@@ -56,3 +57,12 @@ export type {
   AuthResponse,
   VerifyTokenResponse,
 } from "./auth";
+export type {
+  Specialty,
+  SpecialtyStats,
+  CreateSpecialtyRequest,
+  UpdateSpecialtyRequest,
+  SpecialtiesResponse,
+  SpecialtyResponse,
+  SpecialtyStatsResponse,
+} from "./specialties";

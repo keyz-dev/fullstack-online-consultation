@@ -6,7 +6,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<{ className?: string }>;
   trend?: "up" | "down";
   trendValue?: number;
   colorTheme?: keyof typeof colorThemes;
@@ -14,24 +14,32 @@ interface StatCardProps {
   isLoading?: boolean;
 }
 
-export default function StatCard({
+const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   description,
   icon: Icon,
   trend,
   trendValue,
-  colorTheme = "blue",
+  colorTheme = "white",
   className = "w-[180px] lg:w-[250px]",
   isLoading = false,
   ...props
-}: StatCardProps) {
-  const theme = colorThemes[colorTheme] || colorThemes.white;
+}) => {
+  const theme = colorThemes[colorTheme];
   const TrendIcon = trend === "up" ? ArrowUp : ArrowDown;
-  const trendColor = trend === "up" ? "text-green-500" : "text-red-500";
-  const trendBgColor = trend === "up" ? "bg-green-100" : "bg-red-100";
+  const trendColor =
+    trend === "up"
+      ? "text-green-500 dark:text-green-400"
+      : "text-red-500 dark:text-red-400";
+  const trendBgColor =
+    trend === "up"
+      ? "bg-green-100 dark:bg-green-900/20"
+      : "bg-red-100 dark:bg-red-900/20";
   const trendBorderColor =
-    trend === "up" ? "border-green-500" : "border-red-500";
+    trend === "up"
+      ? "border-green-500 dark:border-green-400"
+      : "border-red-500 dark:border-red-400";
 
   return (
     <div
@@ -45,15 +53,15 @@ export default function StatCard({
         </div>
 
         {/* Title */}
-        <h3 className="text-sm sm:text-lg font-medium text-primary mb-1 sm:mb-2 leading-tight">
+        <h3 className="text-sm sm:text-lg font-medium text-primary dark:text-white mb-1 sm:mb-2 leading-tight">
           {title}
         </h3>
       </div>
 
       {/* Value */}
-      <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary mb-2 sm:mb-3">
+      <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary dark:text-white mb-2 sm:mb-3">
         {isLoading ? (
-          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+          <div className="animate-pulse bg-gray-200 dark:bg-gray-600 h-8 w-16 rounded"></div>
         ) : typeof value === "number" ? (
           value.toLocaleString()
         ) : (
@@ -76,7 +84,7 @@ export default function StatCard({
         {/* Description */}
         {description && (
           <p
-            className="text-xs sm:text-sm text-placeholder leading-relaxed w-fit truncate"
+            className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed w-fit truncate"
             style={{ maxWidth: "150px" }}
           >
             {description}
@@ -85,4 +93,6 @@ export default function StatCard({
       </div>
     </div>
   );
-}
+};
+
+export default StatCard;

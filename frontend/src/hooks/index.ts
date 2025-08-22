@@ -1,2 +1,3 @@
 export { useIsMobile } from "./useIsMobile";
+export { useSpecialties } from "./useSpecialties";
 export { useTheme, useLanguage, useAuth } from "../contexts";

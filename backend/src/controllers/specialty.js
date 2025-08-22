@@ -1,4 +1,10 @@
-const { Specialty, Doctor, Consultation, Symptom } = require("../db/models");
+const {
+  Specialty,
+  Doctor,
+  Symptom,
+  User,
+  DoctorSpecialty,
+} = require("../db/models");
 const {
   formatSpecialtyData,
   formatSpecialtiesData,
@@ -46,45 +52,40 @@ exports.getAllSpecialties = async (req, res, next) => {
         {
           model: Symptom,
           as: "symptoms",
-          attributes: ["id", "name", "isActive"],
-          where: { isActive: true },
-          required: false,
+          attributes: ["id", "name", "iconUrl", "specialtyId"],
         },
       ],
     });
 
-    // Get statistics for each specialty
+    // Get statistics for each specialty using proper joins
     const specialtiesWithStats = await Promise.all(
       specialties.map(async (specialty) => {
-        // Count doctors for this specialty
+        // Count doctors for this specialty using proper joins
         const doctorCount = await Doctor.count({
           where: {
-            specialties: {
-              [require("sequelize").Op.overlap]: [specialty.name],
-            },
             isActive: true,
+            isVerified: true,
           },
-        });
-
-        // Count consultations for this specialty (if consultation model has specialty field)
-        const consultationCount = await Consultation.count({
-          where: {
-            specialtyId: specialty.id,
-          },
+          include: [
+            {
+              model: Specialty,
+              as: "specialties",
+              through: { attributes: [] },
+              where: { id: specialty.id },
+            },
+          ],
         });
 
         // Count symptoms for this specialty
         const symptomCount = await Symptom.count({
           where: {
             specialtyId: specialty.id,
-            isActive: true,
           },
         });
 
         return formatSpecialtyData(specialty, {
           includeStats: true,
           doctorCount,
-          consultationCount,
           symptomCount,
         });
       })
@@ -115,7 +116,7 @@ exports.getSpecialtyById = async (req, res, next) => {
         {
           model: Symptom,
           as: "symptoms",
-          attributes: ["id", "name", "description", "severity", "isActive"],
+          attributes: ["id", "name", "iconUrl", "specialtyId"],
         },
       ],
     });
@@ -124,33 +125,31 @@ exports.getSpecialtyById = async (req, res, next) => {
       return next(new NotFoundError("Specialty not found"));
     }
 
-    // Get statistics for this specialty
+    // Get statistics for this specialty using proper joins
     const doctorCount = await Doctor.count({
       where: {
-        specialties: {
-          [require("sequelize").Op.overlap]: [specialty.name],
-        },
         isActive: true,
+        isVerified: true,
       },
-    });
-
-    const consultationCount = await Consultation.count({
-      where: {
-        specialtyId: specialty.id,
-      },
+      include: [
+        {
+          model: Specialty,
+          as: "specialties",
+          through: { attributes: [] },
+          where: { id: specialty.id },
+        },
+      ],
     });
 
     const symptomCount = await Symptom.count({
       where: {
         specialtyId: specialty.id,
-        isActive: true,
       },
     });
 
     const formattedSpecialty = formatSpecialtyData(specialty, {
       includeStats: true,
       doctorCount,
-      consultationCount,
       symptomCount,
     });
 
@@ -271,13 +270,20 @@ exports.deleteSpecialty = async (req, res, next) => {
       return next(new NotFoundError("Specialty not found"));
     }
 
-    // Check if specialty is being used by doctors
+    // Check if specialty is being used by doctors using proper joins
     const doctorCount = await Doctor.count({
       where: {
-        specialties: {
-          [require("sequelize").Op.overlap]: [specialty.name],
-        },
+        isActive: true,
+        isVerified: true,
       },
+      include: [
+        {
+          model: Specialty,
+          as: "specialties",
+          through: { attributes: [] },
+          where: { id: specialty.id },
+        },
+      ],
     });
 
     if (doctorCount > 0) {
@@ -327,17 +333,23 @@ exports.getSpecialtyStats = async (req, res, next) => {
     });
     const inactiveSpecialties = totalSpecialties - activeSpecialties;
 
-    // Get top specialties by doctor count
+    // Get top specialties by doctor count using proper joins
     const specialties = await Specialty.findAll();
     const specialtiesWithDoctorCounts = await Promise.all(
       specialties.map(async (specialty) => {
         const doctorCount = await Doctor.count({
           where: {
-            specialties: {
-              [require("sequelize").Op.overlap]: [specialty.name],
-            },
             isActive: true,
+            isVerified: true,
           },
+          include: [
+            {
+              model: Specialty,
+              as: "specialties",
+              through: { attributes: [] },
+              where: { id: specialty.id },
+            },
+          ],
         });
 
         return {
