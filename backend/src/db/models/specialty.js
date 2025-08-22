@@ -15,9 +15,13 @@ module.exports = (sequelize, DataTypes) => {
         as: "symptoms",
       });
 
-      // Note: Doctor model stores specialties as an array of strings
-      // No direct foreign key relationship exists
-      // The relationship is handled through the specialties array field in Doctor model
+      // Specialty belongs to many doctors through DoctorSpecialties
+      Specialty.belongsToMany(models.Doctor, {
+        through: "DoctorSpecialties",
+        foreignKey: "specialtyId",
+        otherKey: "doctorId",
+        as: "doctors",
+      });
     }
   }
 
@@ -68,6 +72,5 @@ module.exports = (sequelize, DataTypes) => {
       ],
     }
   );
-
   return Specialty;
 };

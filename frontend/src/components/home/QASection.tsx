@@ -45,11 +45,7 @@ const QASection = () => {
           title="Frequently Asked Questions"
           description="Find answers to common questions about our healthcare platform and services."
         />
-        <p className="text-center text-secondary dark:text-gray-300 text-sm md:w-[40%] mx-auto">
-          Most of our users ask these questions
-        </p>
-
-        <div className="w-full grid gap-3 grid-cols-1 md:grid-cols-2 pt-5">
+        <div className="w-full grid gap-3 grid-cols-1 md:grid-cols-2">
           {qaItems.length > 0 ? (
             qaItems.map((item) => (
               <div

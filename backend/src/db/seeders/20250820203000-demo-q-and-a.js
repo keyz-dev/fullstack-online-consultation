@@ -4,7 +4,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert(
-      "Q_and_As",
+      "QAndAs",
       [
         {
           question: "What are the common symptoms of COVID-19?",
@@ -102,6 +102,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete("Q_and_As", null, {});
+    await queryInterface.bulkDelete("QAndAs", null, {});
   },
 };

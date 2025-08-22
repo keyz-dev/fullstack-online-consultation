@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Notification extends Model {
     /**
@@ -8,13 +9,42 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      // Notification belongs to a user
       Notification.belongsTo(models.User, {
         foreignKey: "user_id",
         as: "user",
       });
     }
+
+    // Instance method to mark notification as read
+    async markAsRead() {
+      this.isRead = true;
+      this.readAt = new Date();
+      return await this.save();
+    }
+
+    // Instance method to check if notification is expired
+    isExpired() {
+      if (!this.expiresAt) return false;
+      return new Date() > new Date(this.expiresAt);
+    }
+
+    // Instance method to check if notification is scheduled
+    isScheduled() {
+      return this.scheduledAt && new Date() < new Date(this.scheduledAt);
+    }
+
+    // Instance method to check if notification is urgent
+    isUrgent() {
+      return this.priority === "urgent";
+    }
+
+    // Instance method to check if notification is high priority
+    isHighPriority() {
+      return this.priority === "high" || this.priority === "urgent";
+    }
   }
+
   Notification.init(
     {
       id: {
@@ -30,77 +60,48 @@ module.exports = (sequelize, DataTypes) => {
           model: "Users",
           key: "id",
         },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       type: {
         type: DataTypes.ENUM(
-          // Patient notifications
-          "appointment_confirmed",
-          "appointment_reminder",
-          "appointment_cancelled",
+          "consultation_reminder",
+          "consultation_confirmation",
+          "consultation_cancelled",
           "prescription_ready",
           "payment_successful",
           "payment_failed",
-          "consultation_message",
-          "consultation_completed",
-
-          // Doctor notifications
-          "new_consultation_request",
-          "consultation_confirmed",
-          "consultation_cancelled",
-          "pharmacy_application_approved",
-          "pharmacy_application_rejected",
-          "new_review",
-          "payment_received",
-
-          // Admin notifications
-          "doctor_application_submitted",
-          "pharmacy_request_submitted",
-          "payment_dispute",
-          "system_alert",
-          "user_reported",
-
-          // General notifications
-          "system",
-          "promotion",
-          "announcement"
+          "application_approved",
+          "application_rejected",
+          "application_under_review",
+          "system_announcement",
+          "general"
         ),
         allowNull: false,
         validate: {
           isIn: [
             [
-              "appointment_confirmed",
-              "appointment_reminder",
-              "appointment_cancelled",
+              "consultation_reminder",
+              "consultation_confirmation",
+              "consultation_cancelled",
               "prescription_ready",
               "payment_successful",
               "payment_failed",
-              "consultation_message",
-              "consultation_completed",
-              "new_consultation_request",
-              "consultation_confirmed",
-              "consultation_cancelled",
-              "pharmacy_application_approved",
-              "pharmacy_application_rejected",
-              "new_review",
-              "payment_received",
-              "doctor_application_submitted",
-              "pharmacy_request_submitted",
-              "payment_dispute",
-              "system_alert",
-              "user_reported",
-              "system",
-              "promotion",
-              "announcement",
+              "application_approved",
+              "application_rejected",
+              "application_under_review",
+              "system_announcement",
+              "general",
             ],
           ],
         },
       },
       title: {
-        type: DataTypes.STRING(100),
+        type: DataTypes.STRING(255),
         allowNull: false,
         validate: {
           notEmpty: true,
-          len: [1, 100],
+          len: [1, 255],
         },
       },
       message: {
@@ -108,18 +109,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         validate: {
           notEmpty: true,
-          len: [1, 1000],
-        },
-      },
-      related_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      related_model: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-          len: [0, 100],
         },
       },
       priority: {
@@ -130,45 +119,39 @@ module.exports = (sequelize, DataTypes) => {
           isIn: [["low", "medium", "high", "urgent"]],
         },
       },
-      is_read: {
+      isRead: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      read_at: {
+      readAt: {
         type: DataTypes.DATE,
         allowNull: true,
       },
-      target_role: {
-        type: DataTypes.ENUM("patient", "doctor", "admin", "all"),
-        allowNull: false,
-        defaultValue: "all",
+      data: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        comment: "Additional data for the notification",
         validate: {
-          isIn: [["patient", "doctor", "admin", "all"]],
+          isValidData(value) {
+            if (value && typeof value !== "object") {
+              throw new Error("Data must be a valid object");
+            }
+          },
         },
       },
-      category: {
-        type: DataTypes.ENUM(
-          "appointments",
-          "consultations",
-          "payments",
-          "pharmacy",
-          "system",
-          "promotions"
-        ),
-        allowNull: false,
-        validate: {
-          isIn: [
-            [
-              "appointments",
-              "consultations",
-              "payments",
-              "pharmacy",
-              "system",
-              "promotions",
-            ],
-          ],
-        },
+      scheduledAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: "When to send the notification",
+      },
+      sentAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
     },
     {
@@ -181,22 +164,25 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["user_id"],
         },
         {
-          fields: ["is_read"],
-        },
-        {
           fields: ["type"],
         },
         {
           fields: ["priority"],
         },
         {
-          fields: ["target_role"],
+          fields: ["isRead"],
         },
         {
-          fields: ["category"],
+          fields: ["scheduledAt"],
         },
         {
-          fields: ["createdAt"],
+          fields: ["sentAt"],
+        },
+        {
+          fields: ["expiresAt"],
+        },
+        {
+          fields: ["user_id", "isRead"],
         },
       ],
       hooks: {
@@ -208,15 +194,24 @@ module.exports = (sequelize, DataTypes) => {
           if (notification.message) {
             notification.message = notification.message.trim();
           }
+
+          // Set sentAt if not scheduled
+          if (!notification.scheduledAt) {
+            notification.sentAt = new Date();
+          }
         },
         beforeUpdate: (notification) => {
-          // Set read_at timestamp when notification is marked as read
-          if (
-            notification.changed("is_read") &&
-            notification.is_read &&
-            !notification.read_at
-          ) {
-            notification.read_at = new Date();
+          // Ensure title and message are properly formatted
+          if (notification.title) {
+            notification.title = notification.title.trim();
+          }
+          if (notification.message) {
+            notification.message = notification.message.trim();
+          }
+
+          // Set readAt when marking as read
+          if (notification.changed("isRead") && notification.isRead) {
+            notification.readAt = new Date();
           }
         },
       },

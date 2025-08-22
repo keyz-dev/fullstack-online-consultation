@@ -107,7 +107,7 @@ const DashboardHeader = () => {
             </Button>
 
             {/* Page Title */}
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-white truncate">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-primary dark:text-white truncate">
               {pageTitle}
             </h1>
           </div>

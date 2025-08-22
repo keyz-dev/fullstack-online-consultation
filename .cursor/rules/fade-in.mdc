@@ -1,0 +1,72 @@
+---
+alwaysApply: true
+---
+- Rule: All dashboard main components should use the smooth fade-in container,
+- similar to the reference project.
+-
+- - Any main dashboard component (e.g., DashboardHeader, DashboardSidebar, DashboardContent, etc.)
+- must wrap its top-level content in a reusable FadeInContainer component.
+- - The FadeInContainer should apply a smooth fade-in animation on mount.
+- - The FadeInContainer must support Tailwind CSS dark mode (e.g., background, text, etc.).
+- - The FadeInContainer should be reusable, professional, and not exceed 250 lines.
+- - Example usage:
+-     <FadeInContainer>
+-       {/* ...dashboard content... */}
+-     </FadeInContainer>
+- - The FadeInContainer should use Tailwind's transition and opacity utilities for smoothness.
+- - If a FadeInContainer does not exist, create it in a common/ui directory for reuse.
+- - All future dashboard main components must follow this pattern.
+
+/**
+ * FadeInContainer
+ *
+ * A reusable container component that applies a smooth fade-in animation on mount.
+ * - Uses Tailwind CSS transitions and opacity utilities for smoothness.
+ * - Supports Tailwind dark mode for background and text.
+ * - Intended for wrapping main dashboard components (e.g., DashboardHeader, DashboardSidebar, DashboardContent, etc.).
+ * - Professional, organized, and under 250 lines.
+ *
+ * Usage:
+ *   <FadeInContainer>
+ *     {/* ...dashboard content... */}
+ *   </FadeInContainer>
+ *
+ * Place this component in: src/components/ui/FadeInContainer.tsx
+ */
+
+import React, { useEffect, useState } from "react";
+
+type FadeInContainerProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+const FadeInContainer: React.FC<FadeInContainerProps> = ({
+  children,
+  className = "",
+}) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Trigger fade-in after mount
+    const timeout = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <div
+      className={`
+        transition-opacity duration-500 ease-out
+        ${visible ? "opacity-100" : "opacity-0"}
+        bg-white dark:bg-gray-900
+        text-gray-900 dark:text-white
+        ${className}
+      `}
+      data-testid="fade-in-container"
+    >
+      {children}
+    </div>
+  );
+};
+
+export default FadeInContainer;

@@ -12,7 +12,7 @@ export default function SubHeading({
   title,
 }: SubHeadingProps) {
   return (
-    <div className="w-full flex gap-3 justify-center items-center py-12">
+    <div className="w-full flex gap-3 justify-center items-center py-5">
       <svg
         width="40"
         height="40"

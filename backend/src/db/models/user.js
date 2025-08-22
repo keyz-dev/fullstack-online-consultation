@@ -40,6 +40,12 @@ module.exports = (sequelize, DataTypes) => {
         as: "applicationPayments",
       });
 
+      // User has many user applications
+      User.hasMany(models.UserApplication, {
+        foreignKey: "userId",
+        as: "applications",
+      });
+
       // User has many notifications
       User.hasMany(models.Notification, {
         foreignKey: "user_id",
@@ -50,6 +56,12 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.ActivityLog, {
         foreignKey: "user_id",
         as: "activityLogs",
+      });
+
+      // User has many consultation messages (as sender)
+      User.hasMany(models.ConsultationMessage, {
+        foreignKey: "senderId",
+        as: "sentMessages",
       });
     }
 
@@ -94,14 +106,24 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     // Helper method to check if user can reapply
-    canReapply() {
-      return (
-        this.role === "patient" ||
-        (this.role === "pending_doctor" &&
-          this.doctor?.status === "rejected") ||
-        (this.role === "pending_pharmacy" &&
-          this.pharmacy?.status === "rejected")
-      );
+    async canReapply() {
+      if (this.role === "patient") return true;
+
+      if (this.role === "pending_doctor") {
+        const application = await this.getApplications({
+          where: { applicationType: "doctor", status: "rejected" },
+        });
+        return application.length > 0;
+      }
+
+      if (this.role === "pending_pharmacy") {
+        const application = await this.getApplications({
+          where: { applicationType: "pharmacy", status: "rejected" },
+        });
+        return application.length > 0;
+      }
+
+      return false;
     }
 
     // Generate JWT token for authentication
@@ -150,17 +172,28 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
       role: {
-        type: DataTypes.ENUM("patient", "doctor", "admin", "pharmacy"),
+        type: DataTypes.ENUM(
+          "patient",
+          "doctor",
+          "admin",
+          "pharmacy",
+          "pending_doctor",
+          "pending_pharmacy"
+        ),
         allowNull: false,
         defaultValue: "patient",
         validate: {
-          isIn: [["patient", "doctor", "admin", "pharmacy"]],
+          isIn: [
+            [
+              "patient",
+              "doctor",
+              "admin",
+              "pharmacy",
+              "pending_doctor",
+              "pending_pharmacy",
+            ],
+          ],
         },
-      },
-      isApproved: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
       },
       gender: {
         type: DataTypes.ENUM("male", "female", "other"),
@@ -241,9 +274,6 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["role"],
         },
         {
-          fields: ["isApproved"],
-        },
-        {
           fields: ["isActive"],
         },
         {
@@ -257,7 +287,10 @@ module.exports = (sequelize, DataTypes) => {
         beforeCreate: async (user) => {
           // Generate verification code for doctors and pharmacies
           if (
-            (user.role === "doctor" || user.role === "pharmacy") &&
+            (user.role === "doctor" ||
+              user.role === "pharmacy" ||
+              user.role === "pending_doctor" ||
+              user.role === "pending_pharmacy") &&
             !user.emailVerified
           ) {
             user.emailVerificationCode = Math.floor(

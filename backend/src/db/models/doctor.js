@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Doctor extends Model {
     /**
@@ -12,6 +13,14 @@ module.exports = (sequelize, DataTypes) => {
       Doctor.belongsTo(models.User, {
         foreignKey: "userId",
         as: "user",
+      });
+
+      // Doctor belongs to many specialties through DoctorSpecialties
+      Doctor.belongsToMany(models.Specialty, {
+        through: "DoctorSpecialties",
+        foreignKey: "doctorId",
+        otherKey: "specialtyId",
+        as: "specialties",
       });
 
       // Doctor has many consultations
@@ -43,8 +52,16 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "doctorId",
         as: "testimonials",
       });
+
+      // Doctor has many user applications
+      Doctor.hasMany(models.UserApplication, {
+        foreignKey: "typeId",
+        scope: { applicationType: "doctor" },
+        as: "applications",
+      });
     }
   }
+
   Doctor.init(
     {
       id: {
@@ -105,18 +122,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-      specialties: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        allowNull: true,
-        defaultValue: [],
-        validate: {
-          isValidSpecialties(value) {
-            if (value && (!Array.isArray(value) || value.length === 0)) {
-              throw new Error("Specialties must be a non-empty array");
-            }
-          },
-        },
-      },
       clinicAddress: {
         type: DataTypes.JSONB,
         allowNull: true,
@@ -146,16 +151,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-      documents: {
-        type: DataTypes.JSONB,
-        allowNull: true,
-        defaultValue: {},
-      },
-      paymentMethods: {
-        type: DataTypes.JSONB,
-        allowNull: true,
-        defaultValue: {},
-      },
       consultationFee: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
@@ -173,11 +168,6 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
       isVerified: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      isApproved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -203,55 +193,6 @@ module.exports = (sequelize, DataTypes) => {
           min: 0,
         },
       },
-      adminNotes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: {
-          len: [0, 1000],
-        },
-      },
-      // Application status fields
-      status: {
-        type: DataTypes.ENUM(
-          "pending",
-          "under_review",
-          "approved",
-          "rejected",
-          "suspended"
-        ),
-        allowNull: false,
-        defaultValue: "pending",
-        validate: {
-          isIn: [
-            ["pending", "under_review", "approved", "rejected", "suspended"],
-          ],
-        },
-      },
-      applicationVersion: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 1,
-        validate: {
-          min: 1,
-        },
-      },
-      adminReview: {
-        type: DataTypes.JSONB,
-        allowNull: true,
-      },
-      submittedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      approvedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      rejectedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
     },
     {
       sequelize,
@@ -268,9 +209,6 @@ module.exports = (sequelize, DataTypes) => {
           unique: true,
         },
         {
-          fields: ["isApproved"],
-        },
-        {
           fields: ["isVerified"],
         },
         {
@@ -278,19 +216,6 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
           fields: ["averageRating"],
-        },
-        {
-          fields: ["specialties"],
-          using: "gin",
-        },
-        {
-          fields: ["status"],
-        },
-        {
-          fields: ["userId", "status"],
-        },
-        {
-          fields: ["submittedAt"],
         },
       ],
       hooks: {

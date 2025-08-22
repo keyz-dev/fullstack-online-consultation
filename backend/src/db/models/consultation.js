@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Consultation extends Model {
     /**
@@ -9,18 +10,18 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // Consultation belongs to a patient
-      Consultation.belongsTo(models.User, {
+      Consultation.belongsTo(models.Patient, {
         foreignKey: "patientId",
         as: "patient",
       });
 
       // Consultation belongs to a doctor
-      Consultation.belongsTo(models.User, {
+      Consultation.belongsTo(models.Doctor, {
         foreignKey: "doctorId",
         as: "doctor",
       });
 
-      // Consultation has many messages
+      // Consultation has many consultation messages
       Consultation.hasMany(models.ConsultationMessage, {
         foreignKey: "consultationId",
         as: "messages",
@@ -38,7 +39,52 @@ module.exports = (sequelize, DataTypes) => {
         as: "payments",
       });
     }
+
+    // Instance method to check if consultation is scheduled
+    isScheduled() {
+      return this.status === "scheduled";
+    }
+
+    // Instance method to check if consultation is in progress
+    isInProgress() {
+      return this.status === "in_progress";
+    }
+
+    // Instance method to check if consultation is completed
+    isCompleted() {
+      return this.status === "completed";
+    }
+
+    // Instance method to check if consultation is cancelled
+    isCancelled() {
+      return this.status === "cancelled";
+    }
+
+    // Instance method to check if consultation is no show
+    isNoShow() {
+      return this.status === "no_show";
+    }
+
+    // Instance method to check if consultation can be started
+    canBeStarted() {
+      return this.status === "scheduled" && new Date() >= this.scheduledAt;
+    }
+
+    // Instance method to check if consultation can be cancelled
+    canBeCancelled() {
+      return this.status === "scheduled" && new Date() < this.scheduledAt;
+    }
+
+    // Instance method to calculate duration
+    calculateDuration() {
+      if (this.startedAt && this.endedAt) {
+        const durationMs = new Date(this.endedAt) - new Date(this.startedAt);
+        return Math.round(durationMs / (1000 * 60)); // Convert to minutes
+      }
+      return null;
+    }
   }
+
   Consultation.init(
     {
       id: {
@@ -51,7 +97,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Users",
+          model: "Patients",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -61,28 +107,15 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Users",
+          model: "Doctors",
           key: "id",
         },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
-      appointmentId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      consultationType: {
-        type: DataTypes.ENUM("video", "audio", "chat", "in_person"),
-        allowNull: false,
-        defaultValue: "video",
-        validate: {
-          isIn: [["video", "audio", "chat", "in_person"]],
-        },
-      },
       status: {
         type: DataTypes.ENUM(
           "scheduled",
-          "confirmed",
           "in_progress",
           "completed",
           "cancelled",
@@ -92,22 +125,23 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: "scheduled",
         validate: {
           isIn: [
-            [
-              "scheduled",
-              "confirmed",
-              "in_progress",
-              "completed",
-              "cancelled",
-              "no_show",
-            ],
+            ["scheduled", "in_progress", "completed", "cancelled", "no_show"],
           ],
+        },
+      },
+      type: {
+        type: DataTypes.ENUM("video_call", "voice_call", "chat", "in_person"),
+        allowNull: false,
+        defaultValue: "video_call",
+        validate: {
+          isIn: [["video_call", "voice_call", "chat", "in_person"]],
         },
       },
       scheduledAt: {
         type: DataTypes.DATE,
         allowNull: false,
         validate: {
-          isFutureDate(value) {
+          isFuture(value) {
             if (value && new Date(value) <= new Date()) {
               throw new Error("Scheduled time must be in the future");
             }
@@ -125,49 +159,24 @@ module.exports = (sequelize, DataTypes) => {
       duration: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        comment: "Duration in minutes",
         validate: {
           min: 0,
-        },
-      },
-      meetingId: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-        unique: true,
-      },
-      meetingUrl: {
-        type: DataTypes.STRING(500),
-        allowNull: true,
-        validate: {
-          isUrl: true,
-        },
-      },
-      recordingUrl: {
-        type: DataTypes.STRING(500),
-        allowNull: true,
-        validate: {
-          isUrl: true,
-        },
-      },
-      reason: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: {
-          len: [0, 1000],
         },
       },
       symptoms: {
         type: DataTypes.ARRAY(DataTypes.STRING),
         allowNull: true,
         defaultValue: [],
-      },
-      diagnosis: {
-        type: DataTypes.TEXT,
-        allowNull: true,
         validate: {
-          len: [0, 2000],
+          isValidSymptoms(value) {
+            if (value && !Array.isArray(value)) {
+              throw new Error("Symptoms must be an array");
+            }
+          },
         },
       },
-      treatment: {
+      diagnosis: {
         type: DataTypes.TEXT,
         allowNull: true,
         validate: {
@@ -178,26 +187,40 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
         validate: {
-          len: [0, 2000],
+          len: [0, 5000],
         },
       },
-      consultationFee: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        validate: {
-          min: 0,
-        },
-      },
-      isPaid: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      cancelledBy: {
-        type: DataTypes.ENUM("patient", "doctor", "admin", "system"),
+      followUpDate: {
+        type: DataTypes.DATE,
         allowNull: true,
         validate: {
-          isIn: [["patient", "doctor", "admin", "system"]],
+          isFuture(value) {
+            if (value && new Date(value) <= new Date()) {
+              throw new Error("Follow-up date must be in the future");
+            }
+          },
+        },
+      },
+      followUpNotes: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+          len: [0, 1000],
+        },
+      },
+      rating: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+          min: 1,
+          max: 5,
+        },
+      },
+      review: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+          len: [0, 1000],
         },
       },
       cancellationReason: {
@@ -207,37 +230,11 @@ module.exports = (sequelize, DataTypes) => {
           len: [0, 500],
         },
       },
-      cancelledAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      patientRating: {
-        type: DataTypes.INTEGER,
+      cancelledBy: {
+        type: DataTypes.ENUM("patient", "doctor", "system"),
         allowNull: true,
         validate: {
-          min: 1,
-          max: 5,
-        },
-      },
-      patientFeedback: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: {
-          len: [0, 1000],
-        },
-      },
-      patientConnectionQuality: {
-        type: DataTypes.ENUM("excellent", "good", "fair", "poor"),
-        allowNull: true,
-        validate: {
-          isIn: [["excellent", "good", "fair", "poor"]],
-        },
-      },
-      doctorConnectionQuality: {
-        type: DataTypes.ENUM("excellent", "good", "fair", "poor"),
-        allowNull: true,
-        validate: {
-          isIn: [["excellent", "good", "fair", "poor"]],
+          isIn: [["patient", "doctor", "system"]],
         },
       },
     },
@@ -260,59 +257,32 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["scheduledAt"],
         },
         {
-          fields: ["consultationType"],
+          fields: ["type"],
         },
         {
-          fields: ["isPaid"],
-        },
-        {
-          fields: ["meetingId"],
-          unique: true,
+          fields: ["patientId", "doctorId"],
         },
       ],
       hooks: {
         beforeCreate: (consultation) => {
-          // Ensure text fields are properly formatted
-          if (consultation.reason) {
-            consultation.reason = consultation.reason.trim();
-          }
-          if (consultation.diagnosis) {
-            consultation.diagnosis = consultation.diagnosis.trim();
-          }
-          if (consultation.treatment) {
-            consultation.treatment = consultation.treatment.trim();
-          }
-          if (consultation.notes) {
-            consultation.notes = consultation.notes.trim();
-          }
-          if (consultation.cancellationReason) {
-            consultation.cancellationReason =
-              consultation.cancellationReason.trim();
-          }
-          if (consultation.patientFeedback) {
-            consultation.patientFeedback = consultation.patientFeedback.trim();
+          // Ensure symptoms is an array
+          if (consultation.symptoms && !Array.isArray(consultation.symptoms)) {
+            consultation.symptoms = [consultation.symptoms];
           }
         },
         beforeUpdate: (consultation) => {
-          // Ensure text fields are properly formatted
-          if (consultation.reason) {
-            consultation.reason = consultation.reason.trim();
+          // Ensure symptoms is an array
+          if (consultation.symptoms && !Array.isArray(consultation.symptoms)) {
+            consultation.symptoms = [consultation.symptoms];
           }
-          if (consultation.diagnosis) {
-            consultation.diagnosis = consultation.diagnosis.trim();
-          }
-          if (consultation.treatment) {
-            consultation.treatment = consultation.treatment.trim();
-          }
-          if (consultation.notes) {
-            consultation.notes = consultation.notes.trim();
-          }
-          if (consultation.cancellationReason) {
-            consultation.cancellationReason =
-              consultation.cancellationReason.trim();
-          }
-          if (consultation.patientFeedback) {
-            consultation.patientFeedback = consultation.patientFeedback.trim();
+
+          // Calculate duration when consultation ends
+          if (
+            consultation.changed("endedAt") &&
+            consultation.endedAt &&
+            consultation.startedAt
+          ) {
+            consultation.duration = consultation.calculateDuration();
           }
         },
       },

@@ -14,6 +14,32 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "userId",
         as: "user",
       });
+
+      // ApplicationPayment belongs to a user application
+      ApplicationPayment.belongsTo(models.UserApplication, {
+        foreignKey: "applicationId",
+        as: "application",
+      });
+    }
+
+    // Instance method to check if payment is successful
+    isSuccessful() {
+      return this.status === "successful";
+    }
+
+    // Instance method to check if payment is pending
+    isPending() {
+      return this.status === "pending";
+    }
+
+    // Instance method to check if payment failed
+    isFailed() {
+      return this.status === "failed";
+    }
+
+    // Instance method to check if payment is refunded
+    isRefunded() {
+      return this.status === "refunded";
     }
   }
 
@@ -35,12 +61,15 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
-      applicationType: {
-        type: DataTypes.ENUM("doctor", "pharmacy"),
+      applicationId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        validate: {
-          isIn: [["doctor", "pharmacy"]],
+        references: {
+          model: "UserApplications",
+          key: "id",
         },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
@@ -49,35 +78,77 @@ module.exports = (sequelize, DataTypes) => {
           min: 0,
         },
       },
+      currency: {
+        type: DataTypes.STRING(3),
+        allowNull: false,
+        defaultValue: "USD",
+        validate: {
+          len: [3, 3],
+        },
+      },
       paymentMethod: {
-        type: DataTypes.ENUM("card", "bank_transfer", "mobile_money"),
+        type: DataTypes.STRING(50),
         allowNull: false,
         validate: {
-          isIn: [["card", "bank_transfer", "mobile_money"]],
+          isIn: [["card", "mobile_money", "bank_transfer", "wallet"]],
+        },
+      },
+      status: {
+        type: DataTypes.ENUM("pending", "successful", "failed", "refunded"),
+        allowNull: false,
+        defaultValue: "pending",
+        validate: {
+          isIn: [["pending", "successful", "failed", "refunded"]],
         },
       },
       transactionId: {
         type: DataTypes.STRING(255),
         allowNull: true,
         unique: true,
-      },
-      status: {
-        type: DataTypes.ENUM("pending", "completed", "failed", "refunded"),
-        allowNull: false,
-        defaultValue: "pending",
         validate: {
-          isIn: [["pending", "completed", "failed", "refunded"]],
+          len: [0, 255],
         },
       },
-      refundAmount: {
-        type: DataTypes.DECIMAL(10, 2),
+      paymentProvider: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        validate: {
+          isIn: [["stripe", "paypal", "campay", "flutterwave"]],
+        },
+      },
+      paymentProviderResponse: {
+        type: DataTypes.JSONB,
         allowNull: true,
         validate: {
-          min: 0,
+          isValidResponse(value) {
+            if (value && typeof value !== "object") {
+              throw new Error(
+                "Payment provider response must be a valid object"
+              );
+            }
+          },
+        },
+      },
+      failureReason: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+          len: [0, 1000],
         },
       },
       refundReason: {
         type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+          len: [0, 1000],
+        },
+      },
+      processedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      refundedAt: {
+        type: DataTypes.DATE,
         allowNull: true,
       },
     },
@@ -91,7 +162,7 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["userId"],
         },
         {
-          fields: ["applicationType"],
+          fields: ["applicationId"],
         },
         {
           fields: ["status"],
@@ -100,9 +171,38 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["transactionId"],
           unique: true,
         },
+        {
+          fields: ["paymentProvider"],
+        },
+        {
+          fields: ["processedAt"],
+        },
       ],
+      hooks: {
+        beforeCreate: (payment) => {
+          // Ensure currency is uppercase
+          if (payment.currency) {
+            payment.currency = payment.currency.toUpperCase();
+          }
+        },
+        beforeUpdate: (payment) => {
+          // Ensure currency is uppercase
+          if (payment.currency) {
+            payment.currency = payment.currency.toUpperCase();
+          }
+
+          // Set processedAt when status changes to successful
+          if (payment.changed("status") && payment.status === "successful") {
+            payment.processedAt = new Date();
+          }
+
+          // Set refundedAt when status changes to refunded
+          if (payment.changed("status") && payment.status === "refunded") {
+            payment.refundedAt = new Date();
+          }
+        },
+      },
     }
   );
-
   return ApplicationPayment;
 };

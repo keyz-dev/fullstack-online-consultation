@@ -8,9 +8,6 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate(models) {
-      // ContactInformation is a system configuration table, no direct associations needed
-    }
   }
 
   ContactInformation.init(
@@ -21,44 +18,55 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
       },
-      type: {
-        type: DataTypes.STRING(50),
-        allowNull: false,
-        unique: true,
-        validate: {
-          notEmpty: true,
-          len: [2, 50],
-        },
-      },
-      displayName: {
-        type: DataTypes.STRING(100),
+      name: {
+        type: DataTypes.STRING(255),
         allowNull: false,
         validate: {
           notEmpty: true,
-          len: [2, 100],
+          len: [1, 255],
         },
       },
-      icon: {
+      iconUrl: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        defaultValue: "defaultIcon.png",
+        validate: {
+          len: [0, 255],
+        },
+      },
+      inputType: {
+        type: DataTypes.ENUM("phone", "email", "url", "text", "time"),
+        allowNull: false,
+        defaultValue: "text",
+        comment: "Type of input field to render in the frontend",
+      },
+      placeholder: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        comment: "Placeholder text for the input field",
+      },
+      validationPattern: {
         type: DataTypes.STRING(500),
         allowNull: true,
-      },
-      isActive: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: true,
+        comment: "Regex pattern for validation (optional)",
       },
       isRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+        comment: "Whether this contact method requires a value",
       },
-      validationRegex: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
+      displayOrder: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        comment: "Order in which to display this contact method",
       },
-      adminNotes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+      isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        comment: "Whether this contact method is available for selection",
       },
     },
     {
@@ -68,15 +76,30 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       indexes: [
         {
-          fields: ["type"],
-          unique: true,
+          fields: ["name"],
+        },
+        {
+          fields: ["displayOrder"],
         },
         {
           fields: ["isActive"],
         },
       ],
+      hooks: {
+        beforeCreate: (contactInfo) => {
+          // Ensure name is properly formatted
+          if (contactInfo.name) {
+            contactInfo.name = contactInfo.name.trim();
+          }
+        },
+        beforeUpdate: (contactInfo) => {
+          // Ensure name is properly formatted
+          if (contactInfo.name) {
+            contactInfo.name = contactInfo.name.trim();
+          }
+        },
+      },
     }
   );
-
   return ContactInformation;
 };

@@ -2,8 +2,10 @@ const {
   Specialty,
   Symptom,
   Testimonial,
-  Q_and_A,
+  QAndA,
   Doctor,
+  User,
+  DoctorSpecialty,
 } = require("../db/models");
 const { Op } = require("sequelize");
 
@@ -13,20 +15,28 @@ class HomeController {
     try {
       // Get specialties with doctor count
       const specialties = await Specialty.findAll({
+        where: {
+          isActive: true,
+        },
         limit: 5,
       });
 
-      // Get doctor count for each specialty
+      // Get doctor count for each specialty using proper joins
       const specialtiesWithCount = await Promise.all(
         specialties.map(async (specialty) => {
           const doctorCount = await Doctor.count({
             where: {
               isActive: true,
-              isApproved: true,
-              specialties: {
-                [Op.overlap]: [specialty.name],
-              },
+              isVerified: true,
             },
+            include: [
+              {
+                model: Specialty,
+                as: "specialties",
+                through: { attributes: [] },
+                where: { id: specialty.id },
+              },
+            ],
           });
 
           return {
@@ -45,7 +55,7 @@ class HomeController {
       const testimonials = [];
 
       // Get Q&A
-      const qAndAs = await Q_and_A.findAll({
+      const qAndAs = await QAndA.findAll({
         where: {
           isActive: true,
         },
@@ -56,7 +66,7 @@ class HomeController {
       const doctorCount = await Doctor.count({
         where: {
           isActive: true,
-          isApproved: true,
+          isVerified: true,
         },
       });
 
@@ -115,7 +125,7 @@ class HomeController {
       const doctorCount = await Doctor.count({
         where: {
           isActive: true,
-          isApproved: true,
+          isVerified: true,
         },
       });
 
@@ -163,19 +173,28 @@ class HomeController {
   // Get all specialties for specialties page
   async getSpecialties(req, res) {
     try {
-      const specialties = await Specialty.findAll();
+      const specialties = await Specialty.findAll({
+        where: {
+          isActive: true,
+        },
+      });
 
-      // Get doctor count for each specialty
+      // Get doctor count for each specialty using proper joins
       const specialtiesWithCount = await Promise.all(
         specialties.map(async (specialty) => {
           const doctorCount = await Doctor.count({
             where: {
               isActive: true,
-              isApproved: true,
-              specialties: {
-                [Op.overlap]: [specialty.name],
-              },
+              isVerified: true,
             },
+            include: [
+              {
+                model: Specialty,
+                as: "specialties",
+                through: { attributes: [] },
+                where: { id: specialty.id },
+              },
+            ],
           });
 
           return {
@@ -213,20 +232,23 @@ class HomeController {
         });
       }
 
-      // Get doctors for this specialty
+      // Get doctors for this specialty using proper joins
       const doctors = await Doctor.findAll({
         where: {
           isActive: true,
-          isApproved: true,
-          specialties: {
-            [Op.overlap]: [specialty.name],
-          },
+          isVerified: true,
         },
         include: [
           {
-            model: require("../db/models").User,
+            model: Specialty,
+            as: "specialties",
+            through: { attributes: [] },
+            where: { id: specialty.id },
+          },
+          {
+            model: User,
             as: "user",
-            attributes: ["id", "firstName", "lastName", "email", "avatar"],
+            attributes: ["id", "name", "email", "avatar"],
           },
         ],
       });
@@ -253,11 +275,7 @@ class HomeController {
   // Get all symptoms
   async getSymptoms(req, res) {
     try {
-      const symptoms = await Symptom.findAll({
-        where: {
-          isActive: true,
-        },
-      });
+      const symptoms = await Symptom.findAll();
 
       res.json({
         success: true,
@@ -294,17 +312,22 @@ class HomeController {
         order: [["name", "ASC"]],
       });
 
-      // Get doctor count for each specialty
+      // Get doctor count for each specialty using proper joins
       const specialtiesWithCount = await Promise.all(
         specialties.map(async (specialty) => {
           const doctorCount = await Doctor.count({
             where: {
               isActive: true,
-              isApproved: true,
-              specialties: {
-                [Op.overlap]: [specialty.name],
-              },
+              isVerified: true,
             },
+            include: [
+              {
+                model: Specialty,
+                as: "specialties",
+                through: { attributes: [] },
+                where: { id: specialty.id },
+              },
+            ],
           });
 
           return {
@@ -347,16 +370,19 @@ class HomeController {
       const doctors = await Doctor.findAndCountAll({
         where: {
           isActive: true,
-          isApproved: true,
-          specialties: {
-            [Op.overlap]: [specialty.name],
-          },
+          isVerified: true,
         },
         include: [
           {
-            model: require("../db/models").User,
+            model: Specialty,
+            as: "specialties",
+            through: { attributes: [] },
+            where: { id: specialtyId },
+          },
+          {
+            model: User,
             as: "user",
-            attributes: ["id", "firstName", "lastName", "email", "avatar"],
+            attributes: ["id", "name", "email", "avatar"],
           },
         ],
         limit: parseInt(limit),

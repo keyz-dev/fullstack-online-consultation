@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Prescription extends Model {
     /**
@@ -8,18 +9,6 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // Prescription belongs to a patient
-      Prescription.belongsTo(models.User, {
-        foreignKey: "patientId",
-        as: "patient",
-      });
-
-      // Prescription belongs to a doctor
-      Prescription.belongsTo(models.User, {
-        foreignKey: "doctorId",
-        as: "doctor",
-      });
-
       // Prescription belongs to a consultation
       Prescription.belongsTo(models.Consultation, {
         foreignKey: "consultationId",
@@ -32,7 +21,41 @@ module.exports = (sequelize, DataTypes) => {
         as: "drugOrders",
       });
     }
+
+    // Instance method to check if prescription is active
+    isActive() {
+      return this.status === "active";
+    }
+
+    // Instance method to check if prescription is completed
+    isCompleted() {
+      return this.status === "completed";
+    }
+
+    // Instance method to check if prescription is cancelled
+    isCancelled() {
+      return this.status === "cancelled";
+    }
+
+    // Instance method to check if prescription is expired
+    isExpired() {
+      return this.status === "expired";
+    }
+
+    // Instance method to check if prescription has refills remaining
+    hasRefillsRemaining() {
+      return this.refillsRemaining > 0;
+    }
+
+    // Instance method to check if prescription is expiring soon (within 7 days)
+    isExpiringSoon() {
+      if (!this.endDate) return false;
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      return new Date(this.endDate) <= sevenDaysFromNow;
+    }
   }
+
   Prescription.init(
     {
       id: {
@@ -40,26 +63,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-      },
-      patientId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
-      },
-      doctorId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
       },
       consultationId: {
         type: DataTypes.INTEGER,
@@ -71,66 +74,94 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: "CASCADE",
         onDelete: "SET NULL",
       },
-      appointmentId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      prescriptionNumber: {
-        type: DataTypes.STRING(50),
+      status: {
+        type: DataTypes.ENUM("active", "completed", "cancelled", "expired"),
         allowNull: false,
-        unique: true,
+        defaultValue: "active",
         validate: {
-          notEmpty: true,
-          len: [5, 50],
+          isIn: [["active", "completed", "cancelled", "expired"]],
         },
       },
       diagnosis: {
         type: DataTypes.TEXT,
-        allowNull: false,
+        allowNull: true,
         validate: {
-          notEmpty: true,
-          len: [10, 2000],
+          len: [0, 2000],
         },
       },
-      symptoms: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        allowNull: true,
+      medications: {
+        type: DataTypes.JSONB,
+        allowNull: false,
         defaultValue: [],
-      },
-      prescriptionDate: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      validUntil: {
-        type: DataTypes.DATE,
-        allowNull: false,
         validate: {
-          isFutureDate(value) {
-            if (value && new Date(value) <= new Date()) {
-              throw new Error("Prescription validity must be in the future");
+          isValidMedications(value) {
+            if (!Array.isArray(value)) {
+              throw new Error("Medications must be an array");
             }
           },
         },
       },
-      status: {
-        type: DataTypes.ENUM(
-          "active",
-          "expired",
-          "cancelled",
-          "completed",
-          "suspended"
-        ),
-        allowNull: false,
-        defaultValue: "active",
+      instructions: {
+        type: DataTypes.TEXT,
+        allowNull: true,
         validate: {
-          isIn: [["active", "expired", "cancelled", "completed", "suspended"]],
+          len: [0, 2000],
         },
       },
-      allergies: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
+      dosage: {
+        type: DataTypes.JSONB,
         allowNull: true,
-        defaultValue: [],
+        validate: {
+          isValidDosage(value) {
+            if (value && typeof value !== "object") {
+              throw new Error("Dosage must be a valid object");
+            }
+          },
+        },
+      },
+      duration: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: "Duration in days",
+        validate: {
+          min: 1,
+        },
+      },
+      startDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      endDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        validate: {
+          isAfterStartDate(value) {
+            if (
+              value &&
+              this.startDate &&
+              new Date(value) <= new Date(this.startDate)
+            ) {
+              throw new Error("End date must be after start date");
+            }
+          },
+        },
+      },
+      refills: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        validate: {
+          min: 0,
+        },
+      },
+      refillsRemaining: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        validate: {
+          min: 0,
+        },
       },
       notes: {
         type: DataTypes.TEXT,
@@ -139,44 +170,29 @@ module.exports = (sequelize, DataTypes) => {
           len: [0, 1000],
         },
       },
-      doctorSignature: {
-        type: DataTypes.STRING(500),
+      sideEffects: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
         allowNull: true,
+        defaultValue: [],
         validate: {
-          isUrl: true,
-        },
-      },
-      recommendedPharmacy: {
-        type: DataTypes.STRING(200),
-        allowNull: true,
-        validate: {
-          len: [0, 200],
-        },
-      },
-      followUpRequired: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      followUpDate: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        validate: {
-          isFutureDate(value) {
-            if (value && new Date(value) <= new Date()) {
-              throw new Error("Follow-up date must be in the future");
+          isValidSideEffects(value) {
+            if (value && !Array.isArray(value)) {
+              throw new Error("Side effects must be an array");
             }
           },
         },
       },
-      patientAcknowledged: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      patientAcknowledgedAt: {
-        type: DataTypes.DATE,
+      contraindications: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
         allowNull: true,
+        defaultValue: [],
+        validate: {
+          isValidContraindications(value) {
+            if (value && !Array.isArray(value)) {
+              throw new Error("Contraindications must be an array");
+            }
+          },
+        },
       },
     },
     {
@@ -186,63 +202,38 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       indexes: [
         {
-          fields: ["patientId"],
-        },
-        {
-          fields: ["doctorId"],
-        },
-        {
           fields: ["consultationId"],
-        },
-        {
-          fields: ["prescriptionNumber"],
-          unique: true,
         },
         {
           fields: ["status"],
         },
         {
-          fields: ["prescriptionDate"],
+          fields: ["startDate"],
         },
         {
-          fields: ["validUntil"],
-        },
-        {
-          fields: ["followUpRequired"],
+          fields: ["endDate"],
         },
       ],
       hooks: {
         beforeCreate: (prescription) => {
-          // Generate prescription number if not provided
-          if (!prescription.prescriptionNumber) {
-            const timestamp = Date.now();
-            const random = Math.floor(Math.random() * 1000);
-            prescription.prescriptionNumber = `PRES-${timestamp}-${random}`;
+          // Set refillsRemaining to refills initially
+          if (prescription.refillsRemaining === 0 && prescription.refills > 0) {
+            prescription.refillsRemaining = prescription.refills;
           }
 
-          // Ensure text fields are properly formatted
-          if (prescription.diagnosis) {
-            prescription.diagnosis = prescription.diagnosis.trim();
-          }
-          if (prescription.notes) {
-            prescription.notes = prescription.notes.trim();
-          }
-          if (prescription.recommendedPharmacy) {
-            prescription.recommendedPharmacy =
-              prescription.recommendedPharmacy.trim();
+          // Calculate endDate if duration is provided
+          if (prescription.duration && !prescription.endDate) {
+            const endDate = new Date(prescription.startDate);
+            endDate.setDate(endDate.getDate() + prescription.duration);
+            prescription.endDate = endDate;
           }
         },
         beforeUpdate: (prescription) => {
-          // Ensure text fields are properly formatted
-          if (prescription.diagnosis) {
-            prescription.diagnosis = prescription.diagnosis.trim();
-          }
-          if (prescription.notes) {
-            prescription.notes = prescription.notes.trim();
-          }
-          if (prescription.recommendedPharmacy) {
-            prescription.recommendedPharmacy =
-              prescription.recommendedPharmacy.trim();
+          // Calculate endDate if duration is provided and endDate is not set
+          if (prescription.duration && !prescription.endDate) {
+            const endDate = new Date(prescription.startDate);
+            endDate.setDate(endDate.getDate() + prescription.duration);
+            prescription.endDate = endDate;
           }
         },
       },

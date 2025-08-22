@@ -1,0 +1,141 @@
+"use strict";
+
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    await queryInterface.bulkInsert(
+      "ContactInformations",
+      [
+        {
+          name: "Phone Call",
+          iconUrl: "phone",
+          inputType: "phone",
+          placeholder: "Enter phone number",
+          validationPattern: "^[+]?[0-9\\s\\-\\(\\)]{10,}$",
+          isRequired: false,
+          displayOrder: 1,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "Email",
+          iconUrl: "mail",
+          inputType: "email",
+          placeholder: "Enter email address",
+          validationPattern:
+            "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+          isRequired: false,
+          displayOrder: 2,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "WhatsApp",
+          iconUrl: "message-circle",
+          inputType: "phone",
+          placeholder: "Enter WhatsApp number",
+          validationPattern: "^[+]?[0-9\\s\\-\\(\\)]{10,}$",
+          isRequired: false,
+          displayOrder: 3,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "Website",
+          iconUrl: "globe",
+          inputType: "url",
+          placeholder: "Enter website URL",
+          validationPattern:
+            "^(https?:\\/\\/)?([\\da-z\\.-]+)\\.([a-z\\.]{2,6})([\\/\\w \\.-]*)*\\/?$",
+          isRequired: false,
+          displayOrder: 4,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "Office Hours",
+          iconUrl: "clock",
+          inputType: "text",
+          placeholder: "e.g., Mon-Fri 9AM-5PM",
+          validationPattern: null,
+          isRequired: false,
+          displayOrder: 5,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "Emergency Contact",
+          iconUrl: "alert-circle",
+          inputType: "phone",
+          placeholder: "Enter emergency contact number",
+          validationPattern: "^[+]?[0-9\\s\\-\\(\\)]{10,}$",
+          isRequired: false,
+          displayOrder: 6,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "SMS",
+          iconUrl: "message-square",
+          inputType: "phone",
+          placeholder: "Enter SMS number",
+          validationPattern: "^[+]?[0-9\\s\\-\\(\\)]{10,}$",
+          isRequired: false,
+          displayOrder: 7,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "Video Call",
+          iconUrl: "video",
+          inputType: "url",
+          placeholder: "Enter video call link (Zoom, Teams, etc.)",
+          validationPattern:
+            "^(https?:\\/\\/)?([\\da-z\\.-]+)\\.([a-z\\.]{2,6})([\\/\\w \\.-]*)*\\/?$",
+          isRequired: false,
+          displayOrder: 8,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "Social Media",
+          iconUrl: "share-2",
+          inputType: "url",
+          placeholder: "Enter social media profile URL",
+          validationPattern:
+            "^(https?:\\/\\/)?([\\da-z\\.-]+)\\.([a-z\\.]{2,6})([\\/\\w \\.-]*)*\\/?$",
+          isRequired: false,
+          displayOrder: 9,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          name: "Fax",
+          iconUrl: "printer",
+          inputType: "phone",
+          placeholder: "Enter fax number",
+          validationPattern: "^[+]?[0-9\\s\\-\\(\\)]{10,}$",
+          isRequired: false,
+          displayOrder: 10,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      {}
+    );
+  },
+
+  async down(queryInterface, Sequelize) {
+    await queryInterface.bulkDelete("ContactInformations", null, {});
+  },
+};

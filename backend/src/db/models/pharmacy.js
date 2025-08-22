@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Pharmacy extends Model {
     /**
@@ -31,8 +32,16 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "pharmacyId",
         as: "testimonials",
       });
+
+      // Pharmacy has many user applications
+      Pharmacy.hasMany(models.UserApplication, {
+        foreignKey: "typeId",
+        scope: { applicationType: "pharmacy" },
+        as: "applications",
+      });
     }
   }
+
   Pharmacy.init(
     {
       id: {
@@ -168,17 +177,7 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-      documents: {
-        type: DataTypes.JSONB,
-        allowNull: true,
-        defaultValue: {},
-      },
       isVerified: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      isApproved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -204,55 +203,6 @@ module.exports = (sequelize, DataTypes) => {
           min: 0,
         },
       },
-      adminNotes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: {
-          len: [0, 1000],
-        },
-      },
-      // Application status fields
-      status: {
-        type: DataTypes.ENUM(
-          "pending",
-          "under_review",
-          "approved",
-          "rejected",
-          "suspended"
-        ),
-        allowNull: false,
-        defaultValue: "pending",
-        validate: {
-          isIn: [
-            ["pending", "under_review", "approved", "rejected", "suspended"],
-          ],
-        },
-      },
-      applicationVersion: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 1,
-        validate: {
-          min: 1,
-        },
-      },
-      adminReview: {
-        type: DataTypes.JSONB,
-        allowNull: true,
-      },
-      submittedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      approvedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      rejectedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
     },
     {
       sequelize,
@@ -272,9 +222,6 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["name"],
         },
         {
-          fields: ["isApproved"],
-        },
-        {
           fields: ["isVerified"],
         },
         {
@@ -286,15 +233,6 @@ module.exports = (sequelize, DataTypes) => {
         {
           fields: ["paymentMethods"],
           using: "gin",
-        },
-        {
-          fields: ["status"],
-        },
-        {
-          fields: ["userId", "status"],
-        },
-        {
-          fields: ["submittedAt"],
         },
       ],
       hooks: {

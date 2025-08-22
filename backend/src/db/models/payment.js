@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Payment extends Model {
     /**
@@ -9,13 +10,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // Payment belongs to a patient
-      Payment.belongsTo(models.User, {
+      Payment.belongsTo(models.Patient, {
         foreignKey: "patientId",
         as: "patient",
       });
 
       // Payment belongs to a doctor
-      Payment.belongsTo(models.User, {
+      Payment.belongsTo(models.Doctor, {
         foreignKey: "doctorId",
         as: "doctor",
       });
@@ -25,14 +26,44 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "consultationId",
         as: "consultation",
       });
+    }
 
-      // Payment belongs to a drug order
-      Payment.belongsTo(models.DrugOrder, {
-        foreignKey: "drugOrderId",
-        as: "drugOrder",
-      });
+    // Instance method to check if payment is pending
+    isPending() {
+      return this.status === "pending";
+    }
+
+    // Instance method to check if payment is processing
+    isProcessing() {
+      return this.status === "processing";
+    }
+
+    // Instance method to check if payment is completed
+    isCompleted() {
+      return this.status === "completed";
+    }
+
+    // Instance method to check if payment failed
+    isFailed() {
+      return this.status === "failed";
+    }
+
+    // Instance method to check if payment is refunded
+    isRefunded() {
+      return this.status === "refunded";
+    }
+
+    // Instance method to check if payment is cancelled
+    isCancelled() {
+      return this.status === "cancelled";
+    }
+
+    // Instance method to check if payment can be refunded
+    canBeRefunded() {
+      return this.status === "completed" && !this.refundedAt;
     }
   }
+
   Payment.init(
     {
       id: {
@@ -41,38 +72,25 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
       },
-      transactionId: {
-        type: DataTypes.STRING(100),
-        allowNull: false,
-        unique: true,
-        validate: {
-          notEmpty: true,
-          len: [5, 100],
-        },
-      },
       patientId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Users",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
-      },
-      doctorId: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "Users",
+          model: "Patients",
           key: "id",
         },
         onUpdate: "CASCADE",
         onDelete: "SET NULL",
       },
-      appointmentId: {
+      doctorId: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        references: {
+          model: "Doctors",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       consultationId: {
         type: DataTypes.INTEGER,
@@ -84,15 +102,19 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: "CASCADE",
         onDelete: "SET NULL",
       },
-      drugOrderId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        references: {
-          model: "DrugOrders",
-          key: "id",
+      type: {
+        type: DataTypes.ENUM(
+          "consultation",
+          "prescription",
+          "subscription",
+          "application_fee"
+        ),
+        allowNull: false,
+        validate: {
+          isIn: [
+            ["consultation", "prescription", "subscription", "application_fee"],
+          ],
         },
-        onUpdate: "CASCADE",
-        onDelete: "SET NULL",
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
@@ -106,50 +128,8 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: "USD",
         validate: {
-          isIn: [["USD", "EUR", "GBP", "NGN", "KES", "GHS"]],
+          len: [3, 3],
         },
-      },
-      paymentMethod: {
-        type: DataTypes.ENUM(
-          "mobile_money",
-          "card",
-          "bank_transfer",
-          "cash",
-          "wallet"
-        ),
-        allowNull: false,
-        validate: {
-          isIn: [["mobile_money", "card", "bank_transfer", "cash", "wallet"]],
-        },
-      },
-      paymentType: {
-        type: DataTypes.ENUM(
-          "consultation",
-          "drug_order",
-          "application_fee",
-          "subscription"
-        ),
-        allowNull: false,
-        validate: {
-          isIn: [
-            ["consultation", "drug_order", "application_fee", "subscription"],
-          ],
-        },
-      },
-      gatewayProvider: {
-        type: DataTypes.STRING(50),
-        allowNull: false,
-        validate: {
-          isIn: [["campay", "stripe", "paypal", "flutterwave", "paystack"]],
-        },
-      },
-      gatewayTransactionId: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-      },
-      gatewayResponse: {
-        type: DataTypes.JSON,
-        allowNull: true,
       },
       status: {
         type: DataTypes.ENUM(
@@ -157,8 +137,8 @@ module.exports = (sequelize, DataTypes) => {
           "processing",
           "completed",
           "failed",
-          "cancelled",
-          "refunded"
+          "refunded",
+          "cancelled"
         ),
         allowNull: false,
         defaultValue: "pending",
@@ -169,83 +149,68 @@ module.exports = (sequelize, DataTypes) => {
               "processing",
               "completed",
               "failed",
-              "cancelled",
               "refunded",
+              "cancelled",
             ],
           ],
         },
       },
-      phoneNumber: {
-        type: DataTypes.STRING(20),
-        allowNull: true,
-        validate: {
-          is: /^\+?[1-9]\d{1,14}$/,
-        },
-      },
-      networkProvider: {
-        type: DataTypes.ENUM(
-          "mtn",
-          "vodafone",
-          "airtel",
-          "glo",
-          "orange",
-          "safaricom"
-        ),
-        allowNull: true,
-        validate: {
-          isIn: [["mtn", "vodafone", "airtel", "glo", "orange", "safaricom"]],
-        },
-      },
-      initiatedAt: {
-        type: DataTypes.DATE,
+      paymentMethod: {
+        type: DataTypes.STRING(50),
         allowNull: false,
-        defaultValue: DataTypes.NOW,
+        validate: {
+          isIn: [["card", "mobile_money", "bank_transfer", "wallet"]],
+        },
       },
-      completedAt: {
-        type: DataTypes.DATE,
+      transactionId: {
+        type: DataTypes.STRING(255),
         allowNull: true,
+        unique: true,
+        validate: {
+          len: [0, 255],
+        },
       },
-      failedAt: {
-        type: DataTypes.DATE,
+      paymentProvider: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        validate: {
+          isIn: [["stripe", "paypal", "campay", "flutterwave"]],
+        },
+      },
+      paymentProviderResponse: {
+        type: DataTypes.JSONB,
         allowNull: true,
+        validate: {
+          isValidResponse(value) {
+            if (value && typeof value !== "object") {
+              throw new Error(
+                "Payment provider response must be a valid object"
+              );
+            }
+          },
+        },
       },
-      errorMessage: {
+      failureReason: {
         type: DataTypes.TEXT,
         allowNull: true,
         validate: {
-          len: [0, 500],
+          len: [0, 1000],
         },
       },
-      errorCode: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-      },
-      receiptUrl: {
-        type: DataTypes.STRING(500),
+      refundReason: {
+        type: DataTypes.TEXT,
         allowNull: true,
         validate: {
-          isUrl: true,
+          len: [0, 1000],
         },
       },
-      platformFee: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        defaultValue: 0,
-        validate: {
-          min: 0,
-        },
-      },
-      doctorAmount: {
-        type: DataTypes.DECIMAL(10, 2),
+      processedAt: {
+        type: DataTypes.DATE,
         allowNull: true,
-        validate: {
-          min: 0,
-        },
       },
-      metadata: {
-        type: DataTypes.JSON,
+      refundedAt: {
+        type: DataTypes.DATE,
         allowNull: true,
-        defaultValue: {},
       },
     },
     {
@@ -254,10 +219,6 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "Payments",
       timestamps: true,
       indexes: [
-        {
-          fields: ["transactionId"],
-          unique: true,
-        },
         {
           fields: ["patientId"],
         },
@@ -268,50 +229,43 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["consultationId"],
         },
         {
-          fields: ["drugOrderId"],
-        },
-        {
           fields: ["status"],
         },
         {
-          fields: ["paymentMethod"],
+          fields: ["type"],
         },
         {
-          fields: ["paymentType"],
+          fields: ["transactionId"],
+          unique: true,
         },
         {
-          fields: ["gatewayProvider"],
+          fields: ["paymentProvider"],
         },
         {
-          fields: ["initiatedAt"],
-        },
-        {
-          fields: ["completedAt"],
+          fields: ["processedAt"],
         },
       ],
       hooks: {
         beforeCreate: (payment) => {
-          // Ensure transaction ID is properly formatted
-          if (payment.transactionId) {
-            payment.transactionId = payment.transactionId.trim().toUpperCase();
-          }
-          if (payment.phoneNumber) {
-            payment.phoneNumber = payment.phoneNumber.trim();
-          }
-          if (payment.errorMessage) {
-            payment.errorMessage = payment.errorMessage.trim();
+          // Ensure currency is uppercase
+          if (payment.currency) {
+            payment.currency = payment.currency.toUpperCase();
           }
         },
         beforeUpdate: (payment) => {
-          // Ensure transaction ID is properly formatted
-          if (payment.transactionId) {
-            payment.transactionId = payment.transactionId.trim().toUpperCase();
+          // Ensure currency is uppercase
+          if (payment.currency) {
+            payment.currency = payment.currency.toUpperCase();
           }
-          if (payment.phoneNumber) {
-            payment.phoneNumber = payment.phoneNumber.trim();
+
+          // Set processedAt when status changes to completed
+          if (payment.changed("status") && payment.status === "completed") {
+            payment.processedAt = new Date();
           }
-          if (payment.errorMessage) {
-            payment.errorMessage = payment.errorMessage.trim();
+
+          // Set refundedAt when status changes to refunded
+          if (payment.changed("status") && payment.status === "refunded") {
+            payment.refundedAt = new Date();
           }
         },
       },

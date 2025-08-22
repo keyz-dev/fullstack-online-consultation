@@ -213,7 +213,7 @@ const DashboardSidebar = () => {
                     ${
                       active
                         ? "text-accent"
-                        : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+                        : "text-secondary dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
                     }
                   `}
                   aria-hidden="true"

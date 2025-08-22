@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class DrugOrder extends Model {
     /**
@@ -9,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // DrugOrder belongs to a patient
-      DrugOrder.belongsTo(models.User, {
+      DrugOrder.belongsTo(models.Patient, {
         foreignKey: "patientId",
         as: "patient",
       });
@@ -26,13 +27,62 @@ module.exports = (sequelize, DataTypes) => {
         as: "prescription",
       });
 
-      // DrugOrder has many payments
-      DrugOrder.hasMany(models.Payment, {
-        foreignKey: "drugOrderId",
-        as: "payments",
+      // DrugOrder belongs to a pharmacy drug
+      DrugOrder.belongsTo(models.PharmacyDrug, {
+        foreignKey: "pharmacyDrugId",
+        as: "pharmacyDrug",
       });
     }
+
+    // Instance method to check if order is pending
+    isPending() {
+      return this.status === "pending";
+    }
+
+    // Instance method to check if order is confirmed
+    isConfirmed() {
+      return this.status === "confirmed";
+    }
+
+    // Instance method to check if order is processing
+    isProcessing() {
+      return this.status === "processing";
+    }
+
+    // Instance method to check if order is shipped
+    isShipped() {
+      return this.status === "shipped";
+    }
+
+    // Instance method to check if order is delivered
+    isDelivered() {
+      return this.status === "delivered";
+    }
+
+    // Instance method to check if order is cancelled
+    isCancelled() {
+      return this.status === "cancelled";
+    }
+
+    // Instance method to check if order is returned
+    isReturned() {
+      return this.status === "returned";
+    }
+
+    // Instance method to check if order can be cancelled
+    canBeCancelled() {
+      return this.status === "pending" || this.status === "confirmed";
+    }
+
+    // Instance method to check if order is delivered late
+    isDeliveredLate() {
+      if (!this.estimatedDeliveryDate || !this.actualDeliveryDate) return false;
+      return (
+        new Date(this.actualDeliveryDate) > new Date(this.estimatedDeliveryDate)
+      );
+    }
   }
+
   DrugOrder.init(
     {
       id: {
@@ -45,7 +95,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Users",
+          model: "Patients",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -71,72 +121,15 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: "CASCADE",
         onDelete: "SET NULL",
       },
-      orderItems: {
-        type: DataTypes.JSONB,
-        allowNull: false,
-        validate: {
-          isValidOrderItems(value) {
-            if (!value || !Array.isArray(value) || value.length === 0) {
-              throw new Error("Order items must be a non-empty array");
-            }
-            for (const item of value) {
-              if (!item.drugId || !item.quantity || !item.price) {
-                throw new Error(
-                  "Each order item must have drugId, quantity, and price"
-                );
-              }
-              if (item.quantity <= 0 || item.price <= 0) {
-                throw new Error("Quantity and price must be positive numbers");
-              }
-            }
-          },
+      pharmacyDrugId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "PharmacyDrugs",
+          key: "id",
         },
-      },
-      totalAmount: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        validate: {
-          min: 0,
-        },
-      },
-      deliveryFee: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        defaultValue: 0,
-        validate: {
-          min: 0,
-        },
-      },
-      platformCommission: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        defaultValue: 0,
-        validate: {
-          min: 0,
-        },
-      },
-      pharmacyAmount: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        validate: {
-          min: 0,
-        },
-      },
-      deliveryAddress: {
-        type: DataTypes.JSONB,
-        allowNull: false,
-        validate: {
-          isValidDeliveryAddress(value) {
-            if (!value || typeof value !== "object") {
-              throw new Error("Delivery address must be a valid object");
-            }
-            if (!value.street || !value.city || !value.country) {
-              throw new Error(
-                "Delivery address must include street, city, and country"
-              );
-            }
-          },
-        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       status: {
         type: DataTypes.ENUM(
@@ -144,7 +137,6 @@ module.exports = (sequelize, DataTypes) => {
           "confirmed",
           "processing",
           "shipped",
-          "out_for_delivery",
           "delivered",
           "cancelled",
           "returned"
@@ -158,7 +150,6 @@ module.exports = (sequelize, DataTypes) => {
               "confirmed",
               "processing",
               "shipped",
-              "out_for_delivery",
               "delivered",
               "cancelled",
               "returned",
@@ -166,33 +157,120 @@ module.exports = (sequelize, DataTypes) => {
           ],
         },
       },
-      paymentStatus: {
-        type: DataTypes.ENUM(
-          "pending",
-          "paid",
-          "failed",
-          "refunded",
-          "partially_refunded"
-        ),
+      quantity: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: "pending",
         validate: {
-          isIn: [
-            ["pending", "paid", "failed", "refunded", "partially_refunded"],
-          ],
+          min: 1,
         },
       },
-      pharmacyConfirmedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
+      unitPrice: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        validate: {
+          min: 0,
+        },
       },
-      paidAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
+      totalAmount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        validate: {
+          min: 0,
+        },
       },
-      deliveredAt: {
+      currency: {
+        type: DataTypes.STRING(3),
+        allowNull: false,
+        defaultValue: "USD",
+        validate: {
+          len: [3, 3],
+        },
+      },
+      drugName: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        validate: {
+          notEmpty: true,
+          len: [1, 255],
+        },
+      },
+      dosageInstructions: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+          len: [0, 1000],
+        },
+      },
+      deliveryAddress: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        validate: {
+          isValidAddress(value) {
+            if (!value || typeof value !== "object") {
+              throw new Error("Delivery address must be a valid object");
+            }
+            if (!value.street || !value.city || !value.country) {
+              throw new Error(
+                "Delivery address must include street, city, and country"
+              );
+            }
+          },
+        },
+      },
+      deliveryMethod: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: "standard",
+        validate: {
+          isIn: [["standard", "express", "same_day"]],
+        },
+      },
+      estimatedDeliveryDate: {
         type: DataTypes.DATE,
         allowNull: true,
+        validate: {
+          isDate: true,
+          isFuture(value) {
+            if (value && new Date(value) <= new Date()) {
+              throw new Error("Estimated delivery date must be in the future");
+            }
+          },
+        },
+      },
+      actualDeliveryDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        validate: {
+          isDate: true,
+        },
+      },
+      trackingNumber: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        validate: {
+          len: [0, 100],
+        },
+      },
+      notes: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+          len: [0, 1000],
+        },
+      },
+      cancellationReason: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+          len: [0, 500],
+        },
+      },
+      cancelledBy: {
+        type: DataTypes.ENUM("patient", "pharmacy", "system"),
+        allowNull: true,
+        validate: {
+          isIn: [["patient", "pharmacy", "system"]],
+        },
       },
     },
     {
@@ -211,39 +289,56 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["prescriptionId"],
         },
         {
+          fields: ["pharmacyDrugId"],
+        },
+        {
           fields: ["status"],
         },
         {
-          fields: ["paymentStatus"],
+          fields: ["trackingNumber"],
         },
         {
-          fields: ["pharmacyConfirmedAt"],
+          fields: ["estimatedDeliveryDate"],
         },
         {
-          fields: ["paidAt"],
-        },
-        {
-          fields: ["deliveredAt"],
+          fields: ["actualDeliveryDate"],
         },
       ],
       hooks: {
         beforeCreate: (drugOrder) => {
-          // Calculate pharmacy amount if not provided
-          if (!drugOrder.pharmacyAmount) {
-            drugOrder.pharmacyAmount =
-              parseFloat(drugOrder.totalAmount) -
-              parseFloat(drugOrder.platformCommission);
+          // Ensure currency is uppercase
+          if (drugOrder.currency) {
+            drugOrder.currency = drugOrder.currency.toUpperCase();
+          }
+
+          // Ensure drug name is properly formatted
+          if (drugOrder.drugName) {
+            drugOrder.drugName = drugOrder.drugName.trim();
+          }
+
+          // Calculate total amount if not provided
+          if (
+            !drugOrder.totalAmount &&
+            drugOrder.unitPrice &&
+            drugOrder.quantity
+          ) {
+            drugOrder.totalAmount = drugOrder.unitPrice * drugOrder.quantity;
           }
         },
         beforeUpdate: (drugOrder) => {
-          // Update pharmacy amount if total or commission changes
-          if (
-            drugOrder.changed("totalAmount") ||
-            drugOrder.changed("platformCommission")
-          ) {
-            drugOrder.pharmacyAmount =
-              parseFloat(drugOrder.totalAmount) -
-              parseFloat(drugOrder.platformCommission);
+          // Ensure currency is uppercase
+          if (drugOrder.currency) {
+            drugOrder.currency = drugOrder.currency.toUpperCase();
+          }
+
+          // Ensure drug name is properly formatted
+          if (drugOrder.drugName) {
+            drugOrder.drugName = drugOrder.drugName.trim();
+          }
+
+          // Calculate total amount if unit price or quantity changes
+          if (drugOrder.changed("unitPrice") || drugOrder.changed("quantity")) {
+            drugOrder.totalAmount = drugOrder.unitPrice * drugOrder.quantity;
           }
         },
       },

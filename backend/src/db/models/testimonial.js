@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Testimonial extends Model {
     /**
@@ -8,25 +9,62 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // Testimonial belongs to a user (who wrote the testimonial)
+      // Testimonial belongs to a user
       Testimonial.belongsTo(models.User, {
         foreignKey: "userId",
         as: "user",
       });
 
-      // Testimonial can be about a user (doctor or patient being reviewed)
-      Testimonial.belongsTo(models.User, {
-        foreignKey: "doctorId",
-        as: "reviewedUser",
+      // Testimonial belongs to a patient
+      Testimonial.belongsTo(models.Patient, {
+        foreignKey: "patientId",
+        as: "patient",
       });
 
-      // Testimonial can belong to a pharmacy (if it's about a pharmacy)
+      // Testimonial belongs to a doctor
+      Testimonial.belongsTo(models.Doctor, {
+        foreignKey: "doctorId",
+        as: "doctor",
+      });
+
+      // Testimonial belongs to a pharmacy
       Testimonial.belongsTo(models.Pharmacy, {
         foreignKey: "pharmacyId",
         as: "pharmacy",
       });
     }
+
+    // Instance method to check if testimonial is approved
+    isApproved() {
+      return this.isApproved === true;
+    }
+
+    // Instance method to check if testimonial is anonymous
+    isAnonymous() {
+      return this.isAnonymous === true;
+    }
+
+    // Instance method to get display name
+    getDisplayName() {
+      if (this.isAnonymous) {
+        return "Anonymous";
+      }
+      return this.user ? this.user.name : "Unknown";
+    }
+
+    // Instance method to approve testimonial
+    async approve() {
+      this.isApproved = true;
+      return await this.save();
+    }
+
+    // Instance method to reject testimonial
+    async reject() {
+      this.isApproved = false;
+      return await this.save();
+    }
   }
+
   Testimonial.init(
     {
       id: {
@@ -45,11 +83,21 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
+      patientId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Patients",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
       doctorId: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "Users",
+          model: "Doctors",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -73,12 +121,19 @@ module.exports = (sequelize, DataTypes) => {
           max: 5,
         },
       },
-      message: {
+      title: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        validate: {
+          len: [0, 255],
+        },
+      },
+      content: {
         type: DataTypes.TEXT,
         allowNull: false,
         validate: {
           notEmpty: true,
-          len: [10, 1000],
+          len: [10, 2000],
         },
       },
       isApproved: {
@@ -86,10 +141,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: false,
       },
-      isActive: {
+      isAnonymous: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: true,
+        defaultValue: false,
       },
     },
     {
@@ -100,6 +155,9 @@ module.exports = (sequelize, DataTypes) => {
       indexes: [
         {
           fields: ["userId"],
+        },
+        {
+          fields: ["patientId"],
         },
         {
           fields: ["doctorId"],
@@ -114,20 +172,26 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["isApproved"],
         },
         {
-          fields: ["isActive"],
+          fields: ["isAnonymous"],
         },
       ],
       hooks: {
         beforeCreate: (testimonial) => {
-          // Ensure message is properly formatted
-          if (testimonial.message) {
-            testimonial.message = testimonial.message.trim();
+          // Ensure title and content are properly formatted
+          if (testimonial.title) {
+            testimonial.title = testimonial.title.trim();
+          }
+          if (testimonial.content) {
+            testimonial.content = testimonial.content.trim();
           }
         },
         beforeUpdate: (testimonial) => {
-          // Ensure message is properly formatted
-          if (testimonial.message) {
-            testimonial.message = testimonial.message.trim();
+          // Ensure title and content are properly formatted
+          if (testimonial.title) {
+            testimonial.title = testimonial.title.trim();
+          }
+          if (testimonial.content) {
+            testimonial.content = testimonial.content.trim();
           }
         },
       },
