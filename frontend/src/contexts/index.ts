@@ -14,3 +14,4 @@ export {
   NotificationProvider,
   useNotificationContext,
 } from "./NotificationContext";
+export { SymptomProvider, useSymptom } from "./SymptomContext";

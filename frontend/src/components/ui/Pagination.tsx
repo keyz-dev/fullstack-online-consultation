@@ -45,7 +45,7 @@ export default function Pagination({
             className={`px-3 py-1 rounded transition-colors ${
               i === currentPageValue
                 ? "bg-accent text-white border-accent"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
             } border`}
             onClick={() => handlePageChange!(i)}
             disabled={i === currentPageValue}
@@ -58,7 +58,10 @@ export default function Pagination({
         (i === currentPageValue! + 2 && currentPageValue! < totalPages - 2)
       ) {
         pages.push(
-          <span key={`ellipsis-${i}`} className="px-2 text-gray-500">
+          <span
+            key={`ellipsis-${i}`}
+            className="px-2 text-gray-500 dark:text-gray-400"
+          >
             ...
           </span>
         );
@@ -70,7 +73,7 @@ export default function Pagination({
   return (
     <div className="flex justify-between items-center mt-6">
       {/* Information text */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-600 dark:text-gray-400">
         Showing {startItem} - {endItem} from a total of {total} items
       </div>
 
@@ -81,8 +84,8 @@ export default function Pagination({
           disabled={currentPageValue === 1}
           className={`px-3 py-1 rounded border transition-colors ${
             currentPageValue === 1
-              ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-accent"
+              ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600 cursor-not-allowed"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-accent"
           }`}
         >
           Previous
@@ -93,8 +96,8 @@ export default function Pagination({
           disabled={currentPageValue === totalPages}
           className={`px-3 py-1 rounded border transition-colors ${
             currentPageValue === totalPages
-              ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-accent"
+              ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600 cursor-not-allowed"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-accent"
           }`}
         >
           Next

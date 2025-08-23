@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useAuth } from "../../hooks";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ChevronDown,
   Store,
@@ -63,9 +64,11 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
           onClick={handleProfileClick}
           className="flex items-center gap-3 rounded-sm hover:bg-light_bg px-4 py-2 cursor-pointer"
         >
-          <img
+          <Image
             src={user.avatar || imagePlaceholder}
             alt="User Avatar"
+            width={40}
+            height={40}
             className="w-10 h-10 rounded-full object-cover"
           />
           <div className="hidden lg:block">
@@ -106,13 +109,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
               <LayoutDashboard size={16} />
               Dashboard
             </button>
-            <button
-              onClick={() => router.push("/orders")}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              <Package size={16} />
-              Orders
-            </button>
+
             <button
               onClick={() => router.push("/profile")}
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"

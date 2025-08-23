@@ -5,8 +5,8 @@ const StatusPill: React.FC<StatusPillProps> = ({ status }) => {
   // Handle undefined/null status
   if (!status) {
     return (
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-600 bg-gray-100">
-        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1.5"></div>
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">
+        <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full mr-1.5"></div>
         Unknown
       </span>
     );
@@ -25,9 +25,9 @@ const StatusPill: React.FC<StatusPillProps> = ({ status }) => {
       case "confirmed":
       case "accepted":
         return {
-          bg: "bg-green-100",
-          text: "text-green-800",
-          dot: "bg-green-400",
+          bg: "bg-green-100 dark:bg-green-900/20",
+          text: "text-green-800 dark:text-green-300",
+          dot: "bg-green-400 dark:bg-green-500",
         };
       case "inactive":
       case "out_of_stock":
@@ -40,9 +40,9 @@ const StatusPill: React.FC<StatusPillProps> = ({ status }) => {
       case "refunded":
       case "declined":
         return {
-          bg: "bg-red-100",
-          text: "text-red-800",
-          dot: "bg-red-400",
+          bg: "bg-red-100 dark:bg-red-900/20",
+          text: "text-red-800 dark:text-red-300",
+          dot: "bg-red-400 dark:bg-red-500",
         };
       case "pending":
       case "available":
@@ -51,21 +51,21 @@ const StatusPill: React.FC<StatusPillProps> = ({ status }) => {
       case "processing":
       case "under_review":
         return {
-          bg: "bg-blue-100",
-          text: "text-blue-800",
-          dot: "bg-blue-400",
+          bg: "bg-blue-100 dark:bg-blue-900/20",
+          text: "text-blue-800 dark:text-blue-300",
+          dot: "bg-blue-400 dark:bg-blue-500",
         };
       case "not_submitted":
         return {
-          bg: "bg-gray-100",
-          text: "text-gray-800",
-          dot: "bg-gray-400",
+          bg: "bg-gray-100 dark:bg-gray-700",
+          text: "text-gray-800 dark:text-gray-300",
+          dot: "bg-gray-400 dark:bg-gray-500",
         };
       default:
         return {
-          bg: "bg-yellow-100",
-          text: "text-yellow-800",
-          dot: "bg-yellow-400",
+          bg: "bg-yellow-100 dark:bg-yellow-900/20",
+          text: "text-yellow-800 dark:text-yellow-300",
+          dot: "bg-yellow-400 dark:bg-yellow-500",
         };
     }
   };

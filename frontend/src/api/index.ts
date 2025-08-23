@@ -39,6 +39,7 @@ export default api;
 // Export auth API and types
 export { default as authAPI } from "./auth";
 export { default as specialtiesAPI } from "./specialties";
+export { default as symptomsAPI } from "./symptoms";
 export type {
   User,
   Address,
@@ -66,3 +67,12 @@ export type {
   SpecialtyResponse,
   SpecialtyStatsResponse,
 } from "./specialties";
+export type {
+  Symptom,
+  SymptomStats,
+  CreateSymptomRequest,
+  UpdateSymptomRequest,
+  SymptomsResponse,
+  SymptomResponse,
+  SymptomStatsResponse,
+} from "./symptoms";
