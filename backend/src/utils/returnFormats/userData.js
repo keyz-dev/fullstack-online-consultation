@@ -1,42 +1,6 @@
 const { formatImageUrl } = require("../imageUtils");
 
 /**
- * Format document URLs in documents object
- * @param {Object|Array} documents - Documents object or array
- * @returns {Object|Array} Formatted documents
- */
-const formatDocuments = (documents) => {
-  if (!documents) return documents;
-
-  // Handle array of documents
-  if (Array.isArray(documents)) {
-    return documents.map((doc) => ({
-      ...doc,
-      url: formatImageUrl(doc.url),
-    }));
-  }
-
-  // Handle object with document properties
-  if (typeof documents === "object") {
-    const formattedDocs = {};
-    Object.keys(documents).forEach((key) => {
-      const doc = documents[key];
-      if (doc && typeof doc === "object" && doc.url) {
-        formattedDocs[key] = {
-          ...doc,
-          url: formatImageUrl(doc.url),
-        };
-      } else {
-        formattedDocs[key] = doc;
-      }
-    });
-    return formattedDocs;
-  }
-
-  return documents;
-};
-
-/**
  * Format array of image URLs
  * @param {Array} images - Array of image URLs
  * @returns {Array} Formatted image URLs
@@ -67,7 +31,7 @@ const formatUserData = (user) => {
     authProvider: user.authProvider,
     isActive: user.isActive,
     emailVerified: user.emailVerified,
-    isApproved: user.isApproved,
+    hasPaidApplicationFee: user.hasPaidApplicationFee,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -76,13 +40,13 @@ const formatUserData = (user) => {
   if (user.patient) {
     formattedUser.patient = {
       id: user.patient.id,
-      phoneNumber: user.patient.phoneNumber,
-      emergencyContact: user.patient.emergencyContact,
-      medicalHistory: user.patient.medicalHistory,
+      bloodGroup: user.patient.bloodGroup,
       allergies: user.patient.allergies,
-      bloodType: user.patient.bloodType,
-      height: user.patient.height,
-      weight: user.patient.weight,
+      emergencyContact: user.patient.emergencyContact,
+      contactInfo: user.patient.contactInfo,
+      medicalDocuments: user.patient.medicalDocuments,
+      insuranceInfo: user.patient.insuranceInfo,
+      preferredLanguage: user.patient.preferredLanguage,
     };
   }
 
@@ -94,16 +58,15 @@ const formatUserData = (user) => {
       bio: user.doctor.bio,
       education: user.doctor.education,
       languages: user.doctor.languages,
-      specialties: user.doctor.specialties,
+      specialties: user.doctor.specialties, // This will be populated through include
       clinicAddress: user.doctor.clinicAddress,
       operationalHospital: user.doctor.operationalHospital,
       contactInfo: user.doctor.contactInfo,
       consultationFee: user.doctor.consultationFee,
       consultationDuration: user.doctor.consultationDuration,
       paymentMethods: user.doctor.paymentMethods,
-      documents: formatDocuments(user.doctor.documents),
       isVerified: user.doctor.isVerified,
-      isApproved: user.doctor.isApproved,
+      isActive: user.doctor.isActive,
       averageRating: user.doctor.averageRating,
       totalReviews: user.doctor.totalReviews,
     };
@@ -121,9 +84,8 @@ const formatUserData = (user) => {
       contactInfo: user.pharmacy.contactInfo,
       deliveryInfo: user.pharmacy.deliveryInfo,
       paymentMethods: user.pharmacy.paymentMethods,
-      documents: formatDocuments(user.pharmacy.documents),
       isVerified: user.pharmacy.isVerified,
-      isApproved: user.pharmacy.isApproved,
+      isActive: user.pharmacy.isActive,
       averageRating: user.pharmacy.averageRating,
       totalReviews: user.pharmacy.totalReviews,
     };

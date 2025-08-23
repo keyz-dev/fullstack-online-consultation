@@ -20,6 +20,7 @@ import {
   VerifyEmailRequest,
 } from "../api";
 import { useGoogleLogin } from "@react-oauth/google";
+import { extractErrorMessage } from "../utils/extractError";
 
 interface AuthContextType {
   user: User | null;
@@ -175,7 +176,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(data.message || "Login failed");
       }
     } catch (error: any) {
-      setAuthError(error.message);
+      const errorMessage = extractErrorMessage(error);
+      setAuthError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -190,7 +192,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await authAPI.registerAdmin(userData);
       return { success: true, user: data.data.user };
     } catch (error: any) {
-      setAuthError(error.message);
+      const errorMessage = extractErrorMessage(error);
+      setAuthError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -205,7 +208,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await authAPI.registerPatient(userData);
       return { success: true, user: data.data.user };
     } catch (error: any) {
-      setAuthError(error.message);
+      const errorMessage = extractErrorMessage(error);
+      setAuthError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -220,7 +224,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await authAPI.registerDoctor(userData);
       return { success: true, user: data.data.user };
     } catch (error: any) {
-      setAuthError(error.message);
+      const errorMessage = extractErrorMessage(error);
+      setAuthError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -235,7 +240,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await authAPI.registerPharmacy(userData);
       return { success: true, user: data.data.user };
     } catch (error: any) {
-      setAuthError(error.message);
+      const errorMessage = extractErrorMessage(error);
+      setAuthError(errorMessage);
       throw error;
     } finally {
       setLoading(false);

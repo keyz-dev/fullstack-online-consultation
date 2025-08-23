@@ -7,7 +7,8 @@ if (isProduction) {
   API_BASE_URL = process.env.NEXT_PUBLIC_REMOTE_BACKEND_API_URL || "";
 } else {
   API_BASE_URL =
-    process.env.NEXT_PUBLIC_LOCAL_BACKEND_API_URL || "http://localhost:4501";
+    process.env.NEXT_PUBLIC_LOCAL_BACKEND_API_URL ||
+    "http://localhost:4500/api";
 }
 
 export { API_BASE_URL };

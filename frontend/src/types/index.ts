@@ -1,61 +1,110 @@
+// Import the existing Address interface
+import { Address, ContactInfo, PaymentMethod } from "../api/auth";
+
 export interface User {
   id: string;
+  name: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
+  role:
+    | "admin"
+    | "patient"
+    | "doctor"
+    | "pharmacy"
+    | "pending_doctor"
+    | "pending_pharmacy";
   avatar?: string;
-  role: "admin" | "patient" | "doctor" | "pharmacy";
-  isEmailVerified: boolean;
+  gender?: "male" | "female" | "other";
+  dob?: string;
+  address?: Address;
+  authProvider?: "local" | "google" | "facebook" | "apple";
   isActive: boolean;
+  emailVerified: boolean;
+  hasPaidApplicationFee: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface Patient extends User {
   role: "patient";
-  dateOfBirth?: string;
-  gender?: "male" | "female" | "other";
-  bloodGroup?: string;
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relationship: string;
+  patient?: {
+    id: string;
+    bloodGroup?: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+    allergies?: string[];
+    emergencyContact?: {
+      name: string;
+      phone: string;
+      relationship?: string;
+    };
+    contactInfo?: ContactInfo[];
+    medicalDocuments?: string[];
+    insuranceInfo?: {
+      provider?: string;
+      policyNumber?: string;
+      groupNumber?: string;
+      expiryDate?: string;
+    };
+    preferredLanguage?: string;
   };
 }
 
 export interface Doctor extends User {
-  role: "doctor";
-  specialtyId: string;
-  specialty: Specialty;
-  licenseNumber: string;
-  experience: number;
-  education: string;
-  bio: string;
-  consultationFee: number;
-  isApproved: boolean;
-  documents: string[];
-  availability: DoctorAvailability[];
+  role: "doctor" | "pending_doctor";
+  doctor?: {
+    id: string;
+    licenseNumber: string;
+    experience: number;
+    bio?: string;
+    education?: Array<{
+      degree: string;
+      institution: string;
+      year: string;
+    }>;
+    languages?: string[];
+    specialties?: Specialty[]; // Many-to-many relationship
+    clinicAddress?: Address;
+    operationalHospital?: string;
+    contactInfo?: ContactInfo[];
+    consultationFee: number;
+    consultationDuration: number;
+    paymentMethods?: string[]; // Array of payment method strings
+    isVerified: boolean;
+    isActive: boolean;
+    averageRating?: number;
+    totalReviews: number;
+  };
 }
 
 export interface Pharmacy extends User {
-  role: "pharmacy";
-  pharmacyName: string;
-  address: string;
-  licenseNumber: string;
-  phoneNumber: string;
-  logo?: string;
-  images: string[];
-  documents: string[];
-  isApproved: boolean;
-  description: string;
+  role: "pharmacy" | "pending_pharmacy";
+  pharmacy?: {
+    id: string;
+    name: string; // Not pharmacyName
+    licenseNumber: string;
+    description?: string;
+    logo?: string;
+    images?: string[];
+    address: Address; // JSONB object, not string
+    contactInfo?: ContactInfo[]; // JSONB object, not phoneNumber
+    deliveryInfo?: {
+      radius?: number;
+      fee?: number;
+      time?: string;
+      freeThreshold?: number;
+    };
+    paymentMethods?: string[]; // Array of payment method strings
+    isVerified: boolean;
+    isActive: boolean;
+    averageRating?: number;
+    totalReviews: number;
+  };
 }
 
 export interface Specialty {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   icon?: string;
+  isActive: boolean;
   doctorsCount?: number;
 }
 
@@ -211,6 +260,8 @@ export interface TextAreaProps
   labelClasses?: string;
   additionalClasses?: string;
   onChangeHandler?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onFocusHandler?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
+  onBlurHandler?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   required?: boolean;
 }
 

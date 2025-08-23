@@ -255,6 +255,37 @@ const resetPasswordSchema = Joi.object({
     }),
 });
 
+// User update schema (for profile updates)
+const userUpdateSchema = Joi.object({
+  name: Joi.string().min(2).max(100).optional().messages({
+    "string.min": "Name must be at least 2 characters long",
+    "string.max": "Name cannot exceed 100 characters",
+  }),
+  email: Joi.string().email().optional().messages({
+    "string.email": "Please provide a valid email address",
+  }),
+  gender: Joi.string().valid("male", "female", "other").optional(),
+  dob: Joi.date().max("now").optional().messages({
+    "date.max": "Date of birth cannot be in the future",
+  }),
+  address: addressSchema.optional(),
+  bio: Joi.string().max(2000).optional().messages({
+    "string.max": "Bio cannot exceed 2000 characters",
+  }),
+});
+
+// User password update schema
+const userPasswordUpdateSchema = Joi.object({
+  oldPassword: Joi.string().required().messages({
+    "any.required": "Current password is required",
+  }),
+  newPassword: Joi.string().min(6).max(255).required().messages({
+    "string.min": "New password must be at least 6 characters long",
+    "string.max": "New password cannot exceed 255 characters",
+    "any.required": "New password is required",
+  }),
+});
+
 module.exports = {
   adminRegisterSchema,
   patientRegisterSchema,
@@ -266,4 +297,6 @@ module.exports = {
   resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  userUpdateSchema,
+  userPasswordUpdateSchema,
 };

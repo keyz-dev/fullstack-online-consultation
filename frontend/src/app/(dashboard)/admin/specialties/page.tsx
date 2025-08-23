@@ -7,7 +7,7 @@ import {
   SpecialtyListView,
   AddSpecialtyModal,
   UpdateSpecialtyModal,
-} from "@/components/admin/specialties";
+} from "@/components/dashboard/admin/specialties";
 import {
   Button,
   AdvancedFilters,
@@ -123,7 +123,7 @@ const AdminSpecialtiesPage = () => {
   }
 
   return (
-    <div className="lg:px-3">
+    <section>
       {/* Specialty Statistics */}
       <FadeInContainer delay={200} duration={600}>
         <SpecialtyStatSection stats={stats} loading={loading} />
@@ -254,7 +254,7 @@ const AdminSpecialtiesPage = () => {
         confirmText="Delete"
         cancelText="Cancel"
       />
-    </div>
+    </section>
   );
 };
 

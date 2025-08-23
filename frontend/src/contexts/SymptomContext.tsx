@@ -15,6 +15,7 @@ import {
   UpdateSymptomRequest,
 } from "@/api/symptoms";
 import { toast } from "react-toastify";
+import { extractErrorMessage } from "@/utils/extractError";
 
 // Initial state
 const initialState = {
@@ -215,14 +216,14 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  // Fetch all symptoms
+  // Fetch symptoms
   const fetchSymptoms = useCallback(async () => {
     try {
       dispatch({ type: SYMPTOM_ACTIONS.SET_LOADING, payload: true });
 
       const response = await symptomsAPI.getAllSymptoms();
       const fetchedSymptoms = response.data || [];
-      const stats = response.stats || calculateStats(fetchedSymptoms);
+      const stats = calculateStats(fetchedSymptoms);
 
       dispatch({
         type: SYMPTOM_ACTIONS.SET_SYMPTOMS,
@@ -234,9 +235,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     } catch (err: unknown) {
       console.error("Error fetching symptoms:", err);
-      const errorMessage =
-        (err as any)?.response?.data?.message ||
-        "Failed to load symptoms. Please try again.";
+      const errorMessage = extractErrorMessage(err as any);
       dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
       toast.error("Failed to load symptoms");
     }
@@ -325,8 +324,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
         const response = await symptomsAPI.getSymptomById(id);
         return response.data;
       } catch (err: unknown) {
-        const errorMessage =
-          (err as any)?.response?.data?.message || "Failed to fetch symptom";
+        const errorMessage = extractErrorMessage(err as any);
         dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
         toast.error("Failed to fetch symptom");
         return null;
@@ -352,8 +350,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return { success: true, message: "Symptom created successfully" };
     } catch (err: unknown) {
-      const errorMessage =
-        (err as any)?.response?.data?.message || "Failed to create symptom";
+      const errorMessage = extractErrorMessage(err as any);
       dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
       throw new Error(errorMessage);
     } finally {
@@ -377,8 +374,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
 
         return { success: true, message: "Symptom updated successfully" };
       } catch (err: unknown) {
-        const errorMessage =
-          (err as any)?.response?.data?.message || "Failed to update symptom";
+        const errorMessage = extractErrorMessage(err as any);
         dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
         throw new Error(errorMessage);
       } finally {
@@ -398,8 +394,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return { success: true, message: "Symptom deleted successfully" };
     } catch (err: unknown) {
-      const errorMessage =
-        (err as any)?.response?.data?.message || "Failed to delete symptom";
+      const errorMessage = extractErrorMessage(err as any);
       dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
       throw new Error(errorMessage);
     } finally {

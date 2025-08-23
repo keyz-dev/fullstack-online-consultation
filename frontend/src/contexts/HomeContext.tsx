@@ -8,6 +8,7 @@ import React, {
   ReactNode,
 } from "react";
 import { homeApi, HomeData } from "../api/home";
+import { extractErrorMessage } from "../utils/extractError";
 
 interface HomeContextType {
   homeData: HomeData | null;
@@ -40,7 +41,8 @@ export const HomeProvider: React.FC<HomeProviderProps> = ({ children }) => {
         setError("Failed to fetch home data");
       }
     } catch (err) {
-      setError("Network error occurred");
+      const errorMessage = extractErrorMessage(err as any);
+      setError(errorMessage);
       console.error("Error fetching home data:", err);
     } finally {
       setLoading(false);

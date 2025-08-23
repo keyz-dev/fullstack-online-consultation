@@ -8,6 +8,12 @@ const {
   DoctorSpecialty,
 } = require("../db/models");
 const { Op } = require("sequelize");
+const {
+  formatSpecialtyData,
+} = require("../utils/returnFormats/specialtyData");
+const {
+  formatSymptomsData,
+} = require("../utils/returnFormats/symptomData");
 
 class HomeController {
   // Get home page data
@@ -39,10 +45,10 @@ class HomeController {
             ],
           });
 
-          return {
-            ...specialty.toJSON(),
+          return formatSpecialtyData(specialty, {
+            includeStats: true,
             doctorCount,
-          };
+          });
         })
       );
 
@@ -50,6 +56,9 @@ class HomeController {
       const symptoms = await Symptom.findAll({
         limit: 10,
       });
+
+      // Format symptoms using return format utility
+      const formattedSymptoms = formatSymptomsData(symptoms);
 
       // Get testimonials - temporarily disabled due to model issues
       const testimonials = [];
@@ -102,7 +111,7 @@ class HomeController {
         success: true,
         data: {
           specialties: specialtiesWithCount,
-          symptoms,
+          symptoms: formattedSymptoms,
           testimonials,
           qa: qAndAs,
           stats,
@@ -197,10 +206,10 @@ class HomeController {
             ],
           });
 
-          return {
-            ...specialty.toJSON(),
+          return formatSpecialtyData(specialty, {
+            includeStats: true,
             doctorCount,
-          };
+          });
         })
       );
 
@@ -253,8 +262,9 @@ class HomeController {
         ],
       });
 
+      const formattedSpecialty = formatSpecialtyData(specialty);
       const specialtyWithDoctors = {
-        ...specialty.toJSON(),
+        ...formattedSpecialty,
         doctors,
       };
 
@@ -277,9 +287,11 @@ class HomeController {
     try {
       const symptoms = await Symptom.findAll();
 
+      const formattedSymptoms = formatSymptomsData(symptoms);
+
       res.json({
         success: true,
-        data: symptoms,
+        data: formattedSymptoms,
       });
     } catch (error) {
       console.error("Error fetching symptoms:", error);
@@ -330,10 +342,10 @@ class HomeController {
             ],
           });
 
-          return {
-            ...specialty.toJSON(),
+          return formatSpecialtyData(specialty, {
+            includeStats: true,
             doctorCount,
-          };
+          });
         })
       );
 
@@ -392,6 +404,8 @@ class HomeController {
 
       const totalPages = Math.ceil(doctors.count / limit);
 
+      const formattedSpecialty = formatSpecialtyData(specialty);
+
       res.json({
         success: true,
         data: {
@@ -402,11 +416,7 @@ class HomeController {
             total: doctors.count,
             totalPages,
           },
-          specialty: {
-            id: specialty.id,
-            name: specialty.name,
-            description: specialty.description,
-          },
+          specialty: formattedSpecialty,
         },
       });
     } catch (error) {

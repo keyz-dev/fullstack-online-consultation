@@ -8,7 +8,7 @@ import {
   SymptomListView,
   AddSymptomModal,
   UpdateSymptomModal,
-} from "@/components/admin/symptoms";
+} from "@/components/dashboard/admin/symptoms";
 import {
   Button,
   AdvancedFilters,
@@ -120,7 +120,7 @@ const AdminSymptomsPage = () => {
   }
 
   return (
-    <div className="lg:px-3">
+    <section>
       {/* Symptom Statistics */}
       <FadeInContainer delay={200} duration={600}>
         <SymptomStatSection stats={stats} loading={loading} />
@@ -256,7 +256,7 @@ const AdminSymptomsPage = () => {
         confirmText="Delete"
         cancelText="Cancel"
       />
-    </div>
+    </section>
   );
 };
 

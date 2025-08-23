@@ -29,7 +29,6 @@ const SymptomsSection = () => {
   }
 
   const symptoms = homeData?.symptoms || [];
-
   return (
     <section className="py-10 bg-white dark:bg-gray-900">
       <div className="container mx-auto px-4">

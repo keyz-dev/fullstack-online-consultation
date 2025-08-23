@@ -173,12 +173,12 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
         {/* Filters */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-1 md:justify-start lg:justify-end md:flex-wrap gap-4">
-          {filterConfigs.map((config) => (
+          {filterConfigs.map((config, index) => (
             <div
-              key={config.key}
+              key={index}
               className="flex flex-col sm:flex-row sm:items-center space-x-2 space-y-1"
             >
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 {config.label}:
               </label>
               <select
@@ -187,8 +187,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xs outline-none text-sm focus:ring-2 focus:ring-accent focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-primary dark:text-white"
                 disabled={loading}
               >
-                {config.options?.map((option) => (
-                  <option key={option.value} value={option.value}>
+                {config.options?.map((option, index) => (
+                  <option key={index} value={option.value}>
                     {option.label}
                   </option>
                 ))}
@@ -233,13 +233,13 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               Active Filters:
             </span>
             <div className="flex items-center space-x-2 flex-wrap gap-2">
-              {filterConfigs.map((config) => {
+              {filterConfigs.map((config, index) => {
                 const label = getFilterLabel(config);
                 if (!label) return null;
 
                 return (
                   <span
-                    key={config.key}
+                    key={index}
                     className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                       config.colorClass ||
                       "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
