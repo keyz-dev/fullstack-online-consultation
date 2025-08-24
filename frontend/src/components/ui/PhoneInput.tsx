@@ -1,6 +1,8 @@
 import React from "react";
 import PhoneInputWithCountry from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import "./PhoneInput.css"
+
 
 interface PhoneInputProps {
   label?: string;
@@ -11,7 +13,9 @@ interface PhoneInputProps {
   disabled?: boolean;
   required?: boolean;
   onChangeHandler: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => void;
   labelClasses?: string;
   value?: string;

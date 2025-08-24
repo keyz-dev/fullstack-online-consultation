@@ -122,6 +122,13 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
+      clinicName: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
+        validate: {
+          len: [0, 200],
+        },
+      },
       clinicAddress: {
         type: DataTypes.JSONB,
         allowNull: true,

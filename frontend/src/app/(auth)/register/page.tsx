@@ -18,7 +18,7 @@ const RegisterPage = () => {
       icon: User,
       color:
         "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700",
-      textColor: "text-blue-600 dark:text-blue-400",
+      textColor: "text-accent dark:text-blue-400",
       path: "/register/patient",
     },
     {
@@ -41,16 +41,16 @@ const RegisterPage = () => {
       textColor: "text-purple-600 dark:text-purple-400",
       path: "/register/pharmacy",
     },
-    {
-      id: "admin",
-      title: "Admin",
-      description: "I want to manage the platform and users",
-      icon: Shield,
-      color:
-        "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700",
-      textColor: "text-orange-600 dark:text-orange-400",
-      path: "/register/admin",
-    },
+    // {
+    //   id: "admin",
+    //   title: "Admin",
+    //   description: "I want to manage the platform and users",
+    //   icon: Shield,
+    //   color:
+    //     "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700",
+    //   textColor: "text-orange-600 dark:text-orange-400",
+    //   path: "/register/admin",
+    // },
   ];
 
   const handleRoleSelect = (role: string) => {
@@ -133,7 +133,7 @@ const RegisterPage = () => {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium"
+              className="text-accent dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium"
             >
               Sign in here
             </Link>

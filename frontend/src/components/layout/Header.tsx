@@ -11,11 +11,15 @@ import {
   LanguageSelector,
 } from "../header";
 
-const Header = () => {
+interface HeaderProps {
+  beSticky?: boolean;
+}
+
+const Header = ({ beSticky = true }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="w-full sticky top-0 z-50">
+    <header className={`w-full ${beSticky ? "sticky top-0 z-50" : ""}`}>
       {/* Main navigation */}
       <nav className="bg-white dark:bg-gray-900 shadow-sm backdrop-blur-sm">
         <div className="container mx-auto px-4">

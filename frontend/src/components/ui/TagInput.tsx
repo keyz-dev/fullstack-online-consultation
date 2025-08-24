@@ -71,7 +71,7 @@ const TagInput: React.FC<TagInputProps> = ({
             value.length >= maxTags ? `Maximum ${maxTags} tags` : placeholder
           }
           disabled={value.length >= maxTags}
-          className="flex-1 min-w-0 outline-none text-sm"
+          className="flex-1 min-w-0 outline-none text-sm text-primary placeholder:text-secondary"
         />
       </div>
       {value.length >= maxTags && (

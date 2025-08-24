@@ -38,7 +38,7 @@ exports.registerDoctor = async (req, res, next) => {
       consultationDuration,
       paymentMethods,
       ...userData
-    } = parsedBody;
+    } = req.body;
 
     // Handle file uploads (similar to vendorApp)
     let uploadedFiles = {};
