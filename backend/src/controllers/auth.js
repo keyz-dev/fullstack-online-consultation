@@ -6,6 +6,7 @@ const {
   resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  googleSignUpSchema,
 } = require("../schema/userSchema");
 const {
   BadRequestError,
@@ -123,7 +124,7 @@ exports.googleLogin = async (req, res, next) => {
 // Google OAuth sign up
 exports.googleSignUp = async (req, res, next) => {
   try {
-    const { error } = googleLoginSchema.validate(req.body);
+    const { error } = googleSignUpSchema.validate(req.body);
     if (error) return next(new BadRequestError(error.details[0].message));
 
     const { access_token, role } = req.body;

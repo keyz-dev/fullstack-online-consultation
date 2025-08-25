@@ -147,7 +147,6 @@ const Step1_BasicUserInfo = () => {
               role="incomplete_doctor"
               buttonText="Continue with Google"
               fullWidth
-              variant="outline"
             />
           </div>
 

@@ -24,8 +24,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     updateActiveNavFromPath(pathname);
   }, [pathname, updateActiveNavFromPath]);
 
+  // Show loading state until client-side hydration is complete
   if (!user || !roleConfig) {
-    return null; // This will be handled by the auth middleware
+    return (
+      <div className="h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   return (

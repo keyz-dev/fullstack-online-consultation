@@ -38,22 +38,28 @@ const NotificationBell: React.FC = () => {
   // Get notification icon based on type
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "vendor_application_submitted":
-        return "📝";
-      case "vendor_application_reviewed":
-        return "👀";
-      case "vendor_application_approved":
+      case "application_approved":
         return "✅";
-      case "vendor_application_rejected":
+      case "application_rejected":
         return "❌";
-      case "order":
-        return "📦";
-      case "booking":
+      case "application_under_review":
+        return "👀";
+      case "system_announcement":
+        return "📢";
+      case "consultation_reminder":
+        return "⏰";
+      case "consultation_confirmation":
         return "📅";
-      case "system":
-        return "⚙️";
-      case "promotion":
-        return "🎉";
+      case "consultation_cancelled":
+        return "❌";
+      case "prescription_ready":
+        return "💊";
+      case "payment_successful":
+        return "💰";
+      case "payment_failed":
+        return "⚠️";
+      case "general":
+        return "🔔";
       default:
         return "🔔";
     }
@@ -79,7 +85,7 @@ const NotificationBell: React.FC = () => {
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.isRead) {
-      await markAsRead(notification._id);
+      await markAsRead(notification.id);
     }
     setIsOpen(false);
   };
@@ -90,7 +96,7 @@ const NotificationBell: React.FC = () => {
 
   const handleDeleteNotification = async (
     e: React.MouseEvent,
-    notificationId: string
+    notificationId: number
   ) => {
     e.stopPropagation();
     await deleteNotification(notificationId);
@@ -178,7 +184,7 @@ const NotificationBell: React.FC = () => {
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {notifications.map((notification) => (
                   <div
-                    key={notification._id}
+                    key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
                       !notification.isRead
@@ -208,7 +214,7 @@ const NotificationBell: React.FC = () => {
                           {/* Delete Button */}
                           <button
                             onClick={(e) =>
-                              handleDeleteNotification(e, notification._id)
+                              handleDeleteNotification(e, notification.id)
                             }
                             className="flex-shrink-0 p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                             title="Delete notification"

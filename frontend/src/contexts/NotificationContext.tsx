@@ -7,19 +7,35 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import {
+  notificationsAPI,
+  Notification as APINotification,
+} from "../api/notifications";
+import { useAuth } from "./AuthContext";
+import { toast } from "react-toastify";
 
+// Frontend notification interface (compatible with API)
 export interface Notification {
-  _id: string;
+  id: number;
   title: string;
   message: string;
   type: string;
-  category: string;
   priority: "low" | "medium" | "high" | "urgent";
   isRead: boolean;
+  readAt?: string;
   createdAt: string;
   updatedAt: string;
-  relatedId?: string;
-  relatedModel?: string;
+  data?: {
+    relatedId?: string;
+    relatedModel?: string;
+    category?: string;
+  };
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
 }
 
 interface NotificationContextType {
@@ -29,13 +45,12 @@ interface NotificationContextType {
   isConnected: boolean;
   allowedTypes: string[];
   categories: string[];
-  markAsRead: (notificationId: string) => Promise<void>;
+  markAsRead: (notificationId: number) => Promise<void>;
   markAllAsRead: () => Promise<void>;
-  deleteNotification: (notificationId: string) => Promise<void>;
+  deleteNotification: (notificationId: number) => Promise<void>;
   refreshNotifications: () => Promise<void>;
-  addNotification: (
-    notification: Omit<Notification, "_id" | "createdAt" | "updatedAt">
-  ) => void;
+  addNotification: (notification: APINotification) => void;
+  getUnreadCount: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
@@ -59,132 +74,198 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
 }) => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
-  // Mock data for now - will be replaced with actual API calls
+  // Get token from localStorage safely
+  const getToken = useCallback(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("token");
+    }
+    return null;
+  }, []);
+
+  // Notification types for medical consultation system
   const allowedTypes = [
-    "vendor_application_submitted",
-    "vendor_application_reviewed",
-    "vendor_application_approved",
-    "vendor_application_rejected",
-    "new_user_registered",
-    "order_dispute_reported",
-    "booking_dispute_reported",
-    "system_alert",
-    "platform_maintenance",
-    "security_alert",
-    "user_reported",
-    "vendor_reported",
-    "system",
-    "promotion",
-    "announcement",
+    "application_approved",
+    "application_rejected",
+    "application_under_review",
+    "system_announcement",
+    "consultation_reminder",
+    "consultation_confirmation",
+    "consultation_cancelled",
+    "prescription_ready",
+    "payment_successful",
+    "payment_failed",
+    "general",
   ];
 
   const categories = [
-    "vendor_applications",
-    "orders",
-    "bookings",
+    "applications",
+    "consultations",
+    "payments",
     "system",
-    "promotions",
+    "prescriptions",
   ];
 
-  // Mock notifications for development
-  const mockNotifications: Notification[] = [
-    {
-      _id: "1",
-      title: "New Vendor Application",
-      message: "A new pharmacy has submitted their application for review.",
-      type: "vendor_application_submitted",
-      category: "vendor_applications",
-      priority: "high",
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-      updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      relatedId: "pharmacy_123",
-      relatedModel: "Pharmacy",
-    },
-    {
-      _id: "2",
-      title: "System Maintenance",
-      message: "Scheduled maintenance will occur tonight at 2 AM.",
-      type: "platform_maintenance",
-      category: "system",
-      priority: "medium",
-      isRead: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-      updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    },
-    {
-      _id: "3",
-      title: "Security Alert",
-      message: "Multiple failed login attempts detected from IP 192.168.1.100",
-      type: "security_alert",
-      category: "system",
-      priority: "urgent",
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-      updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    },
-  ];
+  // Get unread count
+  const getUnreadCount = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+    try {
+      const response = await notificationsAPI.getUnreadCount();
+      setUnreadCount(response.unreadCount);
+    } catch (error) {
+      console.error("Failed to get unread count:", error);
+    }
+  }, [getToken]);
 
-  const markAsRead = useCallback(async (notificationId: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification._id === notificationId
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-  }, []);
+  // Mark notification as read
+  const markAsRead = useCallback(
+    async (notificationId: number) => {
+      const token = getToken();
+      if (!token) return;
 
+      try {
+        await notificationsAPI.markAsRead(notificationId);
+
+        // Update local state
+        setNotifications((prev) =>
+          prev.map((notification) =>
+            notification.id === notificationId
+              ? {
+                  ...notification,
+                  isRead: true,
+                  readAt: new Date().toISOString(),
+                }
+              : notification
+          )
+        );
+
+        // Update unread count
+        await getUnreadCount();
+
+        toast.success("Notification marked as read");
+      } catch (error) {
+        console.error("Failed to mark notification as read:", error);
+        toast.error("Failed to mark notification as read");
+      }
+    },
+    [getToken, getUnreadCount]
+  );
+
+  // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, isRead: true }))
-    );
-  }, []);
+    const token = getToken();
+    if (!token) return;
 
-  const deleteNotification = useCallback(async (notificationId: string) => {
-    setNotifications((prev) =>
-      prev.filter((notification) => notification._id !== notificationId)
-    );
-  }, []);
+    try {
+      await notificationsAPI.markAllAsRead();
 
+      // Update local state
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
+      );
+
+      // Update unread count
+      setUnreadCount(0);
+
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+      toast.error("Failed to mark all notifications as read");
+    }
+  }, [getToken]);
+
+  // Delete notification
+  const deleteNotification = useCallback(
+    async (notificationId: number) => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        await notificationsAPI.deleteNotification(notificationId);
+
+        // Update local state
+        setNotifications((prev) =>
+          prev.filter((notification) => notification.id !== notificationId)
+        );
+
+        // Update unread count if notification was unread
+        const deletedNotification = notifications.find(
+          (n) => n.id === notificationId
+        );
+        if (deletedNotification && !deletedNotification.isRead) {
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+
+        toast.success("Notification deleted");
+      } catch (error) {
+        console.error("Failed to delete notification:", error);
+        toast.error("Failed to delete notification");
+      }
+    },
+    [getToken, notifications]
+  );
+
+  // Refresh notifications from API
   const refreshNotifications = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setNotifications(mockNotifications);
+      const response = await notificationsAPI.getNotifications({
+        page: 1,
+        limit: 50, // Get recent notifications
+      });
+
+      setNotifications(response.notifications);
+      setUnreadCount(response.notifications.filter((n) => !n.isRead).length);
       setIsConnected(true);
     } catch (error) {
       console.error("Failed to refresh notifications:", error);
       setIsConnected(false);
+      toast.error("Failed to load notifications");
     } finally {
       setLoading(false);
     }
+  }, [getToken]);
+
+  // Add notification (for real-time updates)
+  const addNotification = useCallback((notification: APINotification) => {
+    setNotifications((prev) => [notification, ...prev]);
+
+    // Update unread count if notification is unread
+    if (!notification.isRead) {
+      setUnreadCount((prev) => prev + 1);
+    }
+
+    // Show toast for new notifications
+    toast.info(notification.message, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   }, []);
 
-  const addNotification = useCallback(
-    (notification: Omit<Notification, "_id" | "createdAt" | "updatedAt">) => {
-      const newNotification: Notification = {
-        ...notification,
-        _id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setNotifications((prev) => [newNotification, ...prev]);
-    },
-    []
-  );
-
-  // Load initial notifications
+  // Load initial notifications when user is authenticated
   useEffect(() => {
-    refreshNotifications();
-  }, [refreshNotifications]);
+    if (user) {
+      refreshNotifications();
+      getUnreadCount();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [user, refreshNotifications, getUnreadCount]);
 
   const value: NotificationContextType = {
     notifications,
@@ -198,6 +279,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     deleteNotification,
     refreshNotifications,
     addNotification,
+    getUnreadCount,
   };
 
   return (

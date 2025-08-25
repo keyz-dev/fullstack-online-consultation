@@ -49,15 +49,17 @@ const DoctorApplicationFlow = () => {
     }
   };
 
-  // Don't show the stepper on the success page
-  if (activeStep === STEPS.SUCCESS) {
-    return renderStep();
-  }
-
   return (
     <section className="flex flex-col lg:flex-row bg-white dark:bg-gray-900 max-h-[90vh]">
-      <DoctorSidebar currentStep={activeStep} visitedSteps={visitedSteps} />
-      <main className="flex-1 grid sm:place-items-center overflow-y-auto overflow-auto scrollbar-hide max-h-[90vh]">
+      {/* Don't show the sidebar on the success page */}
+      {activeStep !== STEPS.SUCCESS && (
+        <DoctorSidebar currentStep={activeStep} visitedSteps={visitedSteps} />
+      )}
+      <main
+        className={`flex-1 grid sm:place-items-center overflow-y-auto overflow-auto scrollbar-hide max-h-[90vh] ${
+          activeStep === STEPS.SUCCESS ? "w-full" : ""
+        }`}
+      >
         {renderStep()}
       </main>
     </section>

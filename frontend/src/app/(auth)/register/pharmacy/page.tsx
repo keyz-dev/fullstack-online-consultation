@@ -192,7 +192,6 @@ const PharmacySetupPage = () => {
                 role="incomplete_pharmacy"
                 buttonText="Continue with Google"
                 fullWidth
-                variant="outline"
               />
             </div>
           </div>

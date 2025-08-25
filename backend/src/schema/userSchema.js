@@ -216,6 +216,27 @@ const googleLoginSchema = Joi.object({
   }),
 });
 
+// Google sign up schema
+const googleSignUpSchema = Joi.object({
+  access_token: Joi.string().required().messages({
+    "any.required": "Access token is required",
+  }),
+  role: Joi.string()
+    .valid(
+      "doctor",
+      "pharmacy",
+      "patient",
+      "admin",
+      "incomplete_doctor",
+      "incomplete_pharmacy"
+    )
+    .required()
+    .messages({
+      "any.required": "Role is required",
+      "any.invalid": "Invalid role",
+    }),
+});
+
 // Email verification schema
 const emailVerificationSchema = Joi.object({
   email: Joi.string().email().required().messages({
@@ -299,6 +320,7 @@ module.exports = {
   pharmacyRegisterSchema,
   userLoginSchema,
   googleLoginSchema,
+  googleSignUpSchema,
   emailVerificationSchema,
   resendVerificationSchema,
   forgotPasswordSchema,

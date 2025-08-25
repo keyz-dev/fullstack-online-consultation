@@ -219,9 +219,10 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
           <div className="flex items-center justify-center min-h-full p-4">
             <img
               src={
+                // For local files, use preview URL first, then fallback to optimized URL
+                documentData.preview ||
                 getOptimizedUrl() ||
                 documentData.url ||
-                documentData.preview ||
                 (documentData.file
                   ? URL.createObjectURL(documentData.file)
                   : undefined)
@@ -245,7 +246,15 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
             {/* Simple iframe approach for PDFs like frontend_reference */}
             <iframe
               ref={iframeRef}
-              src={getOptimizedUrl() || documentData.url}
+              src={
+                // For local files, use preview URL first, then fallback to optimized URL
+                documentData.preview ||
+                getOptimizedUrl() ||
+                documentData.url ||
+                (documentData.file
+                  ? URL.createObjectURL(documentData.file)
+                  : undefined)
+              }
               className="w-full h-full border-0"
               onLoad={handleIframeLoad}
               onError={handleIframeError}
@@ -279,6 +288,8 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
             <iframe
               ref={iframeRef}
               src={
+                // For local files, use preview URL first, then fallback to URL
+                documentData.preview ||
                 documentData.url ||
                 (documentData.file
                   ? URL.createObjectURL(documentData.file)

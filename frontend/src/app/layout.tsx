@@ -5,6 +5,7 @@ import {
   LanguageProvider,
   AuthProvider,
   SocketProvider,
+  NotificationProvider,
 } from "../contexts";
 
 import { ToastContainer } from "react-toastify";
@@ -39,10 +40,12 @@ export default function RootLayout({
           <ThemeProvider>
             <LanguageProvider>
               <AuthProvider>
-                <SocketProvider>
-                  <ToastContainer />
-                  {children}
-                </SocketProvider>
+                <NotificationProvider>
+                  <SocketProvider>
+                    <ToastContainer />
+                    {children}
+                  </SocketProvider>
+                </NotificationProvider>
               </AuthProvider>
             </LanguageProvider>
           </ThemeProvider>

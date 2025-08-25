@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useDoctorApplication } from "../../../../contexts/DoctorApplicationContext";
 import {
   EnhancedFileDropzone,
@@ -22,6 +22,20 @@ const Step6_Documents = () => {
     new Set<string>()
   );
   const [showTips, setShowTips] = useState(false);
+
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up all object URLs when component unmounts
+      if (doctorData.documents) {
+        doctorData.documents.forEach((doc) => {
+          if (doc.preview && doc.preview.startsWith("blob:")) {
+            URL.revokeObjectURL(doc.preview);
+          }
+        });
+      }
+    };
+  }, []);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -48,6 +62,19 @@ const Step6_Documents = () => {
   );
 
   const handleRemoveFile = (documentId: string) => {
+    // Find the document to get its preview URL for cleanup
+    const documentToRemove = doctorData.documents.find(
+      (doc) => doc.id === documentId
+    );
+
+    // Clean up the object URL if it exists
+    if (
+      documentToRemove?.preview &&
+      documentToRemove.preview.startsWith("blob:")
+    ) {
+      URL.revokeObjectURL(documentToRemove.preview);
+    }
+
     const updatedDocuments = doctorData.documents.filter(
       (doc) => doc.id !== documentId
     );
@@ -93,9 +120,10 @@ const Step6_Documents = () => {
       file: file.file,
       name: file.name,
       documentName: file.documentName,
-      fileType: file.type,
+      fileType: file.type, // This should be the MIME type like "image/jpeg"
+      type: file.type, // Add this for compatibility
       size: file.size,
-      preview: file.preview,
+      preview: file.preview, // This is the URL.createObjectURL() result
     });
   };
 

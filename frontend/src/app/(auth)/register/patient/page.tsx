@@ -160,7 +160,6 @@ const PatientRegisterPage = () => {
                   role="patient"
                   buttonText="Continue with Google"
                   fullWidth
-                  variant="outline"
                 />
               </div>
             </div>

@@ -163,7 +163,6 @@ const AdminRegisterPage = () => {
                 role="admin"
                 buttonText="Continue with Google"
                 fullWidth
-                variant="outline"
               />
             </div>
           </div>

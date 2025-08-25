@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 import { toast } from "react-toastify";
 import { API_BASE_URL } from "@/api";
 
@@ -9,9 +10,15 @@ interface NotificationData {
   type: string;
   title: string;
   message: string;
-  priority: string;
+  priority: "low" | "medium" | "high" | "urgent";
   isRead: boolean;
   createdAt: string;
+  updatedAt: string;
+  data?: {
+    relatedId?: string;
+    relatedModel?: string;
+    category?: string;
+  };
 }
 
 interface ChatMessage {
@@ -31,16 +38,34 @@ interface VideoCallData {
 }
 
 export const useSocket = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
+  // Get notification context safely
+  let addNotification: ((notification: any) => void) | undefined;
+  let getUnreadCount: (() => Promise<void>) | undefined;
+
+  try {
+    const notificationContext = useNotificationContext();
+    addNotification = notificationContext?.addNotification;
+    getUnreadCount = notificationContext?.getUnreadCount;
+  } catch (error) {
+    // Context not available yet, that's okay
+    console.log("NotificationContext not available yet");
+  }
+
   const connect = useCallback(() => {
-    if (!user || !token) return;
+    if (!user) return;
 
     // Disconnect existing socket if any
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
+
+    // Get token from localStorage
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) return;
 
     // Connect to socket server
     socketRef.current = io(API_BASE_URL.replace("/api", ""), {
@@ -63,24 +88,21 @@ export const useSocket = () => {
       console.error("Socket connection error:", error);
     });
 
-    // Notification events
+    // Notification events - Now integrated with NotificationContext
     socketRef.current.on(
       "notification:new",
       (data: { notification: NotificationData }) => {
         console.log("New notification received:", data.notification);
 
-        // Show toast notification
-        toast.info(data.notification.message, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        // Add notification to context (this will also show toast)
+        if (addNotification) {
+          addNotification(data.notification);
+        }
 
-        // You can also update notification state here
-        // dispatch({ type: 'ADD_NOTIFICATION', payload: data.notification });
+        // Update unread count
+        if (getUnreadCount) {
+          getUnreadCount();
+        }
       }
     );
 
@@ -118,7 +140,7 @@ export const useSocket = () => {
       console.log("Video call ended:", data);
       // Handle call end
     });
-  }, [user, token]);
+  }, [user, addNotification, getUnreadCount]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
@@ -133,9 +155,9 @@ export const useSocket = () => {
     }
   }, []);
 
-  // Connect on mount and when user/token changes
+  // Connect on mount and when user changes
   useEffect(() => {
-    if (user && token) {
+    if (user) {
       connect();
     } else {
       disconnect();
@@ -145,7 +167,7 @@ export const useSocket = () => {
     return () => {
       disconnect();
     };
-  }, [user, token, connect, disconnect]);
+  }, [user, connect, disconnect]);
 
   return {
     socket: socketRef.current,
