@@ -47,7 +47,10 @@ export const formatGlobalAddress = (geocodeData: any) => {
       address.street ||
       address.pedestrian ||
       address.path ||
-      address.village,
+      address.village ||
+      address.hamlet ||
+      address.city ||
+      address.state,
   ].filter(Boolean);
 
   const streetAddress =

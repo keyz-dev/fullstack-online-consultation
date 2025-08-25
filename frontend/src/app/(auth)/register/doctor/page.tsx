@@ -4,16 +4,20 @@ import React from "react";
 import { useDoctorApplication } from "@/contexts/DoctorApplicationContext";
 import DoctorSidebar from "@/components/onboarding/doctor/DoctorSidebar";
 import { DoctorApplicationProvider } from "@/contexts/DoctorApplicationContext";
+import { BaseSpecialtyProvider } from "@/contexts/BaseSpecialtyContext";
+import RouteProtection from "@/components/auth/RouteProtection";
 
 // Import step components
 import {
-  Step1_BasicInfo,
-  Step2_Specialties,
-  Step3_AddressLocation,
-  Step4_Documents,
-  Step5_PaymentSetup,
-  Step6_Review,
-  Step7_Success,
+  Step1_BasicUserInfo,
+  Step2_EmailVerification,
+  Step3_ProfessionalInfo,
+  Step4_Specialties,
+  Step5_AddressLocation,
+  Step6_Documents,
+  Step7_PaymentSetup,
+  Step8_Review,
+  Step9_Success,
 } from "@/components/onboarding/doctor/steps";
 
 // This is the main component that renders the correct step
@@ -22,22 +26,26 @@ const DoctorApplicationFlow = () => {
 
   const renderStep = () => {
     switch (activeStep) {
-      case STEPS.BASIC_INFO:
-        return <Step1_BasicInfo />;
+      case STEPS.BASIC_USER_INFO:
+        return <Step1_BasicUserInfo />;
+      case STEPS.EMAIL_VERIFICATION:
+        return <Step2_EmailVerification />;
+      case STEPS.PROFESSIONAL_INFO:
+        return <Step3_ProfessionalInfo />;
       case STEPS.SPECIALTIES:
-        return <Step2_Specialties />;
+        return <Step4_Specialties />;
       case STEPS.ADDRESS_LOCATION:
-        return <Step3_AddressLocation />;
+        return <Step5_AddressLocation />;
       case STEPS.DOCUMENTS:
-        return <Step4_Documents />;
+        return <Step6_Documents />;
       case STEPS.PAYMENT_SETUP:
-        return <Step5_PaymentSetup />;
+        return <Step7_PaymentSetup />;
       case STEPS.REVIEW:
-        return <Step6_Review />;
+        return <Step8_Review />;
       case STEPS.SUCCESS:
-        return <Step7_Success />;
+        return <Step9_Success />;
       default:
-        return <Step1_BasicInfo />;
+        return <Step1_BasicUserInfo />;
     }
   };
 
@@ -49,7 +57,7 @@ const DoctorApplicationFlow = () => {
   return (
     <section className="flex flex-col lg:flex-row bg-white dark:bg-gray-900 max-h-[90vh]">
       <DoctorSidebar currentStep={activeStep} visitedSteps={visitedSteps} />
-      <main className="flex-1 grid sm:place-items-center overflow-y-auto h-screen overflow-auto scrollbar-hide max-h-[90vh]">
+      <main className="flex-1 grid sm:place-items-center overflow-y-auto overflow-auto scrollbar-hide max-h-[90vh]">
         {renderStep()}
       </main>
     </section>
@@ -59,9 +67,13 @@ const DoctorApplicationFlow = () => {
 // The wrapper that provides the context
 const DoctorApplicationPage = () => {
   return (
-    <DoctorApplicationProvider>
-      <DoctorApplicationFlow />
-    </DoctorApplicationProvider>
+    <BaseSpecialtyProvider>
+      <DoctorApplicationProvider>
+        <RouteProtection restrictedRoles={["pending_doctor"]} redirectTo="/">
+          <DoctorApplicationFlow />
+        </RouteProtection>
+      </DoctorApplicationProvider>
+    </BaseSpecialtyProvider>
   );
 };
 

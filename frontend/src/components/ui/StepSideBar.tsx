@@ -64,18 +64,18 @@ export default function StepSideBar({
     <>
       {/* Mobile Header + Dropdown in a relative container */}
       <div className="relative lg:hidden">
-        <div className="flex items-center justify-between p-4 bg-white">
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           {displayLogo && <Logo size={120} destination={homePath} />}
           <button
             onClick={() => setMobileMenuOpen((v) => !v)}
-            className="p-2"
+            className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
             aria-label="Open menu"
           >
             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
         {mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 z-50 bg-white shadow-lg p-6 flex flex-col gap-8">
+          <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-gray-900 shadow-lg dark:shadow-gray-800/50 p-6 flex flex-col gap-8 border-b border-gray-200 dark:border-gray-700">
             <nav>
               <ul className="space-y-5">
                 {steps.map((step) => {
@@ -102,21 +102,33 @@ export default function StepSideBar({
                 })}
               </ul>
             </nav>
-            <div className="mt-4 flex justify-between items-center text-sm">
-              <a
-                href={homePath}
-                className="flex items-center gap-2 text-secondary hover:text-accent"
-              >
-                <ArrowLeft size={16} />
-                Back to home
-              </a>
+            <div className="mt-4 relative">
+              <div className="w-full relative max-h-[100px] rounded-lg overflow-hidden">
+                <Image
+                  src={"/images/drogcine-card.png"}
+                  alt="DrogCine Card"
+                  width={100}
+                  height={20}
+                  className="w-full object-cover h-full opacity-15"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-50/70 to-transparent dark:from-gray-900/70"></div>
+                <div className="absolute bottom-2 left-2 right-2">
+                  <a
+                    href={homePath}
+                    className="flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-white/80 dark:bg-gray-800/80 px-3 py-2 rounded-lg backdrop-blur-sm text-sm shadow-sm border border-gray-200/50 dark:border-gray-700/50"
+                  >
+                    <ArrowLeft size={16} />
+                    Back to home
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden max-h-[90vh] lg:flex w-[360px] flex-shrink-0 h-screen bg-light_bg border-r border-r-line_clr px-8 pb-4 flex-col justify-between">
+      <aside className="hidden max-h-[90vh] lg:flex w-[360px] flex-shrink-0 h-screen bg-light_bg border-r border-r-gray-200 dark:border-gray-700 px-8 pb-4 flex-col justify-between">
         <div className="flex items-center gap-3">
           {displayLogo && <Logo size={120} destination={homePath} />}
         </div>
@@ -146,25 +158,25 @@ export default function StepSideBar({
             })}
           </ul>
         </nav>
-        <div className="mt-auto text-center flex-1 flex flex-col justify-between">
-          <div className="flex-1 w-full relative max-h-[220px] rounded-md overflow-hidden">
+        <div className="mt-auto text-center flex-1 flex flex-col justify-center">
+          <div className="flex-1 w-full relative max-h-[140px] rounded-lg overflow-hidden">
             <Image
               src={"/images/drogcine-card.png"}
               alt="DrogCine Card"
               width={100}
-              height={80}
-              className="w-full object-cover h-full"
+              height={100}
+              className="w-full object-cover h-full opacity-15"
             />
-            <div className="absolute inset-0 bg-white/85 dark:bg-gray-900/85"></div>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <a
-              href={homePath}
-              className="flex items-center gap-2 text-secondary hover:text-accent"
-            >
-              <ArrowLeft size={16} />
-              Back to home
-            </a>
+            <div className="absolute inset-0 "></div>
+            <div className="absolute bottom-4 left-4 right-4">
+              <a
+                href={homePath}
+                className="flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-4 py-3 rounded-lg backdrop-blur-sm shadow-sm border border-gray-200/50 dark:border-gray-700/50"
+              >
+                <ArrowLeft size={16} />
+                Back to home
+              </a>
+            </div>
           </div>
         </div>
       </aside>

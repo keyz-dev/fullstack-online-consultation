@@ -10,7 +10,6 @@ const {
 } = require("../db/models");
 const { sequelize } = require("../db/models");
 const { BadRequestError, ConflictError } = require("../utils/errors");
-const { handleFileUploads } = require("../utils/documentUtil");
 const { sendVerificationEmail } = require("../utils/sendVerificationEmail");
 
 // Helper function to create notifications (similar to vendorApp)
@@ -83,6 +82,40 @@ const notifyAdmins = async (notificationType, title, message, relatedId) => {
 };
 
 class RegistrationService {
+  // ==================== INITIATE REGISTRATION ====================
+  static async initiateRegistration(userData, avatar = null, role = null) {
+    const { email, ...otherUserData } = userData;
+
+    // Check if user already exists
+    let user = await User.findOne({ where: { email } });
+    if (user) throw new ConflictError("User already exists with this email");
+
+    // Create user with incomplete_doctor role
+    user = await User.create({
+      ...otherUserData,
+      email,
+      avatar,
+      role: `incomplete_${role}`,
+      authProvider: "local",
+      emailVerified: false,
+      isApproved: false,
+      isActive: true,
+    });
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(user, email, user.name);
+    } catch (err) {
+      await user.destroy();
+      throw new BadRequestError(err.message);
+    }
+
+    return {
+      user: { id: user.id, email: user.email },
+      message: "Registration initiated. Please verify your email to continue.",
+    };
+  }
+
   // ==================== ADMIN REGISTRATION ====================
   static async registerAdmin(userData, avatar = null) {
     const { email, ...otherUserData } = userData;
@@ -158,34 +191,37 @@ class RegistrationService {
   }
 
   // ==================== DOCTOR REGISTRATION (ACID-COMPLIANT) ====================
-  static async registerDoctor(userData, doctorData, uploadedFiles = {}) {
+  static async registerDoctor(userId, doctorData, uploadedFiles = {}) {
     const transaction = await sequelize.transaction();
 
     try {
-      const { email, ...otherUserData } = userData;
       const { specialties, ...otherDoctorData } = doctorData;
 
-      // Check if user already exists
-      let user = await User.findOne({ where: { email } });
-      if (user) throw new ConflictError("User already exists with this email");
+      // Get the existing user (should be incomplete_doctor)
+      const user = await User.findByPk(userId);
+      if (!user) throw new BadRequestError("User not found");
 
-      // Set nextVersion to 1 for new users
+      if (user.role !== "incomplete_doctor") {
+        throw new BadRequestError(
+          "User must have incomplete_doctor role to submit application"
+        );
+      }
+
+      // Set nextVersion to 1 for new applications
       let nextVersion = 1;
 
-      // 1. Create User (pending role)
-      user = await User.create(
+      // 1. Update User role to pending_doctor
+      await user.update(
         {
-          ...otherUserData,
-          email,
-          avatar: uploadedFiles.avatar,
           role: "pending_doctor",
-          authProvider: "local",
-          emailVerified: false,
-          isApproved: false, // Doctors need approval
-          isActive: true,
+          avatar: uploadedFiles.avatar || user.avatar, // Update avatar if provided
         },
         { transaction }
       );
+
+      console.log("\n the user \n");
+      console.log(user);
+      console.log("\n the user \n");
 
       // 2. Create Doctor (clean business data only)
       const doctor = await Doctor.create(
@@ -197,6 +233,10 @@ class RegistrationService {
         },
         { transaction }
       );
+
+      console.log("\n the doctor \n");
+      console.log(doctor);
+      console.log("\n the doctor \n");
 
       // 3. Create UserApplication
       const application = await UserApplication.create(
@@ -210,6 +250,10 @@ class RegistrationService {
         },
         { transaction }
       );
+
+      console.log("\n the application \n");
+      console.log(application);
+      console.log("\n the application \n");
 
       // 4. Create ApplicationDocuments
       if (uploadedFiles.documents) {
@@ -232,6 +276,10 @@ class RegistrationService {
         await Promise.all(documentPromises);
       }
 
+      console.log("\n the documents \n");
+      console.log(uploadedFiles.documents);
+      console.log("\n the documents \n");
+
       // 5. Create DoctorSpecialty relationships
       if (specialties && specialties.length > 0) {
         const specialtyPromises = specialties.map((specialtyId) =>
@@ -245,6 +293,10 @@ class RegistrationService {
         );
         await Promise.all(specialtyPromises);
       }
+
+      console.log("\n the specialties \n");
+      console.log(specialties);
+      console.log("\n the specialties \n");
 
       await transaction.commit();
 
@@ -267,19 +319,11 @@ class RegistrationService {
         application.id
       );
 
-      // Send verification email
-      try {
-        await sendVerificationEmail(user, email, user.name);
-      } catch (err) {
-        console.error("Failed to send verification email:", err);
-        // Don't fail the request if email fails
-      }
-
       return {
         user: { id: user.id, email: user.email },
         application: { id: application.id, status: application.status },
         message:
-          "Doctor registration successful. Please verify your email and wait for approval.",
+          "Doctor application submitted successfully. Your application is under review.",
       };
     } catch (error) {
       await transaction.rollback();
@@ -288,30 +332,28 @@ class RegistrationService {
   }
 
   // ==================== PHARMACY REGISTRATION (ACID-COMPLIANT) ====================
-  static async registerPharmacy(userData, pharmacyData, uploadedFiles = {}) {
+  static async registerPharmacy(userId, pharmacyData, uploadedFiles = {}) {
     const transaction = await sequelize.transaction();
 
     try {
-      const { email, ...otherUserData } = userData;
+      // Get the existing user (should be incomplete_pharmacy)
+      const user = await User.findByPk(userId);
+      if (!user) throw new BadRequestError("User not found");
 
-      // Check if user already exists
-      let user = await User.findOne({ where: { email } });
-      if (user) throw new ConflictError("User already exists with this email");
+      if (user.role !== "incomplete_pharmacy") {
+        throw new BadRequestError(
+          "User must have incomplete_pharmacy role to submit application"
+        );
+      }
 
-      // Set nextVersion to 1 for new users
+      // Set nextVersion to 1 for new applications
       let nextVersion = 1;
 
-      // 1. Create User (pending role)
-      user = await User.create(
+      // 1. Update User role to pending_pharmacy
+      await user.update(
         {
-          ...otherUserData,
-          email,
-          avatar: uploadedFiles.avatar,
           role: "pending_pharmacy",
-          authProvider: "local",
-          emailVerified: false,
-          isApproved: false, // Pharmacies need approval
-          isActive: true,
+          avatar: uploadedFiles.avatar || user.avatar, // Update avatar if provided
         },
         { transaction }
       );
@@ -382,19 +424,11 @@ class RegistrationService {
         application.id
       );
 
-      // Send verification email
-      try {
-        await sendVerificationEmail(user, email, user.name);
-      } catch (err) {
-        console.error("Failed to send verification email:", err);
-        // Don't fail the request if email fails
-      }
-
       return {
         user: { id: user.id, email: user.email },
         application: { id: application.id, status: application.status },
         message:
-          "Pharmacy registration successful. Please verify your email and wait for approval.",
+          "Pharmacy application submitted successfully. Your application is under review.",
       };
     } catch (error) {
       await transaction.rollback();

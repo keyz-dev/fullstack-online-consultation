@@ -32,9 +32,20 @@ router.post(
   registrationController.registerPatient
 );
 
-// Doctor registration (with documents and images)
+// Initiate doctor registration (basic user info only)
+router.post(
+  "/register/:role/initiate",
+  upload.single("avatar"),
+  handleCloudinaryUpload,
+  formatFilePaths,
+  handleUploadError,
+  registrationController.initiateRegistration
+);
+
+// Doctor registration (with documents and images) - for final application submission
 router.post(
   "/register/doctor",
+  authenticate, // Require authentication
   upload.fields([
     { name: "avatar", maxCount: 1 },
     { name: "doctorDocument", maxCount: 10 },
@@ -48,6 +59,7 @@ router.post(
 // Pharmacy registration (with documents and images)
 router.post(
   "/register/pharmacy",
+  authenticate, // Require authentication
   upload.fields([
     { name: "avatar", maxCount: 1 },
     { name: "pharmacyLogo", maxCount: 1 },

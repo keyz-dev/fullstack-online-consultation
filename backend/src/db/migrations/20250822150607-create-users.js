@@ -26,6 +26,10 @@ module.exports = {
           isEmail: true,
         },
       },
+      phoneNumber: {
+        type: Sequelize.STRING(20),
+        allowNull: true,
+      },
       password: {
         type: Sequelize.STRING(255),
         allowNull: true, // For OAuth users
@@ -40,7 +44,9 @@ module.exports = {
           "admin",
           "pharmacy",
           "pending_doctor",
-          "pending_pharmacy"
+          "pending_pharmacy",
+          "incomplete_doctor",
+          "incomplete_pharmacy"
         ),
         allowNull: false,
         defaultValue: "patient",

@@ -22,7 +22,6 @@ exports.registerPharmacy = async (req, res, next) => {
     if (error) throw new BadRequestError(error.details[0].message);
 
     const {
-      email,
       pharmacyName,
       licenseNumber,
       description,
@@ -30,8 +29,7 @@ exports.registerPharmacy = async (req, res, next) => {
       contactInfo,
       deliveryInfo,
       paymentMethods,
-      ...userData
-    } = parsedBody;
+    } = req.body;
 
     // Handle file uploads (similar to vendorApp)
     let uploadedFiles = {};
@@ -55,9 +53,12 @@ exports.registerPharmacy = async (req, res, next) => {
       paymentMethods: paymentMethods || ["cash"],
     };
 
+    // Get user ID from authenticated user
+    const userId = req.authUser.id;
+
     // Use the registration service
     const result = await RegistrationService.registerPharmacy(
-      userData,
+      userId,
       pharmacyData,
       uploadedFiles
     );

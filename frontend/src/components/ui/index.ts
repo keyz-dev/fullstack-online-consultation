@@ -38,10 +38,14 @@ export { default as StepSideBar } from "./StepSideBar";
 export { default as StepNavButtons } from "./StepNavButtons";
 export { default as ProgressSteps } from "./ProgressSteps";
 export { default as SecurityNotice } from "./SecurityNotice";
-export { default as MapSelector } from "./MapSelector";
+// MapSelector moved to maps/leaflet
 export { default as FileDropzone } from "./FileDropzone";
 export { default as UploadedFileItem } from "./UploadedFileItem";
 export { default as FilePreviewModal } from "./FilePreviewModal";
+
+// Enhanced Document Components
+export * from "./DocumentReview";
+export * from "./DocumentUpload";
 export { default as GuaranteeCard } from "./GuaranteeCard";
 export { default as StaggeredFadeIn } from "./StaggeredFadeIn";
 export { default as HeroSection } from "./HeroSection";

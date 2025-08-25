@@ -15,6 +15,7 @@ import {
   PatientRegisterRequest,
   DoctorRegisterRequest,
   PharmacyRegisterRequest,
+  InitiateRegistrationRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyEmailRequest,
@@ -41,6 +42,10 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; user: User }>;
   registerPharmacy: (
     userData: PharmacyRegisterRequest
+  ) => Promise<{ success: boolean; user: User }>;
+  initiateRegistration: (
+    userData: InitiateRegistrationRequest,
+    role: "doctor" | "pharmacy"
   ) => Promise<{ success: boolean; user: User }>;
   handleGoogleLogin: () => void;
   forgotPassword: (
@@ -113,7 +118,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const redirectBasedOnRole = (userData: User) => {
+    // Check for registration context first (for new registrations)
+    const context = sessionStorage.getItem("registrationContext");
+    if (context) {
+      const { type, returnUrl, returnStep, visitedSteps } = JSON.parse(context);
+      if (type === "doctor" && userData.role === "incomplete_doctor") {
+        // Clear the context
+        sessionStorage.removeItem("registrationContext");
+
+        // Redirect back to application with step context
+        router.push(
+          `${returnUrl}?step=${returnStep}&visited=${visitedSteps.join(",")}`
+        );
+        return;
+      }
+      if (type === "pharmacy" && userData.role === "incomplete_pharmacy") {
+        // Clear the context
+        sessionStorage.removeItem("registrationContext");
+
+        // Redirect back to application with step context
+        router.push(
+          `${returnUrl}?step=${returnStep}&visited=${visitedSteps.join(",")}`
+        );
+        return;
+      }
+    }
+
+    // Regular login redirection
     switch (userData.role) {
+      // Dashboard users
       case "admin":
         router.push("/admin");
         break;
@@ -126,6 +159,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       case "pharmacy":
         router.push("/pharmacy");
         break;
+
+      // Application tracking users
+      case "pending_doctor":
+        router.push("/doctor/application-status");
+        break;
+      case "pending_pharmacy":
+        router.push("/pharmacy/application-status");
+        break;
+
+      // Application form users
+      case "incomplete_doctor":
+        // Set visited steps for returning users
+        sessionStorage.setItem(
+          "registrationContext",
+          JSON.stringify({
+            type: "doctor",
+            returnUrl: "/register/doctor",
+            returnStep: 3, // Step 3 (Professional Info)
+            visitedSteps: [1, 2], // Mark steps 1 & 2 as visited
+          })
+        );
+        router.push("/register/doctor?step=3&visited=1,2");
+        break;
+      case "incomplete_pharmacy":
+        // Set visited steps for returning users
+        sessionStorage.setItem(
+          "registrationContext",
+          JSON.stringify({
+            type: "pharmacy",
+            returnUrl: "/register/pharmacy",
+            returnStep: 3, // Step 3 (Professional Info)
+            visitedSteps: [1, 2], // Mark steps 1 & 2 as visited
+          })
+        );
+        router.push("/register/pharmacy?step=3&visited=1,2");
+        break;
+
       default:
         router.push("/");
     }
@@ -248,6 +318,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const initiateRegistration = async (
+    userData: InitiateRegistrationRequest,
+    role: "doctor" | "pharmacy"
+  ) => {
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const data = await authAPI.initiateRegistration(userData, role);
+      return { success: true, user: data.data.user };
+    } catch (error: any) {
+      const errorMessage = extractErrorMessage(error);
+      setAuthError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = useGoogleLogin({
     scope: "profile email openid",
     onSuccess: async (tokenResponse) => {
@@ -339,6 +428,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     registerPatient,
     registerDoctor,
     registerPharmacy,
+    initiateRegistration,
     handleGoogleLogin,
     forgotPassword,
     resetPassword,

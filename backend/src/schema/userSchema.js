@@ -1,15 +1,15 @@
 const Joi = require("joi");
 
 const addressSchema = Joi.object({
-  street: Joi.string().optional(),
-  city: Joi.string().optional(),
-  state: Joi.string().optional(),
-  country: Joi.string().optional(),
-  postalCode: Joi.string().optional(),
-  fullAddress: Joi.string().optional(),
+  street: Joi.string().optional().allow(null, ""),
+  city: Joi.string().optional().allow(null, ""),
+  state: Joi.string().optional().allow(null, ""),
+  country: Joi.string().optional().allow(null, ""),
+  postalCode: Joi.string().optional().allow(null, ""),
+  fullAddress: Joi.string().optional().allow(null, ""),
   coordinates: Joi.object({
-    lat: Joi.number().optional(),
-    lng: Joi.number().optional(),
+    lat: Joi.number().optional().allow(null, ""),
+    lng: Joi.number().optional().allow(null, ""),
   }).optional(),
 });
 
@@ -58,6 +58,12 @@ const baseUserSchema = Joi.object({
     "string.email": "Please provide a valid email address",
     "any.required": "Email is required",
   }),
+  phoneNumber: Joi.string()
+    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .optional()
+    .messages({
+      "string.pattern.base": "Please provide a valid phone number",
+    }),
   password: Joi.string().min(6).max(255).messages({
     "string.min": "Password must be at least 6 characters long",
     "string.max": "Password cannot exceed 255 characters",
@@ -67,6 +73,15 @@ const baseUserSchema = Joi.object({
     "date.max": "Date of birth cannot be in the future",
   }),
   address: addressSchema.optional(),
+});
+
+// Initiate registration schema (for basic user info only)
+const initiateRegistrationSchema = baseUserSchema.keys({
+  password: Joi.string().min(6).max(255).required().messages({
+    "string.min": "Password must be at least 6 characters long",
+    "string.max": "Password cannot exceed 255 characters",
+    "any.required": "Password is required",
+  }),
 });
 
 // Admin registration schema
@@ -101,12 +116,7 @@ const patientRegisterSchema = baseUserSchema.keys({
 });
 
 // Doctor registration schema
-const doctorRegisterSchema = baseUserSchema.keys({
-  password: Joi.string().min(6).max(255).required().messages({
-    "string.min": "Password must be at least 6 characters long",
-    "string.max": "Password cannot exceed 255 characters",
-    "any.required": "Password is required",
-  }),
+const doctorRegisterSchema = Joi.object({
   licenseNumber: Joi.string().min(5).max(50).required().messages({
     "string.min": "License number must be at least 5 characters long",
     "string.max": "License number cannot exceed 50 characters",
@@ -126,7 +136,7 @@ const doctorRegisterSchema = baseUserSchema.keys({
   languages: Joi.array().items(Joi.string()).min(1).optional().messages({
     "array.min": "At least one language must be specified",
   }),
-  specialties: Joi.array().items(Joi.string()).min(1).required().messages({
+  specialties: Joi.array().items(Joi.number()).min(1).required().messages({
     "array.min": "At least one specialty must be specified",
     "any.required": "Specialties are required",
   }),
@@ -159,12 +169,7 @@ const doctorRegisterSchema = baseUserSchema.keys({
 });
 
 // Pharmacy registration schema
-const pharmacyRegisterSchema = baseUserSchema.keys({
-  password: Joi.string().min(6).max(255).required().messages({
-    "string.min": "Password must be at least 6 characters long",
-    "string.max": "Password cannot exceed 255 characters",
-    "any.required": "Password is required",
-  }),
+const pharmacyRegisterSchema = Joi.object({
   pharmacyName: Joi.string().min(2).max(200).required().messages({
     "string.min": "Pharmacy name must be at least 2 characters long",
     "string.max": "Pharmacy name cannot exceed 200 characters",
@@ -287,6 +292,7 @@ const userPasswordUpdateSchema = Joi.object({
 });
 
 module.exports = {
+  initiateRegistrationSchema,
   adminRegisterSchema,
   patientRegisterSchema,
   doctorRegisterSchema,

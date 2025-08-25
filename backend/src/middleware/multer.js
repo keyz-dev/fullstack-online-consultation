@@ -88,6 +88,7 @@ const storage = inProduction
 // --- File Filter ---
 const fileFilter = (req, file, cb) => {
   // Allow images for most uploads
+
   const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|ico|avif)$/;
   // Allow documents for uploads
   const documentExtensions = /\.(pdf|doc|docx|txt|jpg|jpeg|png|webp)$/;

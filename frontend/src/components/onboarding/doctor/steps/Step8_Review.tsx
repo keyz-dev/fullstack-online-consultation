@@ -9,9 +9,16 @@ import {
   CreditCard,
   User,
   Stethoscope,
+  Phone,
+  Mail,
+  Calendar,
+  DollarSign,
+  Clock,
 } from "lucide-react";
+import { PaymentMethod, Address } from "@/api";
+import { toast } from "react-toastify";
 
-const Step6_Review = () => {
+const Step8_Review = () => {
   const {
     doctorData,
     submitDoctorApplication,
@@ -24,33 +31,31 @@ const Step6_Review = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleSubmit = async () => {
-    if (!agreedToTerms) return;
+    if (!agreedToTerms) {
+      toast.error(
+        "You must agree to the terms and conditions before submitting."
+      );
+      return;
+    }
 
     const result = await submitDoctorApplication();
     if (!result.success) {
       // Handle error - you might want to show a toast or error message
       console.error("Submission failed:", result.error);
+      toast.error(`Submission failed: ${result.error}`);
     }
   };
 
-  const formatAddress = (address: any) => {
+  const formatAddress = (address: Address | undefined) => {
     if (!address) return "Not provided";
-    return [
-      address.streetAddress,
+    const parts = [
+      address.street,
       address.city,
       address.state,
       address.country,
       address.postalCode,
-    ]
-      .filter(Boolean)
-      .join(", ");
-  };
-
-  const formatPaymentMethods = (methods: string[]) => {
-    if (!methods || methods.length === 0) return "None selected";
-    return methods
-      .map((method) => method.replace("_", " ").toUpperCase())
-      .join(", ");
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "Not provided";
   };
 
   const ReviewSection = ({
@@ -65,7 +70,7 @@ const Step6_Review = () => {
     isComplete?: boolean;
   }) => (
     <div
-      className={`border rounded-lg p-4 ${
+      className={`border rounded-lg p-4 transition-all duration-300 ${
         isComplete
           ? "border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20"
           : "border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20"
@@ -96,13 +101,31 @@ const Step6_Review = () => {
     </div>
   );
 
+  const InfoRow = ({
+    label,
+    value,
+    icon,
+  }: {
+    label: string;
+    value: string;
+    icon?: React.ReactNode;
+  }) => (
+    <div className="flex items-center space-x-2">
+      {icon && <span className="text-gray-400">{icon}</span>}
+      <span className="font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">
+        {label}:
+      </span>
+      <span className="text-gray-900 dark:text-white">{value}</span>
+    </div>
+  );
+
   const isStepComplete = (step: number) => {
     switch (step) {
       case 0: // Basic Info
         return !!(
           doctorData.name &&
           doctorData.email &&
-          doctorData.phone &&
+          doctorData.phoneNumber &&
           doctorData.licenseNumber &&
           doctorData.experience &&
           doctorData.bio
@@ -111,7 +134,8 @@ const Step6_Review = () => {
         return !!(doctorData.specialties && doctorData.specialties.length > 0);
       case 2: // Address
         return !!(
-          doctorData.coordinates && doctorData.clinicAddress?.fullAddress
+          doctorData.clinicAddress?.fullAddress &&
+          doctorData.clinicAddress?.coordinates
         );
       case 3: // Documents
         return !!(doctorData.documents && doctorData.documents.length > 0);
@@ -139,6 +163,29 @@ const Step6_Review = () => {
           </p>
         </div>
 
+        {/* Summary Section */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                Application Summary
+              </h3>
+              <p className="text-blue-700 dark:text-blue-300 text-sm">
+                Review all information before submitting your application
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                {[0, 1, 2, 3, 4].filter((step) => isStepComplete(step)).length}
+                /5
+              </div>
+              <div className="text-blue-700 dark:text-blue-300 text-sm">
+                Steps Complete
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-6">
           {/* Basic Information */}
           <ReviewSection
@@ -147,65 +194,51 @@ const Step6_Review = () => {
             isComplete={isStepComplete(0)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Name:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.name || "Not provided"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Email:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.email || "Not provided"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Phone:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.phone || "Not provided"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  License Number:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.licenseNumber || "Not provided"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Experience:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.experience
+              <InfoRow
+                label="Full Name"
+                value={doctorData.name || "Not provided"}
+                icon={<User size={14} />}
+              />
+              <InfoRow
+                label="Email"
+                value={doctorData.email || "Not provided"}
+                icon={<Mail size={14} />}
+              />
+              <InfoRow
+                label="Phone"
+                value={doctorData.phoneNumber || "Not provided"}
+                icon={<Phone size={14} />}
+              />
+              <InfoRow
+                label="License Number"
+                value={doctorData.licenseNumber || "Not provided"}
+              />
+              <InfoRow
+                label="Experience"
+                value={
+                  doctorData.experience
                     ? `${doctorData.experience} years`
-                    : "Not provided"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Languages:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.languages?.length
+                    : "Not provided"
+                }
+                icon={<Calendar size={14} />}
+              />
+              <InfoRow
+                label="Languages"
+                value={
+                  doctorData.languages?.length
                     ? doctorData.languages.join(", ")
-                    : "Not provided"}
-                </span>
-              </div>
+                    : "Not provided"
+                }
+              />
               <div className="md:col-span-2">
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Bio:
-                </span>
-                <p className="mt-1 text-gray-900 dark:text-white">
-                  {doctorData.bio || "Not provided"}
-                </p>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">
+                    Bio:
+                  </span>
+                  <p className="text-gray-900 dark:text-white">
+                    {doctorData.bio || "Not provided"}
+                  </p>
+                </div>
               </div>
             </div>
           </ReviewSection>
@@ -225,7 +258,7 @@ const Step6_Review = () => {
                   doctorData.specialties.map((specialty, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs"
+                      className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs font-medium"
                     >
                       {specialty}
                     </span>
@@ -245,33 +278,23 @@ const Step6_Review = () => {
             icon={<MapPin size={20} className="text-purple-600" />}
             isComplete={isStepComplete(2)}
           >
-            <div className="text-sm space-y-2">
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Hospital/Clinic:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.operationalHospital || "Not provided"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Address:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {formatAddress(doctorData.clinicAddress)}
-                </span>
-              </div>
-              {doctorData.coordinates && (
-                <div>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
-                    Coordinates:
-                  </span>
-                  <span className="ml-2 text-gray-900 dark:text-white">
-                    {doctorData.coordinates.lat.toFixed(6)},{" "}
-                    {doctorData.coordinates.lng.toFixed(6)}
-                  </span>
-                </div>
+            <div className="text-sm space-y-3">
+              <InfoRow
+                label="Hospital/Clinic"
+                value={doctorData.operationalHospital || "Not provided"}
+              />
+              <InfoRow
+                label="Full Address"
+                value={formatAddress(doctorData.clinicAddress)}
+                icon={<MapPin size={14} />}
+              />
+              {doctorData.clinicAddress?.coordinates && (
+                <InfoRow
+                  label="Coordinates"
+                  value={`${doctorData.clinicAddress.coordinates.lat.toFixed(
+                    6
+                  )}, ${doctorData.clinicAddress.coordinates.lng.toFixed(6)}`}
+                />
               )}
             </div>
           </ReviewSection>
@@ -286,17 +309,20 @@ const Step6_Review = () => {
               <span className="font-medium text-gray-700 dark:text-gray-300">
                 Uploaded Documents:
               </span>
-              <div className="mt-2 space-y-1">
+              <div className="mt-2 space-y-2">
                 {doctorData.documents?.length ? (
                   doctorData.documents.map((doc, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border"
+                      className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600"
                     >
-                      <span className="text-gray-900 dark:text-white">
-                        {doc.documentName || doc.name}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center space-x-3">
+                        <FileText size={16} className="text-orange-500" />
+                        <span className="text-gray-900 dark:text-white font-medium">
+                          {doc.documentName || doc.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
                         {(doc.size / 1024 / 1024).toFixed(2)} MB
                       </span>
                     </div>
@@ -317,33 +343,66 @@ const Step6_Review = () => {
             isComplete={isStepComplete(4)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Consultation Fee:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.consultationFee
+              <InfoRow
+                label="Consultation Fee"
+                value={
+                  doctorData.consultationFee
                     ? `${doctorData.consultationFee} XAF`
-                    : "Not set"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Duration:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {doctorData.consultationDuration
+                    : "Not set"
+                }
+                icon={<DollarSign size={14} />}
+              />
+              <InfoRow
+                label="Duration"
+                value={
+                  doctorData.consultationDuration
                     ? `${doctorData.consultationDuration} minutes`
-                    : "Not set"}
-                </span>
-              </div>
+                    : "Not set"
+                }
+                icon={<Clock size={14} />}
+              />
               <div className="md:col-span-2">
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Payment Methods:
-                </span>
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {formatPaymentMethods(doctorData.paymentMethods)}
-                </span>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">
+                    Payment Methods:
+                  </span>
+                  <div className="flex-1">
+                    {doctorData.paymentMethods?.length ? (
+                      <div className="space-y-2">
+                        {doctorData.paymentMethods.map((method, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <CreditCard
+                                size={14}
+                                className="text-indigo-500"
+                              />
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {method.method === "OM"
+                                  ? "Orange Money"
+                                  : "MTN Mobile Money"}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-gray-900 dark:text-white text-xs">
+                                {method.value.accountNumber}
+                              </div>
+                              <div className="text-gray-500 dark:text-gray-400 text-xs">
+                                {method.value.accountName}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-400">
+                        No payment methods configured
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </ReviewSection>
@@ -403,4 +462,4 @@ const Step6_Review = () => {
   );
 };
 
-export default Step6_Review;
+export default Step8_Review;

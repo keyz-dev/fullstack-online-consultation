@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { Button } from "../../../ui";
 
-const Step7_Success = () => {
+const Step9_Success = () => {
   const router = useRouter();
 
   return (
@@ -63,7 +63,7 @@ const Step7_Success = () => {
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-500 mr-2">3.</span>
-                  You'll receive an email with the approval decision
+                  You&apos;ll receive an email with the approval decision
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-500 mr-2">4.</span>
@@ -102,4 +102,4 @@ const Step7_Success = () => {
   );
 };
 
-export default Step7_Success;
+export default Step9_Success;

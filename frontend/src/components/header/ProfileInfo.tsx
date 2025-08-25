@@ -84,31 +84,78 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
 
         {showUserDropdown && (
           <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-sm shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-10">
-            <button
-              onClick={() => {
-                setShowUserDropdown(false);
-                switch (user.role) {
-                  case "admin":
-                    router.push("/admin");
-                    break;
-                  case "doctor":
-                    router.push("/doctor");
-                    break;
-                  case "patient":
-                    router.push("/patient");
-                    break;
-                  case "pharmacy":
-                    router.push("/pharmacy");
-                    break;
-                  default:
-                    router.push("/");
-                }
-              }}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              <LayoutDashboard size={16} />
-              Dashboard
-            </button>
+            {/* Dashboard/Status/Application Links */}
+            {["admin", "doctor", "patient", "pharmacy"].includes(user.role) ? (
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  switch (user.role) {
+                    case "admin":
+                      router.push("/admin");
+                      break;
+                    case "doctor":
+                      router.push("/doctor");
+                      break;
+                    case "patient":
+                      router.push("/patient");
+                      break;
+                    case "pharmacy":
+                      router.push("/pharmacy");
+                      break;
+                    default:
+                      router.push("/");
+                  }
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <LayoutDashboard size={16} />
+                Dashboard
+              </button>
+            ) : user.role === "pending_doctor" ? (
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  router.push("/doctor/application-status");
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <Package size={16} />
+                Application Status
+              </button>
+            ) : user.role === "pending_pharmacy" ? (
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  router.push("/pharmacy/application-status");
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <Package size={16} />
+                Application Status
+              </button>
+            ) : user.role === "incomplete_doctor" ? (
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  router.push("/register/doctor?step=3&visited=1,2");
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <Store size={16} />
+                Complete Doctor Application
+              </button>
+            ) : user.role === "incomplete_pharmacy" ? (
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  router.push("/register/pharmacy?step=3&visited=1,2");
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <Store size={16} />
+                Complete Pharmacy Application
+              </button>
+            ) : null}
 
             <button
               onClick={() => router.push("/profile")}
@@ -117,6 +164,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
               <User size={16} />
               My Profile
             </button>
+            {/* Application Links - Only show for patients and incomplete users */}
             {user.role === "patient" && (
               <>
                 <hr className="my-2 text-line_clr" />
@@ -129,6 +177,21 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
                 >
                   <Store size={16} />
                   Become a Doctor
+                </button>
+              </>
+            )}
+            {user.role === "patient" && (
+              <>
+                <hr className="my-2 text-line_clr" />
+                <button
+                  onClick={() => {
+                    setShowUserDropdown(false);
+                    router.push("/register/pharmacy");
+                  }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent hover:bg-gray-200 dark:hover:bg-gray-700"
+                >
+                  <Store size={16} />
+                  Add Pharmacy
                 </button>
               </>
             )}
@@ -172,14 +235,17 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
         </button>
       </Link>
       <hr className="w-0 lg:w-[2px] lg:h-8 border-none bg-slate-200 dark:bg-accent"></hr>
-      <Button
-        onClickHandler={() => router.push("/register/pharmacy")}
-        additionalClasses={`primarybtn min-h-fit ${
-          mobile ? "text-left justify-start" : "justify-center"
-        }`}
-        text="Add Pharmacy"
-        leadingIcon={<Store size={16} />}
-      />
+      {/* Only show Add Pharmacy button for non-authenticated users or patients */}
+      {!user && (
+        <Button
+          onClickHandler={() => router.push("/register/pharmacy")}
+          additionalClasses={`primarybtn min-h-fit ${
+            mobile ? "text-left justify-start" : "justify-center"
+          }`}
+          text="Add Pharmacy"
+          leadingIcon={<Store size={16} />}
+        />
+      )}
     </div>
   );
 };

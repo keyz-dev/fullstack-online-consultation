@@ -24,8 +24,6 @@ const initialState = {
     total: 0,
     totalPages: 1,
   },
-  searchResults: [],
-  searchLoading: false,
 };
 
 // Action types
@@ -35,8 +33,6 @@ const SPECIALTY_ACTIONS = {
   SET_SPECIALTIES: "SET_SPECIALTIES",
   SET_FILTERS: "SET_FILTERS",
   SET_PAGINATION: "SET_PAGINATION",
-  SET_SEARCH_RESULTS: "SET_SEARCH_RESULTS",
-  SET_SEARCH_LOADING: "SET_SEARCH_LOADING",
   REFRESH_SPECIALTIES: "REFRESH_SPECIALTIES",
 };
 
@@ -74,19 +70,6 @@ const specialtyReducer = (state: any, action: any) => {
       return {
         ...state,
         pagination: { ...state.pagination, ...action.payload },
-      };
-
-    case SPECIALTY_ACTIONS.SET_SEARCH_RESULTS:
-      return {
-        ...state,
-        searchResults: action.payload,
-        searchLoading: false,
-      };
-
-    case SPECIALTY_ACTIONS.SET_SEARCH_LOADING:
-      return {
-        ...state,
-        searchLoading: action.payload,
       };
 
     case SPECIALTY_ACTIONS.REFRESH_SPECIALTIES:
@@ -128,29 +111,6 @@ export const BaseSpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
         err?.response?.data?.message ||
         "Failed to load specialties. Please try again.";
       dispatch({ type: SPECIALTY_ACTIONS.SET_ERROR, payload: errorMessage });
-    }
-  }, []);
-
-  // Search specialties
-  const searchSpecialties = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      dispatch({ type: SPECIALTY_ACTIONS.SET_SEARCH_RESULTS, payload: [] });
-      return;
-    }
-
-    try {
-      dispatch({ type: SPECIALTY_ACTIONS.SET_SEARCH_LOADING, payload: true });
-
-      const response = await homeApi.searchSpecialties(query, 20);
-      const searchResults = response.data || [];
-
-      dispatch({
-        type: SPECIALTY_ACTIONS.SET_SEARCH_RESULTS,
-        payload: searchResults,
-      });
-    } catch (err: any) {
-      console.error("Error searching specialties:", err);
-      dispatch({ type: SPECIALTY_ACTIONS.SET_SEARCH_RESULTS, payload: [] });
     }
   }, []);
 
@@ -264,9 +224,7 @@ export const BaseSpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
     // State
     specialties: getPaginatedSpecialties(),
     allSpecialties: state.specialties,
-    searchResults: state.searchResults,
     loading: state.loading,
-    searchLoading: state.searchLoading,
     error: state.error,
     filters: state.filters,
     pagination: state.pagination,
@@ -276,7 +234,6 @@ export const BaseSpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Actions
     fetchSpecialties,
-    searchSpecialties,
     handleSearch,
     handleFilterChange,
     handleSortChange,

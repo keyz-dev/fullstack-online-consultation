@@ -1,11 +1,14 @@
 import React from "react";
 import {
   User as LucideUser,
+  Mail,
   Stethoscope,
   MapPin,
   FileText,
   CreditCard,
   CheckCircle,
+  Award,
+  Building,
 } from "lucide-react";
 import { StepSideBar } from "@/components/ui";
 import { useDoctorApplication } from "@/contexts/DoctorApplicationContext";
@@ -24,11 +27,25 @@ const DoctorSidebar: React.FC<DoctorSidebarProps> = ({
 
   const steps = [
     {
-      id: STEPS.BASIC_INFO,
+      id: STEPS.BASIC_USER_INFO,
       icon: <LucideUser size={20} />,
-      title: getStepTitle(STEPS.BASIC_INFO),
-      description: getStepSubtitle(STEPS.BASIC_INFO),
-      completed: isStepCompleted(STEPS.BASIC_INFO),
+      title: getStepTitle(STEPS.BASIC_USER_INFO),
+      description: getStepSubtitle(STEPS.BASIC_USER_INFO),
+      completed: isStepCompleted(STEPS.BASIC_USER_INFO),
+    },
+    {
+      id: STEPS.EMAIL_VERIFICATION,
+      icon: <Mail size={20} />,
+      title: getStepTitle(STEPS.EMAIL_VERIFICATION),
+      description: getStepSubtitle(STEPS.EMAIL_VERIFICATION),
+      completed: isStepCompleted(STEPS.EMAIL_VERIFICATION),
+    },
+    {
+      id: STEPS.PROFESSIONAL_INFO,
+      icon: <Award size={20} />,
+      title: getStepTitle(STEPS.PROFESSIONAL_INFO),
+      description: getStepSubtitle(STEPS.PROFESSIONAL_INFO),
+      completed: isStepCompleted(STEPS.PROFESSIONAL_INFO),
     },
     {
       id: STEPS.SPECIALTIES,

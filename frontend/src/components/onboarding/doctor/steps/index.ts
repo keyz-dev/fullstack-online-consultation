@@ -1,7 +1,9 @@
-export { default as Step1_BasicInfo } from "./Step1_BasicInfo";
-export { default as Step2_Specialties } from "./Step2_Specialties";
-export { default as Step3_AddressLocation } from "./Step3_AddressLocation";
-export { default as Step4_Documents } from "./Step4_Documents";
-export { default as Step5_PaymentSetup } from "./Step5_PaymentSetup";
-export { default as Step6_Review } from "./Step6_Review";
-export { default as Step7_Success } from "./Step7_Success";
+export { default as Step1_BasicUserInfo } from "./Step1_BasicUserInfo";
+export { default as Step2_EmailVerification } from "./Step2_EmailVerification";
+export { default as Step3_ProfessionalInfo } from "./Step3_ProfessionalInfo";
+export { default as Step4_Specialties } from "./Step4_Specialties";
+export { default as Step5_AddressLocation } from "./Step5_AddressLocation";
+export { default as Step6_Documents } from "./Step6_Documents";
+export { default as Step7_PaymentSetup } from "./Step7_PaymentSetup";
+export { default as Step8_Review } from "./Step8_Review";
+export { default as Step9_Success } from "./Step9_Success";

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDoctorApplication } from "@/contexts/DoctorApplicationContext";
 import {
   Input,
@@ -6,9 +6,9 @@ import {
   StepNavButtons,
   TagInput,
   ContactInfo,
+  FileUploader,
 } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { validateContactForm } from "@/utils/validateContactForm";
 
 interface ContactField {
   id: string;
@@ -22,18 +22,39 @@ const Step1_BasicInfo = () => {
     useDoctorApplication();
   const router = useRouter();
 
-  const [contactFields, setContactFields] = useState<ContactField[]>([]);
-
   // Define contact types (can be fetched from backend if needed)
-  const contactTypes = [
-    { id: "phone", label: "Phone Number", type: "tel" },
-    { id: "whatsapp", label: "WhatsApp", type: "tel" },
-    { id: "telegram", label: "Telegram", type: "tel" },
-    { id: "website", label: "Website URL", type: "url" },
-    { id: "facebook", label: "Facebook", type: "url" },
-    { id: "instagram", label: "Instagram", type: "url" },
-    { id: "linkedin", label: "LinkedIn", type: "url" },
-  ];
+  const contactTypes = React.useMemo(
+    () => [
+      { id: "phone", label: "Phone Number", type: "tel" },
+      { id: "whatsapp", label: "WhatsApp", type: "tel" },
+      { id: "telegram", label: "Telegram", type: "tel" },
+      { id: "website", label: "Website URL", type: "url" },
+      { id: "facebook", label: "Facebook", type: "url" },
+      { id: "instagram", label: "Instagram", type: "url" },
+      { id: "linkedin", label: "LinkedIn", type: "url" },
+    ],
+    []
+  );
+
+  const [contactFields, setContactFields] = useState<ContactField[]>([]);
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Initialize contact fields from context data
+  useEffect(() => {
+    if (doctorData.contactInfo.length > 0) {
+      const fields = doctorData.contactInfo.map((contact) => ({
+        id: contact.type,
+        label:
+          contactTypes.find((type) => type.id === contact.type)?.label ||
+          contact.type,
+        type:
+          contactTypes.find((type) => type.id === contact.type)?.type || "text",
+        value: contact.value,
+      }));
+      setContactFields(fields);
+    }
+  }, [doctorData.contactInfo]);
 
   const [errors, setErrors] = useState({
     name: "",
@@ -63,6 +84,18 @@ const Step1_BasicInfo = () => {
     updateField(field, values);
   };
 
+  // Update context when contact fields change
+  const handleContactFieldsChange = (fields: ContactField[]) => {
+    setContactFields(fields);
+
+    // Update the context with the new contact info
+    const contactInfo = fields.map(({ id: type, value }) => ({
+      type,
+      value,
+    }));
+    updateField("contactInfo", contactInfo);
+  };
+
   const validateForm = () => {
     const newErrors = {
       name: "",
@@ -88,11 +121,6 @@ const Step1_BasicInfo = () => {
       isValid = false;
     }
 
-    if (!doctorData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-      isValid = false;
-    }
-
     if (!doctorData.password) {
       newErrors.password = "Password is required";
       isValid = false;
@@ -115,8 +143,59 @@ const Step1_BasicInfo = () => {
     }
 
     // Validate contact fields
-    if (!validateContactForm(contactFields, setErrors)) {
+    if (contactFields.length === 0) {
+      newErrors.contactFields = "At least one contact field is required";
       isValid = false;
+    } else {
+      // Validate each contact field
+      const contactErrors = contactFields.map((field) => {
+        const error = { value: "" };
+
+        if (!field.value.trim()) {
+          error.value = `${field.label} is required`;
+          isValid = false;
+          return error;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+
+        switch (field.type) {
+          case "email":
+            if (!emailRegex.test(field.value)) {
+              error.value = "Please enter a valid email address";
+              isValid = false;
+            }
+            break;
+
+          case "tel":
+            if (!phoneRegex.test(field.value.replace(/\s/g, ""))) {
+              error.value = "Please enter a valid phone number";
+              isValid = false;
+            }
+            break;
+
+          case "url":
+            try {
+              new URL(field.value);
+            } catch {
+              error.value = "Please enter a valid URL";
+              isValid = false;
+            }
+            break;
+        }
+
+        return error;
+      });
+
+      // Check if any contact field has errors
+      const hasContactErrors = contactErrors.some(
+        (error) => error.value !== ""
+      );
+      if (hasContactErrors) {
+        newErrors.contactFields = "Please fix contact field errors";
+        isValid = false;
+      }
     }
 
     setErrors(newErrors);
@@ -133,25 +212,17 @@ const Step1_BasicInfo = () => {
       value,
     }));
 
+    if (avatar) {
+      updateField("avatar", avatar);
+    }
+
     // Update the doctor data with contact info
     updateField("contactInfo", contactInfo);
-
-    // Extract phone and email from contact fields for backward compatibility
-    const phoneField = contactFields.find((field) => field.type === "tel");
-    const emailField = contactFields.find((field) => field.type === "email");
-
-    if (phoneField?.value) {
-      updateField("phone", phoneField.value);
-    }
-    if (emailField?.value) {
-      updateField("email", emailField.value);
-    }
-
     nextStep();
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="w-full max-w-2xl mx-auto">
       <form
         className="py-4 sm:py-6"
         encType="multipart/form-data"
@@ -218,7 +289,7 @@ const Step1_BasicInfo = () => {
           <div className="space-y-4">
             <ContactInfo
               contactFields={contactFields}
-              setContactFields={setContactFields}
+              setContactFields={handleContactFieldsChange}
               contactTypes={contactTypes}
               errors={errors}
             />
@@ -232,16 +303,26 @@ const Step1_BasicInfo = () => {
           </div>
 
           {/* Bio */}
-          <TextArea
-            label="Professional Bio"
-            name="bio"
-            value={doctorData.bio}
-            error={errors.bio}
-            placeholder="Tell us about your medical background, expertise, and approach to patient care"
-            onChangeHandler={handleInputChange}
-            required
-            rows={4}
-          />
+          <div className="flex flex-col sm:flex-row gap-6">
+            <FileUploader
+              preview={avatarPreview || undefined}
+              onChange={(file) => {
+                setAvatar(file);
+                setAvatarPreview(URL.createObjectURL(file));
+              }}
+              text="Avatar"
+            />
+            <TextArea
+              label="Professional Bio"
+              name="bio"
+              value={doctorData.bio}
+              error={errors.bio}
+              placeholder="Tell us about your medical background, expertise, and approach to patient care"
+              onChangeHandler={handleInputChange}
+              required
+              rows={5}
+            />
+          </div>
 
           {/* Languages */}
           <TagInput
@@ -262,7 +343,9 @@ const Step1_BasicInfo = () => {
               !!doctorData.confirmPassword &&
               doctorData.password === doctorData.confirmPassword &&
               !!doctorData.bio &&
-              contactFields.length > 0
+              contactFields.length > 0 &&
+              doctorData.languages.length > 0 &&
+              contactFields.every((field) => field.value.trim() !== "")
             }
           />
         </div>

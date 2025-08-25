@@ -121,11 +121,22 @@ const VerifyAccountPage = () => {
         setIsValid(true);
         setShowSuccess(true);
 
-        console.log("This is res: ", res);
-
         // Delay redirection to show success state
         setTimeout(() => {
-          redirectBasedOnRole(res.user);
+          // Check if we have registration context for doctor application
+          const context = sessionStorage.getItem("registrationContext");
+          if (context && res.user?.role === "incomplete_doctor") {
+            const { returnUrl, returnStep, visitedSteps } = JSON.parse(context);
+            sessionStorage.removeItem("registrationContext");
+            router.push(
+              `${returnUrl}?step=${returnStep}&visited=${visitedSteps.join(
+                ","
+              )}`
+            );
+          } else {
+            // Fallback to regular redirection
+            redirectBasedOnRole(res.user);
+          }
         }, REDIRECT_DELAY);
       } else {
         setIsValid(false);

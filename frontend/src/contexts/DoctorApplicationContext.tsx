@@ -1,43 +1,43 @@
-import React, { createContext, useState, useContext } from "react";
-import { doctorAppApi } from "@/api/doctorApp";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { PaymentMethod, DoctorApplicationData, authAPI, Address } from "@/api";
+import { useRouter } from "next/navigation";
+import { extractErrorMessage } from "@/lib/utils";
 
 interface DoctorData {
-  // Step 1: Basic Information
+  // Step 1: Basic User Information (similar to admin registration)
   name: string;
   email: string;
-  phone: string;
   password: string;
   confirmPassword: string;
+  phoneNumber?: string;
+  gender?: string;
+  dob?: string;
+  address?: Address;
+  avatar?: File | null;
+
+  // Step 3: Professional Information (moved from old Step 1)
+  bio: string;
+  languages: string[];
+  contactInfo: Array<{ type: string; value: string }>;
   licenseNumber: string;
   experience: string;
-  bio: string;
-  education: string[];
-  languages: string[];
 
-  // Step 2: Specialties
+  // Step 4: Specialties
   specialties: string[];
 
-  // Step 3: Address & Location
-  clinicAddress: {
-    streetAddress: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    fullAddress: string;
-  };
-  coordinates: { lat: number; lng: number } | null;
+  // Step 5: Address & Location
+  clinicAddress: Address;
   operationalHospital: string;
 
-  // Step 4: Documents
+  // Step 6: Documents
   documents: any[];
 
-  // Step 5: Payment Setup
+  // Step 7: Payment Setup
   consultationFee: string;
   consultationDuration: string;
-  paymentMethods: string[];
+  paymentMethods: PaymentMethod[];
 
-  // Step 6: Review
+  // Step 8: Review
   agreedToTerms: boolean;
 }
 
@@ -57,6 +57,7 @@ interface DoctorApplicationContextType {
   nextStep: () => void;
   prevStep: () => void;
   goToStep: (step: number) => void;
+  submitStep1: () => Promise<{ success: boolean; error?: string }>;
   submitDoctorApplication: () => Promise<{
     success: boolean;
     data?: any;
@@ -75,62 +76,100 @@ const DoctorApplicationContext = createContext<
 >(undefined);
 
 const STEPS = {
-  BASIC_INFO: 0,
-  SPECIALTIES: 1,
-  ADDRESS_LOCATION: 2,
-  DOCUMENTS: 3,
-  PAYMENT_SETUP: 4,
-  REVIEW: 5,
-  SUCCESS: 6,
+  BASIC_USER_INFO: 1,
+  EMAIL_VERIFICATION: 2,
+  PROFESSIONAL_INFO: 3,
+  SPECIALTIES: 4,
+  ADDRESS_LOCATION: 5,
+  DOCUMENTS: 6,
+  PAYMENT_SETUP: 7,
+  REVIEW: 8,
+  SUCCESS: 9,
 };
 
 export const DoctorApplicationProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [activeStep, setActiveStep] = useState(STEPS.BASIC_INFO);
-  const [visitedSteps, setVisitedSteps] = useState([STEPS.BASIC_INFO]);
+  const router = useRouter();
+  const [activeStep, setActiveStep] = useState(STEPS.BASIC_USER_INFO);
+  const [visitedSteps, setVisitedSteps] = useState([STEPS.BASIC_USER_INFO]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, any>>({});
 
   const [doctorData, setDoctorData] = useState<DoctorData>({
-    // Step 1: Basic Information
+    // Step 1: Basic User Information
     name: "",
     email: "",
-    phone: "",
     password: "",
     confirmPassword: "",
-    licenseNumber: "",
-    experience: "",
-    bio: "",
-    education: [],
-    languages: [],
-
-    // Step 2: Specialties
-    specialties: [],
-
-    // Step 3: Address & Location
-    clinicAddress: {
-      streetAddress: "",
+    phoneNumber: "",
+    gender: "",
+    dob: "",
+    address: {
+      street: "",
+      fullAddress: "",
       city: "",
       state: "",
       country: "Cameroon",
       postalCode: "00000",
-      fullAddress: "", // For display purposes
+      coordinates: undefined,
     },
-    coordinates: null, // {lat, lng}
+    avatar: null,
+
+    // Step 3: Professional Information
+    bio: "",
+    languages: [],
+    contactInfo: [],
+    licenseNumber: "",
+    experience: "",
+
+    // Step 4: Specialties
+    specialties: [],
+
+    // Step 5: Address & Location
+    clinicAddress: {
+      street: "",
+      fullAddress: "",
+      city: "",
+      state: "",
+      country: "Cameroon",
+      postalCode: "00000",
+      coordinates: undefined,
+    },
     operationalHospital: "",
 
-    // Step 4: Documents
+    // Step 6: Documents
     documents: [],
 
-    // Step 5: Payment Setup
+    // Step 7: Payment Setup
     consultationFee: "",
     consultationDuration: "30",
-    paymentMethods: [],
+    paymentMethods: [] as PaymentMethod[],
 
-    // Step 6: Review
+    // Step 8: Review
     agreedToTerms: false,
   });
+
+  // Handle return from email verification
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnStep = urlParams.get("step");
+    const visitedStepsParam = urlParams.get("visited");
+
+    if (returnStep && visitedStepsParam) {
+      const step = parseInt(returnStep);
+      const visited = visitedStepsParam.split(",").map(Number);
+
+      // Set the active step
+      setActiveStep(step);
+
+      // Mark steps as visited
+      setVisitedSteps(visited);
+
+      // Clean up URL
+      window.history.replaceState({}, "", "/register/doctor");
+    }
+  }, []);
 
   // Update form data for a specific field
   const updateField = (field: string, value: any) => {
@@ -157,7 +196,7 @@ export const DoctorApplicationProvider: React.FC<{
 
   // Navigate to previous step
   const prevStep = () => {
-    setActiveStep((prev) => Math.max(prev - 1, STEPS.BASIC_INFO));
+    setActiveStep((prev) => Math.max(prev - 1, STEPS.BASIC_USER_INFO));
   };
 
   // Jump to a specific step (only if visited)
@@ -167,76 +206,86 @@ export const DoctorApplicationProvider: React.FC<{
     }
   };
 
-  // Submit doctor application
+  // Submit Step 1 (Basic User Information)
+  const submitStep1 = async () => {
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      // Call initiate registration
+      const response = await authAPI.initiateRegistration(
+        {
+          name: doctorData.name,
+          email: doctorData.email,
+          password: doctorData.password,
+          phoneNumber: doctorData.phoneNumber,
+          gender: doctorData.gender,
+          dob: doctorData.dob,
+          address: doctorData.address,
+          avatar: doctorData.avatar as File,
+        },
+        "doctor"
+      );
+
+      if (response.status === "success") {
+        // Store registration context for email verification
+        sessionStorage.setItem(
+          "registrationContext",
+          JSON.stringify({
+            type: "doctor",
+            returnUrl: "/register/doctor",
+            returnStep: STEPS.PROFESSIONAL_INFO,
+            visitedSteps: [STEPS.BASIC_USER_INFO, STEPS.EMAIL_VERIFICATION],
+          })
+        );
+
+        // Mark Step 2 as visited and redirect to email verification
+        setVisitedSteps((prev) => [...prev, STEPS.EMAIL_VERIFICATION]);
+        router.push(
+          `/verify-account?email=${encodeURIComponent(
+            doctorData.email
+          )}&from=register`
+        );
+
+        return { success: true };
+      } else {
+        const errorMessage = extractErrorMessage(response.message);
+        return {
+          success: false,
+          error: errorMessage || "Failed to submit basic information",
+        };
+      }
+    } catch (error: any) {
+      const errorMessage = extractErrorMessage(error);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Submit doctor application (Steps 3-8)
   const submitDoctorApplication = async () => {
     setIsLoading(true);
     setErrors({});
 
     try {
-      const formData = new FormData();
+      // Prepare doctor application data (without user data)
+      const doctorApplicationData: DoctorApplicationData = {
+        licenseNumber: doctorData.licenseNumber,
+        experience: parseInt(doctorData.experience),
+        bio: doctorData.bio,
+        languages: doctorData.languages,
+        specialties: doctorData.specialties,
+        clinicAddress: doctorData.clinicAddress,
+        operationalHospital: doctorData.operationalHospital,
+        consultationFee: parseInt(doctorData.consultationFee),
+        consultationDuration: parseInt(doctorData.consultationDuration),
+        paymentMethods: doctorData.paymentMethods,
+        documents: doctorData.documents,
+      };
 
-      // Basic Information (user data)
-      formData.append("name", doctorData.name);
-      formData.append("email", doctorData.email);
-      formData.append("password", doctorData.password);
-      formData.append("phone", doctorData.phone);
-
-      // Doctor-specific information
-      formData.append("licenseNumber", doctorData.licenseNumber);
-      formData.append("experience", doctorData.experience);
-      formData.append("bio", doctorData.bio);
-
-      // Arrays
-      formData.append("education", JSON.stringify(doctorData.education));
-      formData.append("languages", JSON.stringify(doctorData.languages));
-      formData.append("specialties", JSON.stringify(doctorData.specialties));
-
-      // Address & Location
-      formData.append(
-        "clinicAddress",
-        JSON.stringify(doctorData.clinicAddress)
-      );
-      formData.append("operationalHospital", doctorData.operationalHospital);
-
-      // Contact Info (format as expected by backend)
-      const contactInfo = [
-        {
-          type: "phone",
-          value: doctorData.phone,
-        },
-        {
-          type: "email",
-          value: doctorData.email,
-        },
-      ];
-      formData.append("contactInfo", JSON.stringify(contactInfo));
-
-      // Payment Setup
-      formData.append("consultationFee", doctorData.consultationFee);
-      formData.append("consultationDuration", doctorData.consultationDuration);
-
-      // Convert payment methods to expected format
-      const paymentMethods = doctorData.paymentMethods.map((method) => ({
-        method: method,
-        value: {
-          accountNumber: "N/A",
-          accountName: doctorData.name,
-        },
-      }));
-      formData.append("paymentMethods", JSON.stringify(paymentMethods));
-
-      // Documents (use doctorDocument field name as expected by backend)
-      if (doctorData.documents && doctorData.documents.length > 0) {
-        const limitedDocuments = doctorData.documents.slice(0, 10);
-        limitedDocuments.forEach((doc) => {
-          formData.append("doctorDocument", doc.file);
-          formData.append("documentNames", doc.documentName);
-        });
-      }
-
-      const response = await doctorAppApi.createDoctorSetup(formData);
-
-      if (response.success) {
+      const response = await authAPI.registerDoctor(doctorApplicationData);
+      if (response.status === "success") {
         setActiveStep(STEPS.SUCCESS);
         return { success: true, data: response.data };
       } else {
@@ -260,8 +309,12 @@ export const DoctorApplicationProvider: React.FC<{
   // Helper functions for UI
   const getStepTitle = (step: number) => {
     switch (step) {
-      case STEPS.BASIC_INFO:
+      case STEPS.BASIC_USER_INFO:
         return "Basic Information";
+      case STEPS.EMAIL_VERIFICATION:
+        return "Email Verification";
+      case STEPS.PROFESSIONAL_INFO:
+        return "Professional Information";
       case STEPS.SPECIALTIES:
         return "Medical Specialties";
       case STEPS.ADDRESS_LOCATION:
@@ -281,12 +334,16 @@ export const DoctorApplicationProvider: React.FC<{
 
   const getStepSubtitle = (step: number) => {
     switch (step) {
-      case STEPS.BASIC_INFO:
-        return "Enter your personal and professional details";
+      case STEPS.BASIC_USER_INFO:
+        return "Enter your personal information";
+      case STEPS.EMAIL_VERIFICATION:
+        return "Verify your email address";
+      case STEPS.PROFESSIONAL_INFO:
+        return "Enter your professional details";
       case STEPS.SPECIALTIES:
         return "Select your medical specialties";
       case STEPS.ADDRESS_LOCATION:
-        return "Verify your clinic location";
+        return "Verify your clinic/hospital location";
       case STEPS.DOCUMENTS:
         return "Upload verification documents";
       case STEPS.PAYMENT_SETUP:
@@ -302,7 +359,11 @@ export const DoctorApplicationProvider: React.FC<{
 
   const getStepIcon = (step: number) => {
     switch (step) {
-      case STEPS.BASIC_INFO:
+      case STEPS.BASIC_USER_INFO:
+        return "👤";
+      case STEPS.EMAIL_VERIFICATION:
+        return "📧";
+      case STEPS.PROFESSIONAL_INFO:
         return "👨‍⚕️";
       case STEPS.SPECIALTIES:
         return "🏥";
@@ -325,28 +386,34 @@ export const DoctorApplicationProvider: React.FC<{
     if (step > activeStep) return false;
 
     switch (step) {
-      case STEPS.BASIC_INFO:
+      case STEPS.BASIC_USER_INFO:
         return !!(
           doctorData.name &&
           doctorData.email &&
-          doctorData.phone &&
           doctorData.password &&
           doctorData.confirmPassword &&
-          doctorData.password === doctorData.confirmPassword &&
-          doctorData.bio
+          doctorData.password === doctorData.confirmPassword
         );
 
-      case STEPS.SPECIALTIES:
+      case STEPS.EMAIL_VERIFICATION:
+        // This step is completed when user returns from verification
+        return visitedSteps.includes(STEPS.EMAIL_VERIFICATION);
+
+      case STEPS.PROFESSIONAL_INFO:
         return !!(
-          doctorData.specialties &&
-          doctorData.specialties.length > 0 &&
+          doctorData.bio &&
+          doctorData.languages.length > 0 &&
           doctorData.licenseNumber &&
           doctorData.experience
         );
 
+      case STEPS.SPECIALTIES:
+        return !!(doctorData.specialties && doctorData.specialties.length > 0);
+
       case STEPS.ADDRESS_LOCATION:
         return !!(
-          doctorData.clinicAddress?.fullAddress && doctorData.coordinates
+          doctorData.clinicAddress?.fullAddress &&
+          doctorData.clinicAddress?.coordinates
         );
 
       case STEPS.DOCUMENTS:
@@ -384,6 +451,7 @@ export const DoctorApplicationProvider: React.FC<{
     nextStep,
     prevStep,
     goToStep,
+    submitStep1,
     submitDoctorApplication,
 
     // Helpers

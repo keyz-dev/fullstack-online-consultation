@@ -1,25 +1,31 @@
 import React, { useState, useCallback } from "react";
 import { useDoctorApplication } from "../../../../contexts/DoctorApplicationContext";
 import {
-  FileDropzone,
-  UploadedFileItem,
-  FilePreviewModal,
+  EnhancedFileDropzone,
+  EnhancedUploadedFileItem,
+  DocumentPreview,
+  DocumentData,
+  DocumentFile,
   StepNavButtons,
 } from "../../../ui";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
-const Step4_Documents = () => {
+const Step6_Documents = () => {
   const { doctorData, updateField, nextStep, prevStep, isLoading } =
     useDoctorApplication();
 
-  const [previewFile, setPreviewFile] = useState<any>(null);
+  const [previewDocument, setPreviewDocument] = useState<DocumentData | null>(
+    null
+  );
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [newlyUploadedFiles, setNewlyUploadedFiles] = useState(
     new Set<string>()
   );
+  const [showTips, setShowTips] = useState(false);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const newDocuments = acceptedFiles.map((file) => ({
+      const newDocuments: DocumentFile[] = acceptedFiles.map((file) => ({
         id: `${file.name}-${Date.now()}-${Math.random()}`,
         file,
         name: file.name,
@@ -81,6 +87,18 @@ const Step4_Documents = () => {
     }
   };
 
+  const handlePreview = (file: DocumentFile) => {
+    setPreviewDocument({
+      id: file.id,
+      file: file.file,
+      name: file.name,
+      documentName: file.documentName,
+      fileType: file.type,
+      size: file.size,
+      preview: file.preview,
+    });
+  };
+
   const handleContinue = () => {
     const newErrors: Record<string, string> = {};
     let hasErrors = false;
@@ -104,7 +122,7 @@ const Step4_Documents = () => {
     doctorData.documents.every((doc) => doc.documentName.trim());
 
   return (
-    <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-4">
+    <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
           Medical Verification Documents
@@ -116,24 +134,29 @@ const Step4_Documents = () => {
       </div>
 
       {/* File Dropzone */}
-      <FileDropzone onDrop={onDrop} />
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          Upload Documents
+        </h2>
+        <EnhancedFileDropzone onDrop={onDrop} />
+      </div>
 
       {/* Uploaded Documents */}
       {doctorData.documents && doctorData.documents.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Uploaded Documents
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Uploaded Documents ({doctorData.documents.length})
           </h2>
           <div className="space-y-4">
             {doctorData.documents.map((doc) => (
-              <UploadedFileItem
+              <EnhancedUploadedFileItem
                 key={doc.id}
                 file={doc}
                 documentName={doc.documentName}
                 error={localErrors[doc.id]}
                 onNameChange={handleDocumentNameChange}
                 onRemove={handleRemoveFile}
-                onPreview={setPreviewFile}
+                onPreview={handlePreview}
                 isNewlyUploaded={newlyUploadedFiles.has(doc.id)}
               />
             ))}
@@ -141,37 +164,64 @@ const Step4_Documents = () => {
         </div>
       )}
 
-      {/* Document Requirements */}
-      <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-          Required Documents:
-        </h3>
-        <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-          <li>• Medical License</li>
-          <li>• Medical Degree Certificate</li>
-          <li>• Professional Certifications</li>
-          <li>• Reference Letters (optional)</li>
-          <li>• Any other relevant medical credentials</li>
-        </ul>
+      {/* Document Tips - Collapsible */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <button
+          onClick={() => setShowTips(!showTips)}
+          className="flex items-center justify-between w-full text-left"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Document Upload Tips
+          </h3>
+          {showTips ? (
+            <ChevronUp size={20} className="text-gray-500 dark:text-gray-400" />
+          ) : (
+            <ChevronDown
+              size={20}
+              className="text-gray-500 dark:text-gray-400"
+            />
+          )}
+        </button>
+
+        {showTips && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+              <li>• Ensure documents are clear and legible</li>
+              <li>• Upload high-resolution scans or photos</li>
+              <li>• Include all pages of multi-page documents</li>
+              <li>• Verify document names match the content</li>
+              <li>• Keep file sizes under 10MB each</li>
+              <li>
+                • Accepted formats: Images (JPG, PNG, GIF, WebP), PDF, DOC,
+                DOCX, TXT
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Navigation Buttons */}
-      <StepNavButtons
-        onBack={prevStep}
-        onContinue={handleContinue}
-        canContinue={canContinue}
-        isLoading={isLoading}
-        onBackText="Back"
-        onContinueText="Continue"
-      />
+      <div className="mt-8">
+        <StepNavButtons
+          onBack={prevStep}
+          onContinue={handleContinue}
+          canContinue={canContinue}
+          isLoading={isLoading}
+          onBackText="Back"
+          onContinueText="Continue"
+        />
+      </div>
 
-      {/* File Preview Modal */}
-      <FilePreviewModal
-        file={previewFile}
-        onClose={() => setPreviewFile(null)}
-      />
+      {/* Enhanced Document Preview Modal */}
+      {previewDocument && (
+        <DocumentPreview
+          document={previewDocument}
+          isOpen={true}
+          onClose={() => setPreviewDocument(null)}
+        />
+      )}
     </div>
   );
 };
 
-export default Step4_Documents;
+export default Step6_Documents;

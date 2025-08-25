@@ -38,7 +38,15 @@ export interface User {
   licenseNumber?: string;
   experience?: number;
   bio?: string;
-  role: "admin" | "doctor" | "patient" | "pharmacy";
+  role:
+    | "admin"
+    | "doctor"
+    | "patient"
+    | "pharmacy"
+    | "pending_doctor"
+    | "pending_pharmacy"
+    | "incomplete_doctor"
+    | "incomplete_pharmacy";
   avatar?: string;
   emailVerified: boolean;
   isApproved: boolean;
@@ -90,6 +98,12 @@ export interface BaseUserData {
   avatar?: File;
 }
 
+export interface InitiateRegistrationRequest extends BaseUserData {
+  // Basic user data for initial registration
+  // No additional fields needed beyond BaseUserData
+  _type?: "initiate"; // Type discriminator to avoid empty interface warning
+}
+
 export interface AdminRegisterRequest extends BaseUserData {
   // Admin has minimal requirements - no additional fields needed
   _type?: "admin"; // Type discriminator to avoid empty interface warning
@@ -128,6 +142,27 @@ export interface DoctorRegisterRequest extends BaseUserData {
   doctorDocument?: File[]; // Multiple documents
 }
 
+// Type for doctor application data (without user data)
+export interface DoctorApplicationData {
+  licenseNumber: string;
+  experience: number;
+  bio?: string;
+  education?: Array<{
+    degree: string;
+    institution: string;
+    year: string;
+  }>;
+  languages?: string[];
+  specialties: string[];
+  clinicAddress: Address;
+  operationalHospital?: string;
+  contactInfo?: ContactInfo[];
+  consultationFee: number;
+  consultationDuration?: number;
+  paymentMethods?: PaymentMethod[];
+  documents?: any;
+}
+
 export interface PharmacyRegisterRequest extends BaseUserData {
   pharmacyName: string;
   licenseNumber: string;
@@ -143,6 +178,24 @@ export interface PharmacyRegisterRequest extends BaseUserData {
   pharmacyLogo?: File;
   pharmacyImage?: File[]; // Multiple images
   pharmacyDocument?: File[]; // Multiple documents
+}
+
+// Type for pharmacy application data (without user data)
+export interface PharmacyApplicationData {
+  pharmacyName: string;
+  licenseNumber: string;
+  description?: string;
+  address: Address;
+  contactInfo?: ContactInfo[];
+  deliveryInfo?: {
+    deliveryRadius?: number;
+    deliveryFee?: number;
+    deliveryTime?: string;
+  };
+  paymentMethods?: PaymentMethod[];
+  pharmacyLogo?: File;
+  pharmacyImage?: File[];
+  pharmacyDocument?: File[];
 }
 
 // ==================== OTHER INTERFACES ====================
@@ -193,6 +246,34 @@ class AuthAPI {
   }
 
   // ==================== REGISTRATION METHODS ====================
+
+  // Initiate registration (basic user info only)
+  async initiateRegistration(
+    userData: InitiateRegistrationRequest,
+    role: "doctor" | "pharmacy"
+  ): Promise<AuthResponse> {
+    const formData = new FormData();
+
+    Object.entries(userData).forEach(([key, value]) => {
+      if (key === "address") {
+        formData.append(key, JSON.stringify(value));
+      } else if (value) {
+        formData.append(key, value);
+      }
+    });
+
+    const response = await api.post(
+      `/auth/register/${role}/initiate`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data;
+  }
 
   // Admin registration
   async registerAdmin(userData: AdminRegisterRequest): Promise<AuthResponse> {
@@ -269,78 +350,76 @@ class AuthAPI {
     return response.data;
   }
 
-  // Doctor registration
-  async registerDoctor(userData: DoctorRegisterRequest): Promise<AuthResponse> {
+  // Doctor registration (application submission only)
+  async registerDoctor(
+    doctorData: DoctorApplicationData
+  ): Promise<AuthResponse> {
     const formData = new FormData();
 
-    // Basic fields
-    formData.append("name", userData.name);
-    formData.append("email", userData.email);
-    formData.append("password", userData.password);
-
     // Doctor specific fields
-    formData.append("licenseNumber", userData.licenseNumber);
-    formData.append("experience", userData.experience.toString());
-    formData.append("consultationFee", userData.consultationFee.toString());
+    formData.append("licenseNumber", doctorData.licenseNumber);
+    formData.append("experience", doctorData.experience.toString());
+    formData.append("consultationFee", doctorData.consultationFee.toString());
 
-    if (userData.bio) {
-      formData.append("bio", userData.bio);
+    if (doctorData.bio) {
+      formData.append("bio", doctorData.bio);
     }
-    if (userData.consultationDuration) {
+    if (doctorData.consultationDuration) {
       formData.append(
         "consultationDuration",
-        userData.consultationDuration.toString()
+        doctorData.consultationDuration.toString()
       );
     }
-    if (userData.operationalHospital) {
-      formData.append("operationalHospital", userData.operationalHospital);
+    if (doctorData.operationalHospital) {
+      formData.append("operationalHospital", doctorData.operationalHospital);
     }
 
     // Arrays and objects
-    if (userData.education) {
-      userData.education.forEach((edu, index) => {
+    if (doctorData.education) {
+      doctorData.education.forEach((edu, index) => {
         formData.append(`education[${index}][degree]`, edu.degree);
         formData.append(`education[${index}][institution]`, edu.institution);
         formData.append(`education[${index}][year]`, edu.year);
       });
     }
 
-    if (userData.languages) {
-      userData.languages.forEach((lang, index) => {
+    if (doctorData.languages) {
+      doctorData.languages.forEach((lang, index) => {
         formData.append(`languages[${index}]`, lang);
       });
     }
 
-    userData.specialties.forEach((specialty, index) => {
+    doctorData.specialties.forEach((specialty, index) => {
       formData.append(`specialties[${index}]`, specialty);
     });
 
     // Address
-    if (userData.clinicAddress) {
-      formData.append("clinicAddress", JSON.stringify(userData.clinicAddress));
+    if (doctorData.clinicAddress) {
+      formData.append(
+        "clinicAddress",
+        JSON.stringify(doctorData.clinicAddress)
+      );
     }
 
     // Contact info
-    if (userData.contactInfo) {
-      formData.append("contactInfo", JSON.stringify(userData.contactInfo));
+    if (doctorData.contactInfo) {
+      formData.append("contactInfo", JSON.stringify(doctorData.contactInfo));
     }
 
     // Payment methods
-    if (userData.paymentMethods) {
+    if (doctorData.paymentMethods) {
       formData.append(
         "paymentMethods",
-        JSON.stringify(userData.paymentMethods)
+        JSON.stringify(doctorData.paymentMethods)
       );
     }
 
     // Files
-    if (userData.avatar) {
-      formData.append("avatar", userData.avatar);
-    }
 
-    if (userData.doctorDocument) {
-      userData.doctorDocument.forEach((file, index) => {
-        formData.append(`doctorDocument`, file);
+    if (doctorData.documents) {
+      doctorData.documents.forEach((doc, index) => {
+        formData.append(`doctorDocument`, doc.file);
+        formData.append("documentNames", doc.name);
       });
     }
 
@@ -353,81 +432,72 @@ class AuthAPI {
     return response.data;
   }
 
-  // Pharmacy registration
+  // Pharmacy registration (application submission only)
   async registerPharmacy(
-    userData: PharmacyRegisterRequest
+    pharmacyData: PharmacyApplicationData
   ): Promise<AuthResponse> {
     const formData = new FormData();
 
-    // Basic fields
-    formData.append("name", userData.name);
-    formData.append("email", userData.email);
-    formData.append("password", userData.password);
-
     // Pharmacy specific fields
-    formData.append("pharmacyName", userData.pharmacyName);
-    formData.append("licenseNumber", userData.licenseNumber);
+    formData.append("pharmacyName", pharmacyData.pharmacyName);
+    formData.append("licenseNumber", pharmacyData.licenseNumber);
 
-    if (userData.description) {
-      formData.append("description", userData.description);
+    if (pharmacyData.description) {
+      formData.append("description", pharmacyData.description);
     }
 
     // Address
-    if (userData.address) {
-      formData.append("address", JSON.stringify(userData.address));
+    if (pharmacyData.address) {
+      formData.append("address", JSON.stringify(pharmacyData.address));
     }
     // Contact info
-    if (userData.contactInfo) {
-      formData.append("contactInfo", JSON.stringify(userData.contactInfo));
+    if (pharmacyData.contactInfo) {
+      formData.append("contactInfo", JSON.stringify(pharmacyData.contactInfo));
     }
 
     // Delivery info
-    if (userData.deliveryInfo) {
-      if (userData.deliveryInfo.deliveryRadius) {
+    if (pharmacyData.deliveryInfo) {
+      if (pharmacyData.deliveryInfo.deliveryRadius) {
         formData.append(
           "deliveryInfo[deliveryRadius]",
-          userData.deliveryInfo.deliveryRadius.toString()
+          pharmacyData.deliveryInfo.deliveryRadius.toString()
         );
       }
-      if (userData.deliveryInfo.deliveryFee) {
+      if (pharmacyData.deliveryInfo.deliveryFee) {
         formData.append(
           "deliveryInfo[deliveryFee]",
-          userData.deliveryInfo.deliveryFee.toString()
+          pharmacyData.deliveryInfo.deliveryFee.toString()
         );
       }
-      if (userData.deliveryInfo.deliveryTime) {
+      if (pharmacyData.deliveryInfo.deliveryTime) {
         formData.append(
           "deliveryInfo[deliveryTime]",
-          userData.deliveryInfo.deliveryTime
+          pharmacyData.deliveryInfo.deliveryTime
         );
       }
     }
 
     // Payment methods
-    if (userData.paymentMethods) {
+    if (pharmacyData.paymentMethods) {
       formData.append(
         "paymentMethods",
-        JSON.stringify(userData.paymentMethods)
+        JSON.stringify(pharmacyData.paymentMethods)
       );
     }
 
     // Files
-    if (userData.avatar) {
-      formData.append("avatar", userData.avatar);
+    if (pharmacyData.pharmacyLogo) {
+      formData.append("pharmacyLogo", pharmacyData.pharmacyLogo);
     }
 
-    if (userData.pharmacyLogo) {
-      formData.append("pharmacyLogo", userData.pharmacyLogo);
-    }
-
-    if (userData.pharmacyImage) {
-      userData.pharmacyImage.forEach((file) => {
+    if (pharmacyData.pharmacyImage) {
+      pharmacyData.pharmacyImage.forEach((file) => {
         formData.append("pharmacyImage", file);
       });
     }
 
-    if (userData.pharmacyDocument) {
-      userData.pharmacyDocument.forEach((file) => {
+    if (pharmacyData.pharmacyDocument) {
+      pharmacyData.pharmacyDocument.forEach((file) => {
         formData.append("pharmacyDocument", file);
       });
     }

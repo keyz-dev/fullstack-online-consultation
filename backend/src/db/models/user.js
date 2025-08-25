@@ -100,9 +100,31 @@ module.exports = (sequelize, DataTypes) => {
       return this.role === "pending_pharmacy";
     }
 
-    // Helper method to check if user has any pending application
+    // Helper method to check if user is an incomplete doctor
+    isIncompleteDoctor() {
+      return this.role === "incomplete_doctor";
+    }
+
+    // Helper method to check if user is an incomplete pharmacy
+    isIncompletePharmacy() {
+      return this.role === "incomplete_pharmacy";
+    }
+
+    // Helper method to check if user has a pending application
     hasPendingApplication() {
       return this.role === "pending_doctor" || this.role === "pending_pharmacy";
+    }
+
+    // Helper method to check if user has an incomplete application
+    hasIncompleteApplication() {
+      return (
+        this.role === "incomplete_doctor" || this.role === "incomplete_pharmacy"
+      );
+    }
+
+    // Helper method to check if user has a dashboard
+    hasDashboard() {
+      return ["admin", "doctor", "patient", "pharmacy"].includes(this.role);
     }
 
     // Helper method to check if user can reapply
@@ -164,6 +186,10 @@ module.exports = (sequelize, DataTypes) => {
           notEmpty: true,
         },
       },
+      phoneNumber: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+      },
       password: {
         type: DataTypes.STRING(255),
         allowNull: true, // Nullable for OAuth users
@@ -178,7 +204,9 @@ module.exports = (sequelize, DataTypes) => {
           "admin",
           "pharmacy",
           "pending_doctor",
-          "pending_pharmacy"
+          "pending_pharmacy",
+          "incomplete_doctor",
+          "incomplete_pharmacy"
         ),
         allowNull: false,
         defaultValue: "patient",
@@ -191,6 +219,8 @@ module.exports = (sequelize, DataTypes) => {
               "pharmacy",
               "pending_doctor",
               "pending_pharmacy",
+              "incomplete_doctor",
+              "incomplete_pharmacy",
             ],
           ],
         },
@@ -198,9 +228,6 @@ module.exports = (sequelize, DataTypes) => {
       gender: {
         type: DataTypes.ENUM("male", "female", "other"),
         allowNull: true,
-        validate: {
-          isIn: [["male", "female", "other"]],
-        },
       },
       dob: {
         type: DataTypes.DATE,
@@ -285,12 +312,14 @@ module.exports = (sequelize, DataTypes) => {
       ],
       hooks: {
         beforeCreate: async (user) => {
-          // Generate verification code for doctors and pharmacies
+          // Generate verification code for doctors, pharmacies, and incomplete roles
           if (
             (user.role === "doctor" ||
               user.role === "pharmacy" ||
               user.role === "pending_doctor" ||
-              user.role === "pending_pharmacy") &&
+              user.role === "pending_pharmacy" ||
+              user.role === "incomplete_doctor" ||
+              user.role === "incomplete_pharmacy") &&
             !user.emailVerified
           ) {
             user.emailVerificationCode = Math.floor(
@@ -299,6 +328,22 @@ module.exports = (sequelize, DataTypes) => {
             user.emailVerificationExpires = new Date(
               Date.now() + 24 * 60 * 60 * 1000
             ); // 24 hours
+          }
+
+          // Calculate age from dob if not provided
+          if (user.dob && !user.age) {
+            const today = new Date();
+            const birthDate = new Date(user.dob);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (
+              monthDiff < 0 ||
+              (monthDiff === 0 && today.getDate() < birthDate.getDate())
+            ) {
+              age--;
+            }
+            user.age = age;
           }
 
           // Ensure name and email are properly formatted

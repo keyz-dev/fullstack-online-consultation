@@ -52,7 +52,7 @@ module.exports = {
       languages: {
         type: Sequelize.ARRAY(Sequelize.STRING),
         allowNull: true,
-        defaultValue: [],
+        defaultValue: ["english"],
       },
       clinicAddress: {
         type: Sequelize.JSONB,
@@ -66,6 +66,10 @@ module.exports = {
         },
       },
       contactInfo: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+      },
+      paymentMethods: {
         type: Sequelize.JSONB,
         allowNull: true,
       },

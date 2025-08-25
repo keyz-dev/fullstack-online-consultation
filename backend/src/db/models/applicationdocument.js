@@ -87,7 +87,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(500),
         allowNull: true,
         validate: {
-          isUrl: true,
           len: [0, 500],
         },
       },

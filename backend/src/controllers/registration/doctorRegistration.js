@@ -6,6 +6,10 @@ const { handleFileUploads } = require("../../utils/documentUtil");
 
 // ==================== DOCTOR REGISTRATION (ACID-COMPLIANT) ====================
 exports.registerDoctor = async (req, res, next) => {
+  console.log("\nthe request body\n\n");
+  console.log(req.body);
+  console.log("\nthe request body\n\n");
+
   try {
     // Parse form data before validation (similar to vendorApp)
     req.body.specialties = JSON.parse(req.body.specialties || "[]");
@@ -24,7 +28,6 @@ exports.registerDoctor = async (req, res, next) => {
     if (error) throw new BadRequestError(error.details[0].message);
 
     const {
-      email,
       licenseNumber,
       experience,
       bio,
@@ -37,7 +40,6 @@ exports.registerDoctor = async (req, res, next) => {
       consultationFee,
       consultationDuration,
       paymentMethods,
-      ...userData
     } = req.body;
 
     // Handle file uploads (similar to vendorApp)
@@ -61,12 +63,16 @@ exports.registerDoctor = async (req, res, next) => {
       operationalHospital,
       contactInfo,
       consultationFee,
+      paymentMethods,
       consultationDuration: consultationDuration || 30,
     };
 
+    // Get user ID from authenticated user
+    const userId = req.authUser.id;
+
     // Use the registration service
     const result = await RegistrationService.registerDoctor(
-      userData,
+      userId,
       doctorData,
       uploadedFiles
     );

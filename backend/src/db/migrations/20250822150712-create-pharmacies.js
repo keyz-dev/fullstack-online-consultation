@@ -66,9 +66,8 @@ module.exports = {
         defaultValue: {},
       },
       paymentMethods: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
+        type: Sequelize.JSONB,
         allowNull: true,
-        defaultValue: ["cash"],
       },
       isVerified: {
         type: Sequelize.BOOLEAN,
