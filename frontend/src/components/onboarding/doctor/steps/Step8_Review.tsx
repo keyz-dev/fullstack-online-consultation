@@ -121,14 +121,12 @@ const Step8_Review = () => {
 
   const isStepComplete = (step: number) => {
     switch (step) {
-      case 0: // Basic Info
+      case 0: // Professional Info
         return !!(
-          doctorData.name &&
-          doctorData.email &&
-          doctorData.phoneNumber &&
           doctorData.licenseNumber &&
           doctorData.experience &&
-          doctorData.bio
+          doctorData.bio &&
+          doctorData.languages?.length > 0
         );
       case 1: // Specialties
         return !!(doctorData.specialties && doctorData.specialties.length > 0);
@@ -156,10 +154,10 @@ const Step8_Review = () => {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {getStepTitle(5)}
+            {getStepTitle(8)}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-            {getStepSubtitle(5)}
+            {getStepSubtitle(8)}
           </p>
         </div>
 
@@ -187,28 +185,13 @@ const Step8_Review = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Basic Information */}
+          {/* Professional Information */}
           <ReviewSection
-            title="Basic Information"
+            title="Professional Information"
             icon={<User size={20} className="text-blue-600" />}
             isComplete={isStepComplete(0)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <InfoRow
-                label="Full Name"
-                value={doctorData.name || "Not provided"}
-                icon={<User size={14} />}
-              />
-              <InfoRow
-                label="Email"
-                value={doctorData.email || "Not provided"}
-                icon={<Mail size={14} />}
-              />
-              <InfoRow
-                label="Phone"
-                value={doctorData.phoneNumber || "Not provided"}
-                icon={<Phone size={14} />}
-              />
               <InfoRow
                 label="License Number"
                 value={doctorData.licenseNumber || "Not provided"}

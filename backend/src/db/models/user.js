@@ -286,6 +286,27 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: false,
       },
+      // Virtual field to calculate age from dob
+      age: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          if (this.dob) {
+            const today = new Date();
+            const birthDate = new Date(this.dob);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (
+              monthDiff < 0 ||
+              (monthDiff === 0 && today.getDate() < birthDate.getDate())
+            ) {
+              age--;
+            }
+            return age;
+          }
+          return null;
+        },
+      },
     },
     {
       sequelize,
@@ -328,22 +349,6 @@ module.exports = (sequelize, DataTypes) => {
             user.emailVerificationExpires = new Date(
               Date.now() + 24 * 60 * 60 * 1000
             ); // 24 hours
-          }
-
-          // Calculate age from dob if not provided
-          if (user.dob && !user.age) {
-            const today = new Date();
-            const birthDate = new Date(user.dob);
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-
-            if (
-              monthDiff < 0 ||
-              (monthDiff === 0 && today.getDate() < birthDate.getDate())
-            ) {
-              age--;
-            }
-            user.age = age;
           }
 
           // Ensure name and email are properly formatted

@@ -56,10 +56,10 @@ const Step5_AddressLocation = () => {
       <div className="max-w-2xl m-auto lg:px-8 mb-6 space-y-4">
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {getStepTitle(2)}
+            {getStepTitle(5)}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-            {getStepSubtitle(2)}
+            {getStepSubtitle(5)}
           </p>
         </div>
 

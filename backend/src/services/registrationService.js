@@ -219,10 +219,6 @@ class RegistrationService {
         { transaction }
       );
 
-      console.log("\n the user \n");
-      console.log(user);
-      console.log("\n the user \n");
-
       // 2. Create Doctor (clean business data only)
       const doctor = await Doctor.create(
         {
@@ -233,10 +229,6 @@ class RegistrationService {
         },
         { transaction }
       );
-
-      console.log("\n the doctor \n");
-      console.log(doctor);
-      console.log("\n the doctor \n");
 
       // 3. Create UserApplication
       const application = await UserApplication.create(
@@ -251,34 +243,24 @@ class RegistrationService {
         { transaction }
       );
 
-      console.log("\n the application \n");
-      console.log(application);
-      console.log("\n the application \n");
-
       // 4. Create ApplicationDocuments
       if (uploadedFiles.documents) {
-        const documentPromises = Object.entries(uploadedFiles.documents).map(
-          ([type, file]) =>
-            ApplicationDocument.create(
-              {
-                applicationId: application.id,
-                documentType: type,
-                fileName: file.originalName || file.originalname,
-                filePath: file.path, // Use filePath for local files
-                fileUrl: file.url, // Use fileUrl for cloud storage
-                fileSize: file.size,
-                mimeType: file.mimetype,
-                uploadedAt: new Date(),
-              },
-              { transaction }
-            )
+        const documentPromises = uploadedFiles.documents.map((doc, index) =>
+          ApplicationDocument.create(
+            {
+              applicationId: application.id,
+              documentType: doc.documentName,
+              fileName: doc.originalName,
+              fileUrl: doc.url,
+              fileSize: doc.size,
+              mimeType: doc.fileType,
+              uploadedAt: new Date(),
+            },
+            { transaction }
+          )
         );
         await Promise.all(documentPromises);
       }
-
-      console.log("\n the documents \n");
-      console.log(uploadedFiles.documents);
-      console.log("\n the documents \n");
 
       // 5. Create DoctorSpecialty relationships
       if (specialties && specialties.length > 0) {
@@ -294,10 +276,7 @@ class RegistrationService {
         await Promise.all(specialtyPromises);
       }
 
-      console.log("\n the specialties \n");
-      console.log(specialties);
-      console.log("\n the specialties \n");
-
+      console.log("About committing");
       await transaction.commit();
 
       // Create notification for user

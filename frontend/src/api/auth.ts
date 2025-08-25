@@ -376,22 +376,16 @@ class AuthAPI {
 
     // Arrays and objects
     if (doctorData.education) {
-      doctorData.education.forEach((edu, index) => {
-        formData.append(`education[${index}][degree]`, edu.degree);
-        formData.append(`education[${index}][institution]`, edu.institution);
-        formData.append(`education[${index}][year]`, edu.year);
-      });
+      formData.append("education", JSON.stringify(doctorData.education));
     }
 
     if (doctorData.languages) {
-      doctorData.languages.forEach((lang, index) => {
-        formData.append(`languages[${index}]`, lang);
-      });
+      formData.append("languages", JSON.stringify(doctorData.languages));
     }
 
-    doctorData.specialties.forEach((specialty, index) => {
-      formData.append(`specialties[${index}]`, specialty);
-    });
+    if (doctorData.specialties) {
+      formData.append("specialties", JSON.stringify(doctorData.specialties));
+    }
 
     // Address
     if (doctorData.clinicAddress) {
@@ -415,11 +409,10 @@ class AuthAPI {
     }
 
     // Files
-
     if (doctorData.documents) {
       doctorData.documents.forEach((doc, index) => {
         formData.append(`doctorDocument`, doc.file);
-        formData.append("documentNames", doc.name);
+        formData.append("documentNames", doc.documentName);
       });
     }
 

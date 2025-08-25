@@ -6,10 +6,6 @@ const { handleFileUploads } = require("../../utils/documentUtil");
 
 // ==================== DOCTOR REGISTRATION (ACID-COMPLIANT) ====================
 exports.registerDoctor = async (req, res, next) => {
-  console.log("\nthe request body\n\n");
-  console.log(req.body);
-  console.log("\nthe request body\n\n");
-
   try {
     // Parse form data before validation (similar to vendorApp)
     req.body.specialties = JSON.parse(req.body.specialties || "[]");

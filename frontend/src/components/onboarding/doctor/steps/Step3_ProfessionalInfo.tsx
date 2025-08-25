@@ -229,7 +229,7 @@ const Step3_ProfessionalInfo = () => {
           </div>
 
           {/* Contact Information Section */}
-          <div className="space-y-4">
+          <div className="">
             <ContactInfo
               contactFields={contactFields}
               setContactFields={handleContactFieldsChange}

@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { PaymentMethod, DoctorApplicationData, authAPI, Address } from "@/api";
 import { useRouter } from "next/navigation";
 import { extractErrorMessage } from "@/lib/utils";
+import { useAuth } from "./AuthContext";
 
 interface DoctorData {
   // Step 1: Basic User Information (similar to admin registration)
@@ -91,6 +92,7 @@ export const DoctorApplicationProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const router = useRouter();
+  const { user, verifyToken } = useAuth();
   const [activeStep, setActiveStep] = useState(STEPS.BASIC_USER_INFO);
   const [visitedSteps, setVisitedSteps] = useState([STEPS.BASIC_USER_INFO]);
   const [isLoading, setIsLoading] = useState(false);
@@ -150,7 +152,7 @@ export const DoctorApplicationProvider: React.FC<{
     agreedToTerms: false,
   });
 
-  // Handle return from email verification
+  // Handle return from email verification and logged-in incomplete users
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const returnStep = urlParams.get("step");
@@ -168,8 +170,13 @@ export const DoctorApplicationProvider: React.FC<{
 
       // Clean up URL
       window.history.replaceState({}, "", "/register/doctor");
+    } else if (user && user.role === "incomplete_doctor") {
+      // User is logged in but has incomplete application
+      // Set them to Step 3 and mark Steps 1 & 2 as visited
+      setActiveStep(STEPS.PROFESSIONAL_INFO);
+      setVisitedSteps([STEPS.BASIC_USER_INFO, STEPS.EMAIL_VERIFICATION]);
     }
-  }, []);
+  }, [user]);
 
   // Update form data for a specific field
   const updateField = (field: string, value: any) => {
@@ -196,11 +203,25 @@ export const DoctorApplicationProvider: React.FC<{
 
   // Navigate to previous step
   const prevStep = () => {
-    setActiveStep((prev) => Math.max(prev - 1, STEPS.BASIC_USER_INFO));
+    // If user is logged in as incomplete_doctor, don't allow going back to Steps 1 & 2
+    if (user && user.role === "incomplete_doctor") {
+      setActiveStep((prev) => Math.max(prev - 1, STEPS.PROFESSIONAL_INFO));
+    } else {
+      setActiveStep((prev) => Math.max(prev - 1, STEPS.BASIC_USER_INFO));
+    }
   };
 
   // Jump to a specific step (only if visited)
   const goToStep = (step: number) => {
+    // If user is logged in as incomplete_doctor, don't allow going to Steps 1 & 2
+    if (
+      user &&
+      user.role === "incomplete_doctor" &&
+      step < STEPS.PROFESSIONAL_INFO
+    ) {
+      return;
+    }
+
     if (visitedSteps.includes(step) || step <= activeStep) {
       setActiveStep(step);
     }
@@ -280,12 +301,23 @@ export const DoctorApplicationProvider: React.FC<{
         operationalHospital: doctorData.operationalHospital,
         consultationFee: parseInt(doctorData.consultationFee),
         consultationDuration: parseInt(doctorData.consultationDuration),
+        contactInfo: doctorData.contactInfo,
         paymentMethods: doctorData.paymentMethods,
         documents: doctorData.documents,
       };
 
       const response = await authAPI.registerDoctor(doctorApplicationData);
       if (response.status === "success") {
+        // Clear the registration context
+        sessionStorage.removeItem("registrationContext");
+        // Clear the doctor data
+
+        // verify the user token
+        const token = authAPI.getToken();
+        if (token) {
+          await verifyToken(token);
+        }
+
         setActiveStep(STEPS.SUCCESS);
         return { success: true, data: response.data };
       } else {
@@ -387,6 +419,10 @@ export const DoctorApplicationProvider: React.FC<{
 
     switch (step) {
       case STEPS.BASIC_USER_INFO:
+        // If user is logged in as incomplete_doctor, this step is always completed
+        if (user && user.role === "incomplete_doctor") {
+          return true;
+        }
         return !!(
           doctorData.name &&
           doctorData.email &&
@@ -396,6 +432,10 @@ export const DoctorApplicationProvider: React.FC<{
         );
 
       case STEPS.EMAIL_VERIFICATION:
+        // If user is logged in as incomplete_doctor, this step is always completed
+        if (user && user.role === "incomplete_doctor") {
+          return true;
+        }
         // This step is completed when user returns from verification
         return visitedSteps.includes(STEPS.EMAIL_VERIFICATION);
 

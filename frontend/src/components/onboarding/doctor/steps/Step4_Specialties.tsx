@@ -228,40 +228,14 @@ const Step4_Specialties = () => {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {getStepTitle(1)}
+            {getStepTitle(4)}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-            {getStepSubtitle(1)}
+            {getStepSubtitle(4)}
           </p>
         </div>
 
         <div className="space-y-6">
-          {/* License and Experience */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Medical License Number"
-              name="licenseNumber"
-              error={errors.licenseNumber}
-              value={doctorData.licenseNumber}
-              onChangeHandler={handleInputChange}
-              required
-              placeholder="Enter your medical license number"
-            />
-
-            <Input
-              label="Years of Experience"
-              type="number"
-              name="experience"
-              error={errors.experience}
-              value={doctorData.experience}
-              onChangeHandler={handleInputChange}
-              required
-              placeholder="Enter years of experience"
-              min="0"
-              max="50"
-            />
-          </div>
-
           {/* Specialties Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -270,7 +244,7 @@ const Step4_Specialties = () => {
             <TagInput
               value={getSelectedSpecialtyNames()}
               onChangeHandler={handleSpecialtyChange}
-              placeholder="Type to search and add your medical specialties"
+              placeholder="Type to search"
               suggestions={getAvailableSpecialtyNames()}
               showSuggestions={true}
               maxSuggestions={8}

@@ -76,13 +76,6 @@ module.exports = (sequelize, DataTypes) => {
           len: [1, 255],
         },
       },
-      filePath: {
-        type: DataTypes.STRING(500),
-        allowNull: true,
-        validate: {
-          len: [0, 500],
-        },
-      },
       fileUrl: {
         type: DataTypes.STRING(500),
         allowNull: true,
@@ -102,13 +95,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         validate: {
           len: [0, 100],
-        },
-      },
-      description: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: {
-          len: [0, 1000],
         },
       },
       expiryDate: {

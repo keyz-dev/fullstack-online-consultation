@@ -64,6 +64,7 @@ interface AuthContextType {
   invalidateToken: () => void;
   redirectBasedOnRole: (user: User) => void;
   updateUser: (user: User) => void;
+  verifyToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -440,6 +441,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     invalidateToken,
     redirectBasedOnRole,
     updateUser,
+    verifyToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

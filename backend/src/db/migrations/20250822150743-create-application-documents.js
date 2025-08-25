@@ -46,6 +46,22 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
+      expiryDate: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+      verifiedAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+      verifiedBy: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+      verificationNotes: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

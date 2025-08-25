@@ -18,6 +18,7 @@ const Step7_PaymentSetup = () => {
   const [errors, setErrors] = useState({
     consultationFee: "",
   });
+  const [isOpen, setIsOpen] = useState(false);
 
   // Initialize payment methods from existing data
   const initializePaymentMethods = () => {
@@ -73,7 +74,6 @@ const Step7_PaymentSetup = () => {
       // Update the context with the new payment methods
       const apiMethods = getPaymentMethodsForAPI();
       updateField("paymentMethods", apiMethods);
-      console.log(`Payment method ${method} saved successfully:`, apiMethods);
     } else {
       console.log(`Payment method ${method} validation failed`);
     }
@@ -118,50 +118,50 @@ const Step7_PaymentSetup = () => {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {getStepTitle(4)}
+            {getStepTitle(7)}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-            {getStepSubtitle(4)}
+            {getStepSubtitle(7)}
           </p>
         </div>
 
         <div className="space-y-6">
           {/* Consultation Fee */}
-          <div>
-            <Input
-              label="Consultation Fee (XAF)"
-              type="number"
-              name="consultationFee"
-              value={doctorData.consultationFee}
-              error={errors.consultationFee}
-              onChangeHandler={handleInputChange}
-              required
-              placeholder="Enter consultation fee in XAF"
-              min="0"
-              step="100"
-            />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Set your consultation fee in Central African CFA franc (XAF)
-            </p>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Consultation Fee */}
+            <div>
+              <Input
+                label="Consultation Fee (XAF)"
+                type="number"
+                name="consultationFee"
+                value={doctorData.consultationFee}
+                error={errors.consultationFee}
+                onChangeHandler={handleInputChange}
+                required
+                placeholder="Enter consultation fee in XAF"
+                min="0"
+                step="100"
+              />
+            </div>
 
-          {/* Consultation Duration */}
-          <Select
-            label="Consultation Duration (minutes)"
-            name="consultationDuration"
-            value={doctorData.consultationDuration}
-            onChange={(e) =>
-              updateField("consultationDuration", e.target.value)
-            }
-            options={[
-              { label: "15 minutes", value: "15" },
-              { label: "30 minutes", value: "30" },
-              { label: "45 minutes", value: "45" },
-              { label: "60 minutes", value: "60" },
-              { label: "90 minutes", value: "90" },
-              { label: "120 minutes", value: "120" },
-            ]}
-          />
+            {/* Consultation Duration */}
+            <Select
+              label="Consultation Duration (minutes)"
+              name="consultationDuration"
+              value={doctorData.consultationDuration}
+              onChange={(e) =>
+                updateField("consultationDuration", e.target.value)
+              }
+              options={[
+                { label: "15 minutes", value: "15" },
+                { label: "30 minutes", value: "30" },
+                { label: "45 minutes", value: "45" },
+                { label: "60 minutes", value: "60" },
+                { label: "90 minutes", value: "90" },
+                { label: "120 minutes", value: "120" },
+              ]}
+            />
+          </div>
 
           {/* Payment Methods Section */}
           <PaymentMethodsSection
@@ -173,22 +173,59 @@ const Step7_PaymentSetup = () => {
             canSavePaymentMethod={canSavePaymentMethod}
           />
 
-          {/* Information Box */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-              Payment Information:
-            </h3>
-            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-              <li>• Consultation fees are charged per session</li>
-              <li>• Payment is processed securely through our platform</li>
-              <li>
-                • You&apos;ll receive payment within 24-48 hours after
-                consultation
-              </li>
-              <li>• Platform fees may apply (typically 5-10%)</li>
-              <li>• At least one payment method is required</li>
-            </ul>
-          </div>
+          {/* Collapsible Information Box */}
+          {(() => {
+            return (
+              <div className="w-full">
+                <button
+                  type="button"
+                  className="flex items-center justify-between w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition"
+                  onClick={() => setIsOpen((prev) => !prev)}
+                  aria-expanded={isOpen}
+                  aria-controls="payment-info-box"
+                >
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Payment Information
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-blue-700 dark:text-blue-300 transform transition-transform duration-300 ${
+                      isOpen ? "rotate-180" : "rotate-0"
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                <div
+                  id="payment-info-box"
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    isOpen ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"
+                  }`}
+                  aria-hidden={!isOpen}
+                >
+                  <ul className="p-4 text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                    <li>• Consultation fees are charged per session</li>
+                    <li>
+                      • Payment is processed securely through our platform
+                    </li>
+                    <li>
+                      • You&apos;ll receive payment within 24-48 hours after
+                      consultation
+                    </li>
+                    <li>• Platform fees may apply (typically 5-10%)</li>
+                    <li>• At least one payment method is required</li>
+                  </ul>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Navigation */}
           <StepNavButtons
