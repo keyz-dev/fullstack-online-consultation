@@ -145,7 +145,6 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
 
         // Clean up the object URL
         window.URL.revokeObjectURL(url);
-        console.log("Download initiated for:", documentData.url);
       }
     } catch (error) {
       console.error("Download failed:", error);
@@ -156,33 +155,14 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
     }
   };
 
-  // Check if URL is accessible
-  const checkUrlAccessibility = async (url: string) => {
-    try {
-      const response = await fetch(url, { method: "HEAD" });
-      return response.ok;
-    } catch (error) {
-      console.error("URL accessibility check failed:", error);
-      return false;
-    }
-  };
-
-  // Reset iframe error when document changes
+  // Reset iframe error when document changes - SIMPLIFIED like frontend_reference
   useEffect(() => {
     setIframeError(false);
+    onLoading(true); // Set loading to true when document changes
 
-    // Check if document URL is accessible
-    if (documentData?.url) {
-      checkUrlAccessibility(documentData.url).then((isAccessible) => {
-        if (!isAccessible) {
-          setIframeError(true);
-          onError(
-            "Document not found or no longer accessible. Please contact support."
-          );
-        }
-      });
-    }
-  }, [documentData, onError]);
+    // Simple approach like frontend_reference - no URL accessibility check
+    // Let the browser handle loading naturally
+  }, [documentData, onLoading, isImage, isPDF, isDocument]);
 
   return (
     <div className="h-full overflow-hidden relative">
@@ -223,7 +203,7 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
                 {isCloudinaryURL && (
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     <p>
-                      This document is stored on Cloudinary. If it's not
+                      This document is stored on Cloudinary. If it&apos;s not
                       accessible, it may have been moved or deleted.
                     </p>
                   </div>
@@ -262,32 +242,19 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
           </div>
         ) : isPDF ? (
           <div className="w-full h-full">
-            {/* Use PDFViewer component for PDFs */}
-            {documentData.url && (
-              <PDFViewer
-                url={getOptimizedUrl() || documentData.url}
-                currentPage={currentPage}
-                zoom={zoom}
-                rotation={rotation}
-                onLoad={onPDFLoad}
-                onError={onError}
-              />
-            )}
-            {/* Fallback for file objects */}
-            {documentData.file && (
-              <iframe
-                ref={iframeRef}
-                src={URL.createObjectURL(documentData.file)}
-                className="w-full h-full border-0"
-                onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                title={
-                  documentData.documentName ||
-                  documentData.originalName ||
-                  documentData.name
-                }
-              />
-            )}
+            {/* Simple iframe approach for PDFs like frontend_reference */}
+            <iframe
+              ref={iframeRef}
+              src={getOptimizedUrl() || documentData.url}
+              className="w-full h-full border-0"
+              onLoad={handleIframeLoad}
+              onError={handleIframeError}
+              title={
+                documentData.documentName ||
+                documentData.originalName ||
+                documentData.name
+              }
+            />
 
             {/* Fallback for Cloudinary PDFs that can't be displayed */}
             {isCloudinaryURL && !iframeError && (
@@ -301,7 +268,7 @@ const DocumentContent: React.FC<DocumentContentProps> = ({
                     Loading PDF...
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    If preview doesn't load, use download link below
+                    If preview doesn&apos;t load, use download link below
                   </p>
                 </div>
               </div>

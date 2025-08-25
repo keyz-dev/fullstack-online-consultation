@@ -38,10 +38,16 @@ const UserListView: React.FC<UserListViewProps> = ({
     }
   };
 
+  console.log("Users", users);
+
   const getContactInfo = (user: User) => {
-    if (user.patient?.contactInfo) return user.patient.contactInfo;
-    if (user.doctor?.contactInfo) return user.doctor.contactInfo;
-    if (user.pharmacy?.contactInfo) return user.pharmacy.contactInfo;
+    // Check if contactInfo exists in any of the user types
+    if (user.patient && "contactInfo" in user.patient)
+      return (user.patient as any).contactInfo;
+    if (user.doctor && "contactInfo" in user.doctor)
+      return (user.doctor as any).contactInfo;
+    if (user.pharmacy && "contactInfo" in user.pharmacy)
+      return (user.pharmacy as any).contactInfo;
     return null;
   };
 
@@ -66,82 +72,77 @@ const UserListView: React.FC<UserListViewProps> = ({
 
   const columns = [
     {
-      key: "name",
-      label: "NAME",
-      render: (user: User) => (
+      Header: "NAME",
+      accessor: "name",
+      Cell: ({ row }: { row: User }) => (
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
-            {user.avatar ? (
+            {row.avatar ? (
               <img
                 className="h-10 w-10 rounded-full object-cover"
-                src={user.avatar}
-                alt={user.name}
+                src={row.avatar}
+                alt={row.name}
               />
             ) : (
               <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {user.name.charAt(0).toUpperCase()}
+                  {row.name.charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-              {user.name}
+              {row.name}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-              {user.email}
+              {row.email}
             </p>
           </div>
         </div>
       ),
     },
     {
-      key: "role",
-      label: "ROLE",
-      render: (user: User) => (
+      Header: "ROLE",
+      accessor: "role",
+      Cell: ({ row }: { row: User }) => (
         <span className="text-sm text-gray-900 dark:text-white">
-          {getRoleDisplayName(user.role)}
+          {getRoleDisplayName(row.role)}
         </span>
       ),
     },
     {
-      key: "status",
-      label: "STATUS",
-      render: (user: User) => (
+      Header: "STATUS",
+      accessor: "status",
+      Cell: ({ row }: { row: User }) => (
         <div className="flex items-center space-x-2">
-          <StatusPill
-            status={user.isActive ? "active" : "inactive"}
-            text={user.isActive ? "Active" : "Inactive"}
-          />
-          {user.emailVerified && (
-            <StatusPill status="verified" text="Verified" size="sm" />
-          )}
+          <StatusPill status={row.isActive ? "active" : "inactive"} />
+          {row.emailVerified && <StatusPill status="verified" />}
         </div>
       ),
     },
     {
-      key: "phone",
-      label: "PHONE",
-      render: (user: User) => (
+      Header: "PHONE",
+      accessor: "phone",
+      Cell: ({ row }: { row: User }) => (
         <span className="text-sm text-gray-900 dark:text-white">
-          {getPhoneNumber(user)}
+          {getPhoneNumber(row)}
         </span>
       ),
     },
     {
-      key: "joined",
-      label: "JOINED",
-      render: (user: User) => (
+      Header: "JOINED",
+      accessor: "joined",
+      Cell: ({ row }: { row: User }) => (
         <span className="text-sm text-gray-900 dark:text-white">
-          {formatDate(user.createdAt)}
+          {formatDate(row.createdAt)}
         </span>
       ),
     },
     {
-      key: "actions",
-      label: "",
-      render: (user: User) => (
+      Header: "",
+      accessor: "actions",
+      Cell: ({ row }: { row: User }) => (
         <DropdownMenu
           trigger={
             <Button variant="ghost" size="sm">
@@ -151,19 +152,23 @@ const UserListView: React.FC<UserListViewProps> = ({
           items={[
             {
               label: "View Details",
-              icon: Eye,
-              onClick: () => onViewDetails(user),
+              icon: <Eye size={16} />,
+              onClick: () => onViewDetails(row),
             },
             {
               label: "Contact User",
-              icon: MessageSquare,
-              onClick: () => onContactUser(user),
+              icon: <MessageSquare size={16} />,
+              onClick: () => onContactUser(row),
             },
             {
-              label: user.isActive ? "Deactivate" : "Activate",
-              icon: user.isActive ? UserX : UserCheck,
-              onClick: () => handleStatusUpdate(user.id, !user.isActive),
-              disabled: loadingStates[user.id],
+              label: row.isActive ? "Deactivate" : "Activate",
+              icon: row.isActive ? (
+                <UserX size={16} />
+              ) : (
+                <UserCheck size={16} />
+              ),
+              onClick: () => handleStatusUpdate(row.id, !row.isActive),
+              disabled: loadingStates[row.id],
             },
           ]}
         />
@@ -176,8 +181,7 @@ const UserListView: React.FC<UserListViewProps> = ({
       <Table
         columns={columns}
         data={users}
-        emptyMessage="No users found"
-        className="min-h-[400px]"
+        emptyStateMessage="No users found"
       />
     </div>
   );

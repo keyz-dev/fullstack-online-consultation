@@ -15,3 +15,4 @@ export {
   useNotificationContext,
 } from "./NotificationContext";
 export { SymptomProvider, useSymptom } from "./SymptomContext";
+export { SocketProvider, useSocketContext } from "./SocketProvider";

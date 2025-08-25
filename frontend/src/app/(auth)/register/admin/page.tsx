@@ -11,6 +11,7 @@ import {
   Select,
   AddressInput,
 } from "../../../../components/ui";
+import GoogleSignupButton from "../../../../components/auth/GoogleSignupButton";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import { Address } from "../../../../api";
@@ -145,6 +146,28 @@ const AdminRegisterPage = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Google Signup Option */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="text-center space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              <GoogleSignupButton
+                role="admin"
+                buttonText="Continue with Google"
+                fullWidth
+                variant="outline"
+              />
+            </div>
+          </div>
+
           {/* Basic Information */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-primary dark:text-white mb-4">

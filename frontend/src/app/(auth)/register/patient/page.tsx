@@ -10,6 +10,7 @@ import {
   FileUploader,
   PhoneInput,
 } from "../../../../components/ui";
+import GoogleSignupButton from "../../../../components/auth/GoogleSignupButton";
 import { ArrowLeft } from "lucide-react";
 
 const PatientRegisterPage = () => {
@@ -142,6 +143,28 @@ const PatientRegisterPage = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Google Signup Option */}
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+              <div className="text-center space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+                <GoogleSignupButton
+                  role="patient"
+                  buttonText="Continue with Google"
+                  fullWidth
+                  variant="outline"
+                />
+              </div>
+            </div>
+
             {/* Basic Information */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">

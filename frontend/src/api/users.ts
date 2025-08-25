@@ -135,19 +135,19 @@ export const usersAPI = {
     sortOrder?: string;
   }): Promise<UsersResponse> => {
     const response = await api.get("/user", { params });
-    return response.data;
+    return response;
   },
 
   // Get user statistics
   getUserStats: async (): Promise<UserStatsResponse> => {
     const response = await api.get("/user/stats");
-    return response.data;
+    return response;
   },
 
   // Get single user by ID
   getUserById: async (id: number): Promise<UserResponse> => {
     const response = await api.get(`/user/${id}`);
-    return response.data;
+    return response;
   },
 
   // Update user status
@@ -156,7 +156,7 @@ export const usersAPI = {
     data: UpdateUserStatusRequest
   ): Promise<UserResponse> => {
     const response = await api.patch(`/user/${id}/status`, data);
-    return response.data;
+    return response;
   },
 
   // Get user activity logs
@@ -168,6 +168,6 @@ export const usersAPI = {
     }
   ): Promise<UserActivityResponse> => {
     const response = await api.get(`/user/${id}/activity`, { params });
-    return response.data;
+    return response;
   },
 };

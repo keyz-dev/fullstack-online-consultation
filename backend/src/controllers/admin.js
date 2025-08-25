@@ -13,6 +13,7 @@ const {
   formatApplicationData,
   formatApplicationStats,
 } = require("../utils/returnFormats/applicationData");
+const { logger } = require("../utils/logger");
 
 // Helper function to create notifications
 const createNotification = async (
@@ -20,20 +21,28 @@ const createNotification = async (
   type,
   title,
   message,
-  relatedId = null,
-  relatedModel = "UserApplication",
   priority = "medium"
 ) => {
   try {
+    console.log("\n\nabout to create notification\n\n");
+    console.log("Notification data:", {
+      userId,
+      type,
+      title,
+      message,
+      priority,
+    });
+
     const notification = await Notification.create({
       user_id: userId,
       type,
       title,
       message,
-      relatedId,
-      relatedModel,
       priority,
     });
+
+    console.log("\n\nnotification created\n\n");
+    console.log(notification, "notification");
 
     // Emit real-time notification if socket is available
     if (global.io) {
@@ -46,15 +55,13 @@ const createNotification = async (
           priority: notification.priority,
           isRead: notification.isRead,
           createdAt: notification.createdAt,
-          relatedId: notification.relatedId,
-          relatedModel: notification.relatedModel,
         },
       });
     }
 
     return notification;
   } catch (error) {
-    console.error("Error creating notification:", error);
+    logger.error("Error creating notification:", error);
     // Don't fail the main operation if notification fails
   }
 };
@@ -113,10 +120,6 @@ exports.getAllApplications = async (req, res, next) => {
 
     const applications = await UserApplication.findAndCountAll(queryOptions);
 
-    // Debug logging
-    console.log("Applications found:", applications.count);
-    console.log("Sample application:", applications.rows[0]?.toJSON());
-
     // Fetch related doctor and pharmacy data separately to avoid polymorphic association issues
     const applicationsWithDetails = await Promise.all(
       applications.rows.map(async (application) => {
@@ -133,12 +136,6 @@ exports.getAllApplications = async (req, res, next) => {
             ],
           });
           applicationData.doctor = doctor;
-          console.log(
-            "Doctor data for application",
-            application.id,
-            ":",
-            doctor
-          );
         } else if (application.applicationType === "pharmacy") {
           const pharmacy = await Pharmacy.findByPk(application.typeId, {
             attributes: [
@@ -150,23 +147,11 @@ exports.getAllApplications = async (req, res, next) => {
             ],
           });
           applicationData.pharmacy = pharmacy;
-          console.log(
-            "Pharmacy data for application",
-            application.id,
-            ":",
-            pharmacy
-          );
         }
 
         return applicationData;
       })
     );
-
-    console.log(
-      "Final applications with details:",
-      applicationsWithDetails.length
-    );
-    console.log("Sample final application:", applicationsWithDetails[0]);
 
     // Format the applications using the return format
     const formattedApplications = formatApplicationsData(
@@ -324,6 +309,7 @@ exports.reviewApplication = async (req, res, next) => {
       throw new BadRequestError("Rejection reason is required");
     }
 
+    // First, get the application without associations to check the type
     const application = await UserApplication.findByPk(req.params.id, {
       include: [
         {
@@ -331,21 +317,38 @@ exports.reviewApplication = async (req, res, next) => {
           as: "user",
           attributes: ["id", "name", "email"],
         },
-        {
-          model: Doctor,
-          as: "doctor",
-          required: false,
-        },
-        {
-          model: Pharmacy,
-          as: "pharmacy",
-          required: false,
-        },
       ],
     });
 
-    if (!application) {
-      return next(new NotFoundError("Application not found"));
+    // Now include the appropriate association based on applicationType
+    if (application.applicationType === "doctor") {
+      await application.reload({
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: ["id", "name", "email"],
+          },
+          {
+            model: Doctor,
+            as: "doctor",
+          },
+        ],
+      });
+    } else if (application.applicationType === "pharmacy") {
+      await application.reload({
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: ["id", "name", "email"],
+          },
+          {
+            model: Pharmacy,
+            as: "pharmacy",
+          },
+        ],
+      });
     }
 
     // Check if application can be reviewed
@@ -366,6 +369,9 @@ exports.reviewApplication = async (req, res, next) => {
       reviewedAt: new Date(),
     };
 
+    console.log("\n\nabout to update data\n\n");
+    console.log(updateData, "updateData");
+
     if (status === "approved") {
       updateData.approvedAt = new Date();
 
@@ -375,10 +381,10 @@ exports.reviewApplication = async (req, res, next) => {
         "application_approved",
         "Application Approved!",
         `Congratulations! Your ${application.applicationType} application has been approved. You can now access your dashboard.`,
-        application.id,
-        "UserApplication",
         "high"
       );
+
+      console.log("Notification created");
     } else if (status === "rejected") {
       updateData.rejectedAt = new Date();
       updateData.rejectionReason = rejectionReason;
@@ -390,11 +396,13 @@ exports.reviewApplication = async (req, res, next) => {
         "application_rejected",
         "Application Update",
         `Your ${application.applicationType} application requires attention. Please check the details for more information.`,
-        application.id,
-        "UserApplication",
         "high"
       );
+
+      console.log("Notification created");
     }
+
+    console.log("\n\nabout to update document reviews\n\n");
 
     // Handle document reviews if provided
     if (documentReviews && documentReviews.length > 0) {
@@ -411,20 +419,13 @@ exports.reviewApplication = async (req, res, next) => {
             });
           }
         } catch (error) {
-          console.error("Error updating document review:", error);
+          logger.error("Error updating document review:", error);
         }
       }
     }
 
     // Update the application
     await application.update(updateData);
-
-    // Update user role if approved
-    if (status === "approved") {
-      const newRole =
-        application.applicationType === "doctor" ? "doctor" : "pharmacy";
-      await application.user.update({ role: newRole });
-    }
 
     res.status(200).json({
       success: true,

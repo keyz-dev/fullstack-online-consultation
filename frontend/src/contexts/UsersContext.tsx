@@ -45,6 +45,7 @@ const USERS_ACTIONS = {
   SET_LOADING: "SET_LOADING",
   SET_ERROR: "SET_ERROR",
   SET_USERS: "SET_USERS",
+  SET_STATS: "SET_STATS",
   SET_FILTERS: "SET_FILTERS",
   SET_PAGINATION: "SET_PAGINATION",
   UPDATE_USER: "UPDATE_USER",
@@ -68,19 +69,23 @@ const usersReducer = (state: typeof initialState, action: UsersAction) => {
     case USERS_ACTIONS.SET_USERS:
       const payload = action.payload as {
         users?: User[];
-        stats?: UserStats;
         total?: number;
       };
       return {
         ...state,
         users: payload.users || [],
-        stats: payload.stats || state.stats,
         pagination: {
           ...state.pagination,
           total: payload.total || payload.users?.length || 0,
         },
         loading: false,
         error: null,
+      };
+
+    case USERS_ACTIONS.SET_STATS:
+      return {
+        ...state,
+        stats: action.payload as UserStats,
       };
 
     case USERS_ACTIONS.SET_FILTERS:
@@ -170,11 +175,12 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
         sortOrder: state.filters.sortOrder,
       });
 
+      console.log("Users API Response:", response.data); // Debug log
       dispatch({
         type: USERS_ACTIONS.SET_USERS,
         payload: {
-          users: response.data,
-          total: response.pagination.total,
+          users: response.data.data,
+          total: response.data.pagination.total,
         },
       });
     } catch (error) {
@@ -183,15 +189,25 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch({ type: USERS_ACTIONS.SET_ERROR, payload: errorMessage });
       toast.error(errorMessage);
     }
-  }, []);
+  }, [
+    state.pagination.page,
+    state.pagination.limit,
+    state.filters.search,
+    state.filters.role,
+    state.filters.status,
+    state.filters.verified,
+    state.filters.sortBy,
+    state.filters.sortOrder,
+  ]);
 
   // Fetch user stats
   const fetchUserStats = useCallback(async () => {
     try {
       const response = await usersAPI.getUserStats();
+      console.log("Stats API Response:", response.data); // Debug log
       dispatch({
-        type: USERS_ACTIONS.SET_USERS,
-        payload: { stats: response.data },
+        type: USERS_ACTIONS.SET_STATS,
+        payload: response.data.data,
       });
     } catch (error) {
       console.error("Failed to fetch user stats:", error);
@@ -205,7 +221,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
         const response = await usersAPI.updateUserStatus(id, { isActive });
         dispatch({
           type: USERS_ACTIONS.UPDATE_USER,
-          payload: response.data,
+          payload: response.data.data,
         });
         toast.success(
           `User ${isActive ? "activated" : "deactivated"} successfully`
@@ -254,19 +270,37 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Effects
   useEffect(() => {
-    fetchUsers();
-  }, []); // Only run once on mount
+    // Initial data fetch - fetch both users and stats
+    const initializeData = async () => {
+      try {
+        // Fetch users first
+        await fetchUsers();
+        // Then fetch stats
+        await fetchUserStats();
+      } catch (error) {
+        console.error("Failed to initialize data:", error);
+      }
+    };
 
-  useEffect(() => {
-    fetchUserStats();
+    initializeData();
   }, []); // Only run once on mount
 
   // Refetch users when filters or pagination change
   useEffect(() => {
-    if (!state.loading) {
+    // Skip the initial load and only refetch when filters/pagination actually change
+    const hasInitialData = state.users.length > 0 || state.loading;
+    if (hasInitialData && !state.loading) {
       fetchUsers();
     }
-  }, [state.filters, state.pagination.page]);
+  }, [
+    state.filters.search,
+    state.filters.role,
+    state.filters.status,
+    state.filters.verified,
+    state.filters.sortBy,
+    state.filters.sortOrder,
+    state.pagination.page,
+  ]);
 
   // Calculate pagination info
   const totalPages = Math.ceil(state.pagination.total / state.pagination.limit);

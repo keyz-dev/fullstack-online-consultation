@@ -10,38 +10,108 @@ import {
   FileText,
   User,
   Calendar,
+  RefreshCw,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui";
+import { doctorAppApi, DoctorApplicationData } from "@/api/doctorApp";
+import { toast } from "react-toastify";
 
 interface ApplicationStatus {
-  status: "pending" | "under_review" | "approved" | "rejected";
+  id: number;
+  status: "pending" | "under_review" | "approved" | "rejected" | "suspended";
   submittedAt: string;
   estimatedReviewTime: string;
   lastUpdated: string;
   adminNotes?: string;
+  rejectionReason?: string;
 }
 
 const DoctorApplicationStatusPage = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const router = useRouter();
-  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>(
-    {
-      status: "pending",
-      submittedAt: "2024-01-15T10:30:00Z",
-      estimatedReviewTime: "5-7 business days",
-      lastUpdated: "2024-01-15T10:30:00Z",
+  const [applicationStatus, setApplicationStatus] =
+    useState<ApplicationStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Fetch application status
+  const fetchApplicationStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await doctorAppApi.getUserApplications();
+      if (response.success && response.data) {
+        setApplicationStatus({
+          id: response.data.id,
+          status: response.data.status,
+          submittedAt: response.data.submittedAt,
+          estimatedReviewTime: "5-7 business days",
+          lastUpdated: response.data.reviewedAt || response.data.submittedAt,
+          adminNotes: response.data.adminNotes,
+          rejectionReason: response.data.rejectionReason,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching application status:", error);
+      toast.error("Failed to fetch application status");
+    } finally {
+      setLoading(false);
     }
-  );
+  };
 
   // Redirect if not a pending doctor
   useEffect(() => {
-    if (user && user.role !== "pending_doctor") {
+    if (user && !user.role.includes("doctor")) {
       router.push("/");
     }
   }, [user, router]);
 
-  if (!user || user.role !== "pending_doctor") {
+  // Fetch application status on mount
+  useEffect(() => {
+    if (user) {
+      fetchApplicationStatus();
+    }
+  }, [user]);
+
+  if (!user || !user.role.includes("doctor")) {
     return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <div className="animate-pulse">
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!applicationStatus) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              No Application Found
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              You don&apos;t have any doctor application submitted.
+            </p>
+            <Button
+              onClickHandler={() => router.push("/register/doctor")}
+              additionalClasses="primarybtn"
+              text="Submit Application"
+            />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const getStatusIcon = (status: string) => {
@@ -218,12 +288,75 @@ const DoctorApplicationStatusPage = () => {
               text="Contact Support"
               variant="outline"
             />
+            <Button
+              onClickHandler={fetchApplicationStatus}
+              additionalClasses="flex-1"
+              text="Refresh Status"
+              variant="outline"
+              disabled={actionLoading}
+              leadingIcon={
+                <RefreshCw
+                  className={`w-4 h-4 ${actionLoading ? "animate-spin" : ""}`}
+                />
+              }
+            />
             {applicationStatus.status === "rejected" && (
               <Button
-                onClickHandler={() => router.push("/register/doctor")}
+                onClickHandler={async () => {
+                  try {
+                    setActionLoading(true);
+                    await doctorAppApi.reapplyApplication(
+                      applicationStatus.id.toString()
+                    );
+                    toast.success("Application resubmitted successfully!");
+                    fetchApplicationStatus();
+                  } catch (error: any) {
+                    const errorMessage =
+                      error instanceof Error
+                        ? error.message
+                        : "Failed to resubmit application";
+                    toast.error(errorMessage);
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
                 additionalClasses="flex-1"
                 text="Reapply"
                 variant="primary"
+                disabled={actionLoading}
+              />
+            )}
+            {applicationStatus.status === "approved" && (
+              <Button
+                onClickHandler={async () => {
+                  try {
+                    setActionLoading(true);
+                    const response = await doctorAppApi.activateAccount(
+                      applicationStatus.id.toString()
+                    );
+                    toast.success("Account activated successfully!");
+                    if (updateUser && response.data?.role) {
+                      updateUser({
+                        ...user,
+                        role: response.data.role as "doctor",
+                      });
+                    }
+                    router.push("/dashboard/doctor");
+                  } catch (error: any) {
+                    const errorMessage =
+                      error instanceof Error
+                        ? error.message
+                        : "Failed to activate account";
+                    toast.error(errorMessage);
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+                additionalClasses="flex-1"
+                text="Activate Account"
+                variant="primary"
+                disabled={actionLoading}
+                leadingIcon={<Play className="w-4 h-4" />}
               />
             )}
           </div>

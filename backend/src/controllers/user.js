@@ -6,7 +6,7 @@ const {
   ActivityLog,
 } = require("../db/models");
 const { Op } = require("sequelize");
-const { formatUserData } = require("../utils/returnFormats/userData");
+const formatUserData = require("../utils/returnFormats/userData");
 
 // Get all users with filters and pagination
 const getAllUsers = async (req, res) => {

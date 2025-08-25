@@ -22,6 +22,9 @@ router.post(
   registrationController.registerAdmin
 );
 
+// Google OAuth sign up
+router.post("/google-signup", authController.googleSignUp);
+
 // Patient registration (simple, no documents)
 router.post(
   "/register/patient",

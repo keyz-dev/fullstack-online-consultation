@@ -43,24 +43,24 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   const isImage =
     documentData?.fileType?.startsWith("image/") ||
     documentData?.type?.startsWith("image/") ||
-    documentData?.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ||
-    documentData?.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    !!documentData?.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ||
+    !!documentData?.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
 
   const isPDF =
     documentData?.fileType === "application/pdf" ||
     documentData?.type === "application/pdf" ||
-    documentData?.url?.toLowerCase().includes(".pdf") ||
-    documentData?.name?.toLowerCase().includes(".pdf");
+    !!documentData?.url?.toLowerCase().includes(".pdf") ||
+    !!documentData?.name?.toLowerCase().includes(".pdf");
 
   const isDocument =
     isPDF ||
-    documentData?.fileType?.includes("document") ||
-    documentData?.type?.includes("document") ||
-    documentData?.url?.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt)$/i) ||
-    documentData?.name?.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt)$/i);
+    !!documentData?.fileType?.includes("document") ||
+    !!documentData?.type?.includes("document") ||
+    !!documentData?.url?.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt)$/i) ||
+    !!documentData?.name?.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt)$/i);
 
   // Check if URL is from Cloudinary
-  const isCloudinaryURL = documentData?.url?.includes("cloudinary.com");
+  const isCloudinaryURL = !!documentData?.url?.includes("cloudinary.com");
 
   // Reset state when document changes
   useEffect(() => {
@@ -70,6 +70,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       setRotation(0);
       setIsLoading(true);
       setError(null);
+
+      // Simple approach like frontend_reference - let the browser handle loading
+      // No complex URL checking or accessibility validation
     }
   }, [documentData]);
 
@@ -177,7 +180,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 ${
+      className={`fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4 ${
         isFullscreen ? "p-0" : ""
       }`}
     >

@@ -1,48 +1,9 @@
-import api, { Address } from "./index";
+import api from "./index";
 
-// Input data for creating doctor application
-export interface DoctorApplicationInput {
-  // Basic Information
-  name: string;
-  email: string;
-  phone: string;
-  licenseNumber: string;
-  experience: number;
-  bio: string;
-  education?: Array<{
-    degree: string;
-    institution: string;
-    year: string;
-  }>;
-  languages?: string[];
-
-  // Specialties
-  specialties?: string[];
-
-  // Address & Location
-  clinicAddress?: Address;
-  operationalHospital?: string;
-
-  // Documents
-  documents?: Array<{
-    file: File;
-    documentName: string;
-  }>;
-
-  // Payment Setup
-  consultationFee?: number;
-  consultationDuration?: number;
-  paymentMethods?: string[];
-
-  // Terms
-  agreedToTerms?: boolean;
-}
-
-// Application data structure returned by backend
-export interface DoctorApplicationData {
+export interface PharmacyApplicationData {
   id: number;
   userId: number;
-  applicationType: "doctor";
+  applicationType: "pharmacy";
   typeId: number;
   status: "pending" | "under_review" | "approved" | "rejected" | "suspended";
   applicationVersion: number;
@@ -66,11 +27,11 @@ export interface DoctorApplicationData {
     email: string;
     role: string;
   };
-  doctor?: {
+  pharmacy?: {
     id: number;
+    name: string;
     licenseNumber: string;
-    experience: number;
-    bio: string;
+    description: string;
   };
   documents: Array<{
     id: number;
@@ -82,22 +43,10 @@ export interface DoctorApplicationData {
   }>;
 }
 
-// Response for getting user applications
-export interface DoctorApplicationResponse {
+export interface PharmacyApplicationResponse {
   success: boolean;
   message: string;
-  data?: DoctorApplicationData;
-  error?: string;
-}
-
-// Response for create application
-export interface CreateDoctorApplicationResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    applicationId: string;
-    status: string;
-  };
+  data?: PharmacyApplicationData;
   error?: string;
 }
 
@@ -112,13 +61,13 @@ export interface ActivateAccountResponse {
   error?: string;
 }
 
-class DoctorAppApi {
-  // Create doctor application
-  async createDoctorSetup(
+class PharmacyAppApi {
+  // Create pharmacy application
+  async createPharmacySetup(
     formData: FormData
-  ): Promise<CreateDoctorApplicationResponse> {
+  ): Promise<PharmacyApplicationResponse> {
     try {
-      const response = await api.post("/auth/register/doctor", formData, {
+      const response = await api.post("/auth/register/pharmacy", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -129,10 +78,10 @@ class DoctorAppApi {
     }
   }
 
-  // Get doctor application status
+  // Get pharmacy application status
   async getApplicationStatus(
     applicationId: string
-  ): Promise<DoctorApplicationResponse> {
+  ): Promise<PharmacyApplicationResponse> {
     try {
       const response = await api.get(
         `/userApplications/${applicationId}/status`
@@ -143,8 +92,8 @@ class DoctorAppApi {
     }
   }
 
-  // Get user's doctor applications
-  async getUserApplications(): Promise<DoctorApplicationResponse> {
+  // Get user's pharmacy applications
+  async getUserApplications(): Promise<PharmacyApplicationResponse> {
     try {
       const response = await api.get("/userApplications/user");
       return response.data;
@@ -156,7 +105,7 @@ class DoctorAppApi {
   // Reapply for rejected application
   async reapplyApplication(
     applicationId: string
-  ): Promise<DoctorApplicationResponse> {
+  ): Promise<PharmacyApplicationResponse> {
     try {
       const response = await api.put(
         `/userApplications/${applicationId}/reapply`
@@ -181,10 +130,10 @@ class DoctorAppApi {
     }
   }
 
-  // Cancel doctor application
+  // Cancel pharmacy application
   async cancelApplication(
     applicationId: string
-  ): Promise<DoctorApplicationResponse> {
+  ): Promise<PharmacyApplicationResponse> {
     try {
       const response = await api.delete(`/userApplications/${applicationId}`);
       return response.data;
@@ -194,4 +143,4 @@ class DoctorAppApi {
   }
 }
 
-export const doctorAppApi = new DoctorAppApi();
+export const pharmacyAppApi = new PharmacyAppApi();

@@ -8,6 +8,7 @@ import {
   PhoneInput,
   AddressInput,
 } from "@/components/ui";
+import GoogleSignupButton from "@/components/auth/GoogleSignupButton";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, MapPin } from "lucide-react";
 
@@ -130,6 +131,26 @@ const Step1_BasicUserInfo = () => {
         </div>
 
         <div className="space-y-4 sm:space-y-6">
+          {/* Google Signup Option */}
+          <div className="text-center space-y-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            <GoogleSignupButton
+              role="incomplete_doctor"
+              buttonText="Continue with Google"
+              fullWidth
+              variant="outline"
+            />
+          </div>
+
           {/* Personal Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input

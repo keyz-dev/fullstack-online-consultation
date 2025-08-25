@@ -221,7 +221,11 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
               ]
             : []),
         ];
-        return <DropdownMenu items={menuItems} />;
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu items={menuItems} />
+          </div>
+        );
       },
     },
   ];

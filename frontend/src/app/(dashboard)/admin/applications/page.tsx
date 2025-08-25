@@ -6,6 +6,7 @@ import {
   ApplicationList,
   ApplicationStatSection,
   ApplicationReviewModal,
+  ApplicationDetailModal,
 } from "@/components/dashboard/admin/applications";
 import { useAdminApplications } from "@/hooks/useAdminApplications";
 import { Application } from "@/api/admin";
@@ -14,6 +15,7 @@ const AdminApplicationsPage: React.FC = () => {
   const [selectedApplication, setSelectedApplication] =
     useState<Application | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | null>(
     null
   );
@@ -43,8 +45,8 @@ const AdminApplicationsPage: React.FC = () => {
   };
 
   const handleViewDetails = (application: Application) => {
-    // TODO: Implement view details modal
-    console.log("View details for:", application.id);
+    setSelectedApplication(application);
+    setShowDetailsModal(true);
   };
 
   const handleReviewSuccess = () => {
@@ -114,6 +116,17 @@ const AdminApplicationsPage: React.FC = () => {
           onReview={handleReview}
         />
       </FadeInContainer>
+
+      {/* Details Modal */}
+      <ApplicationDetailModal
+        application={selectedApplication}
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedApplication(null);
+        }}
+        onReview={handleReview}
+      />
 
       {/* Review Modal */}
       <ApplicationReviewModal

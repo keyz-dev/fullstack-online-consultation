@@ -48,6 +48,15 @@ interface AuthContextType {
     role: "doctor" | "pharmacy"
   ) => Promise<{ success: boolean; user: User }>;
   handleGoogleLogin: () => void;
+  handleGoogleSignUp: (
+    role:
+      | "doctor"
+      | "pharmacy"
+      | "patient"
+      | "admin"
+      | "incomplete_doctor"
+      | "incomplete_pharmacy"
+  ) => () => void;
   forgotPassword: (
     emailData: ForgotPasswordRequest
   ) => Promise<{ success: boolean; message: string }>;
@@ -351,18 +360,76 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setAuthError(null);
             redirectBasedOnRole(user);
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = extractErrorMessage(error as any);
           setAuthError(
-            error.response?.data?.message ||
+            (error as any)?.response?.data?.message ||
+              errorMessage ||
               "Google login failed. Please try again."
           );
         }
       }
     },
-    onError: (error: any) => {
-      setAuthError(error.message || "Google login failed. Please try again.");
+    onError: (error: unknown) => {
+      const errorMessage = extractErrorMessage(error as any);
+      setAuthError(
+        (error as any)?.message ||
+          errorMessage ||
+          "Google login failed. Please try again."
+      );
     },
   });
+
+  /**
+   * Returns a Google sign up handler for the specified role.
+   * Usage: handleGoogleSignUp("doctor")();
+   */
+  const handleGoogleSignUp = (
+    role:
+      | "doctor"
+      | "pharmacy"
+      | "patient"
+      | "admin"
+      | "incomplete_doctor"
+      | "incomplete_pharmacy"
+  ) =>
+    useGoogleLogin({
+      scope: "profile email openid",
+      onSuccess: async (tokenResponse) => {
+        const { access_token } = tokenResponse;
+        if (access_token) {
+          try {
+            const response = await authAPI.googleSignUp({
+              access_token,
+              role,
+            });
+            if (response.data) {
+              const { user, token } = response.data;
+              setUserAndToken(user, token || "");
+              setAuthError(null);
+              redirectBasedOnRole(user);
+            }
+          } catch (error: unknown) {
+            // Use extractErrorMessage for consistency
+            const errorMessage = extractErrorMessage(error);
+            setAuthError(
+              (error as any)?.response?.data?.message ||
+                errorMessage ||
+                "Google sign up failed. Please try again."
+            );
+          }
+        }
+      },
+      onError: (error: unknown) => {
+        // Use extractErrorMessage for consistency
+        const errorMessage = extractErrorMessage(error);
+        setAuthError(
+          (error as any)?.message ||
+            errorMessage ||
+            "Google sign up failed. Please try again."
+        );
+      },
+    });
 
   const forgotPassword = async (emailData: ForgotPasswordRequest) => {
     setLoading(true);
@@ -431,6 +498,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     registerPharmacy,
     initiateRegistration,
     handleGoogleLogin,
+    handleGoogleSignUp,
     forgotPassword,
     resetPassword,
     verifyEmail,

@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { X, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-import { Button, TextArea } from "@/components/ui";
+import {
+  Button,
+  TextArea,
+  ModalWrapper,
+  FadeInContainer,
+  DocumentPreview,
+} from "@/components/ui";
 import { adminApi, Application, DocumentReview } from "@/api/admin";
 import DocumentReviewCard from "./DocumentReviewCard";
 import { toast } from "react-toastify";
@@ -71,7 +77,8 @@ const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
     setLoading(true);
     try {
       const reviewData = {
-        status: action === "approve" ? "approved" : "rejected",
+        status:
+          action === "approve" ? ("approved" as const) : ("rejected" as const),
         remarks: formData.remarks,
         ...(action === "reject" && {
           rejectionReason: formData.remarks,
@@ -83,14 +90,24 @@ const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
 
       await adminApi.reviewApplication(application.id, reviewData);
 
+      // clear the form data
+      setFormData({
+        remarks: "",
+        documentReviews: [],
+      });
+      // clear the preview document
+      setPreviewDocument(null);
+
       toast.success(`Application ${action}d successfully`);
       onSuccess();
       onClose();
     } catch (error: any) {
       console.error("Review submission failed:", error);
-      toast.error(
-        error.response?.data?.message || `Failed to ${action} application`
-      );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Failed to ${action} application`;
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -140,42 +157,38 @@ const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-          <div className="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"></div>
+    <ModalWrapper>
+      <div className="w-full max-w-2xl min-w-sm lg:min-w-lg mx-auto max-h-[90vh] flex flex-col p-2 lg:py-4">
+        {/* Header - Fixed */}
+        <div
+          className={`${config.bgColor} ${config.borderColor} border-b px-6 py-4 flex-shrink-0`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Icon size={24} className={config.iconColor} />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {config.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {getBusinessName()} • {application.applicationType}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full max-h-[90vh] flex flex-col">
-          {/* Header */}
-          <div
-            className={`${config.bgColor} ${config.borderColor} border-b px-6 py-4`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Icon size={24} className={config.iconColor} />
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {config.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {getBusinessName()} • {application.applicationType}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="px-6 py-6 flex-1 overflow-y-auto">
-            <div className="space-y-6 flex flex-col min-h-0">
-              {/* Remarks Field */}
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <FadeInContainer delay={200} duration={600}>
+            <div className="space-y-6">
+              {/* Remarks Field - Dynamic based on action */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {action === "approve"
@@ -195,7 +208,7 @@ const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
                       ? "Provide any additional feedback or instructions for the new provider (optional)..."
                       : "Please provide a clear reason for rejecting this application..."
                   }
-                  additionalClasses={`max-h-32 overflow-y-auto ${
+                  additionalClasses={` ${
                     action === "reject" && !formData.remarks.trim()
                       ? "border-red-300 focus:ring-red-500 focus:border-red-500 dark:border-red-600"
                       : "border-gray-300 dark:border-gray-600"
@@ -233,7 +246,7 @@ const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
 
               {/* Warning for rejections */}
               {action === "reject" && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-sm p-4">
                   <div className="flex items-center gap-2">
                     <AlertTriangle
                       size={16}
@@ -251,89 +264,60 @@ const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
                 </div>
               )}
             </div>
-          </div>
+          </FadeInContainer>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              onClickHandler={onClose}
-              additionalClasses="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              isDisabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClickHandler={handleSubmit}
-              additionalClasses={`flex-1 ${
-                isSubmitDisabled
-                  ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
-                  : config.buttonColor
-              } text-white`}
-              isDisabled={isSubmitDisabled}
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  {action === "approve" ? "Approving..." : "Rejecting..."}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Icon size={16} />
-                  {action === "approve"
-                    ? "Approve Application"
-                    : "Reject Application"}
-                </div>
-              )}
-            </Button>
-          </div>
+        {/* Fixed Action Buttons */}
+        <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <Button
+            onClickHandler={onClose}
+            additionalClasses="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+            isDisabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClickHandler={handleSubmit}
+            additionalClasses={`flex-1 ${
+              isSubmitDisabled
+                ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                : config.buttonColor
+            } text-white`}
+            isDisabled={isSubmitDisabled}
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                {action === "approve" ? "Approving..." : "Rejecting..."}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Icon size={16} />
+                {action === "approve"
+                  ? "Approve Application"
+                  : "Reject Application"}
+              </div>
+            )}
+          </Button>
         </div>
       </div>
 
       {/* Document Preview Modal */}
       {previewDocument && (
-        <div className="fixed inset-0 z-60 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 transition-opacity"
-              aria-hidden="true"
-            >
-              <div className="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"></div>
-            </div>
-
-            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Document Preview
-                  </h3>
-                  <button
-                    onClick={() => setPreviewDocument(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                {previewDocument.mimeType?.startsWith("image/") ? (
-                  <img
-                    src={previewDocument.fileUrl}
-                    alt={previewDocument.fileName}
-                    className="max-w-full h-auto mx-auto"
-                  />
-                ) : (
-                  <iframe
-                    src={previewDocument.fileUrl}
-                    className="w-full h-96 border border-gray-200 dark:border-gray-700 rounded-lg"
-                    title={previewDocument.fileName}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <DocumentPreview
+          document={{
+            id: previewDocument.id.toString(),
+            url: previewDocument.fileUrl,
+            name: previewDocument.fileName,
+            documentName: previewDocument.fileName,
+            fileType: previewDocument.mimeType,
+            size: previewDocument.fileSize,
+          }}
+          isOpen={!!previewDocument}
+          onClose={() => setPreviewDocument(null)}
+        />
       )}
-    </div>
+    </ModalWrapper>
   );
 };
 

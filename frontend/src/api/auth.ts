@@ -86,6 +86,17 @@ export interface GoogleLoginRequest {
   access_token: string;
 }
 
+export interface GoogleSignUpRequest {
+  access_token: string;
+  role:
+    | "doctor"
+    | "pharmacy"
+    | "patient"
+    | "admin"
+    | "incomplete_doctor"
+    | "incomplete_pharmacy";
+}
+
 // ==================== REGISTRATION INTERFACES ====================
 export interface BaseUserData {
   name: string;
@@ -540,6 +551,12 @@ class AuthAPI {
     data: { user: User; token: string };
   }> {
     const response = await api.post("/auth/verify-email", verifyData);
+    return response.data;
+  }
+
+  // Google OAuth sign up
+  async googleSignUp(googleData: GoogleSignUpRequest): Promise<AuthResponse> {
+    const response = await api.post("/auth/google-signup", googleData);
     return response.data;
   }
 

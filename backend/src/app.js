@@ -1,12 +1,24 @@
 const express = require("express");
+const cors = require("cors");
 const apiRoutes = require("./routes/index.js");
 const path = require("path");
 const middleware = require("./middleware/index.js");
+const { initializeSocket } = require("./sockets/index.js");
 require("dotenv").config();
 require("./config/database.js");
 
 const port = process.env.PORT || 4500;
 const app = express();
+
+// CORS configuration
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -15,7 +27,26 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", apiRoutes);
 
 // serve images from the src/uploads dir
-app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    // Add CORS headers for uploads
+    res.header(
+      "Access-Control-Allow-Origin",
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    );
+    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", "true");
+
+    if (req.method === "OPTIONS") {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  },
+  express.static(path.join(__dirname, "./uploads"))
+);
 
 app.get("/", (req, res) => {
   res.status(200).send({ message: "This server works doesn't it??" });
@@ -27,6 +58,9 @@ app.use("*", (req, res, next) => {
 
 app.use(middleware.errorHandler);
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+// Initialize Socket.io
+initializeSocket(server);

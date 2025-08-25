@@ -24,14 +24,12 @@ module.exports = (sequelize, DataTypes) => {
       // UserApplication belongs to a doctor (polymorphic)
       UserApplication.belongsTo(models.Doctor, {
         foreignKey: "typeId",
-        scope: { applicationType: "doctor" },
         as: "doctor",
       });
 
       // UserApplication belongs to a pharmacy (polymorphic)
       UserApplication.belongsTo(models.Pharmacy, {
         foreignKey: "typeId",
-        scope: { applicationType: "pharmacy" },
         as: "pharmacy",
       });
 

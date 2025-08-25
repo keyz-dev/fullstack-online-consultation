@@ -18,14 +18,14 @@ const createNotification = async (
   type,
   title,
   message,
+  priority = "medium",
   relatedId = null,
-  relatedModel = "UserApplication",
-  priority = "medium"
+  relatedModel = "UserApplication"
 ) => {
   try {
     const notification = await Notification.create({
       user_id: userId,
-      type: "system", // Use system type for application notifications
+      type: type, // Use the type parameter passed to the function
       title,
       message,
       priority,
@@ -70,9 +70,9 @@ const notifyAdmins = async (notificationType, title, message, relatedId) => {
         notificationType,
         title,
         message,
+        "high",
         relatedId,
-        "UserApplication",
-        "high"
+        "UserApplication"
       );
     }
   } catch (error) {
@@ -282,17 +282,17 @@ class RegistrationService {
       // Create notification for user
       await createNotification(
         user.id,
-        "doctor_application_submitted",
+        "application_under_review",
         "Application Submitted Successfully",
         `Your doctor application has been submitted and is under review.`,
+        "medium",
         application.id,
-        "UserApplication",
-        "medium"
+        "UserApplication"
       );
 
       // Notify admins
       await notifyAdmins(
-        "doctor_application_submitted",
+        "system_announcement",
         "New Doctor Application",
         `A new doctor application has been submitted by ${user.name} with license number ${doctorData.licenseNumber}.`,
         application.id
@@ -387,17 +387,17 @@ class RegistrationService {
       // Create notification for user
       await createNotification(
         user.id,
-        "pharmacy_application_submitted",
+        "application_under_review",
         "Application Submitted Successfully",
         `Your pharmacy application has been submitted and is under review.`,
+        "medium",
         application.id,
-        "UserApplication",
-        "medium"
+        "UserApplication"
       );
 
       // Notify admins
       await notifyAdmins(
-        "pharmacy_application_submitted",
+        "system_announcement",
         "New Pharmacy Application",
         `A new pharmacy application has been submitted by ${user.name} for "${pharmacyData.name}".`,
         application.id

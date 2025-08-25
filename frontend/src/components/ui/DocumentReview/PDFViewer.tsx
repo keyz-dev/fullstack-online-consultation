@@ -55,12 +55,22 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
       }
     };
 
+    // Add a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (mounted && isLoading) {
+        setError("PDF loading timed out. Please try downloading the file.");
+        setIsLoading(false);
+        onError("PDF loading timed out");
+      }
+    }, 15000); // 15 second timeout
+
     loadPDF();
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
     };
-  }, [url, onLoad, onError]);
+  }, [url, onLoad, onError, isLoading]);
 
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current) return;

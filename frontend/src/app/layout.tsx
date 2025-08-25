@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider, LanguageProvider, AuthProvider } from "../contexts";
+import {
+  ThemeProvider,
+  LanguageProvider,
+  AuthProvider,
+  SocketProvider,
+} from "../contexts";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -34,8 +39,10 @@ export default function RootLayout({
           <ThemeProvider>
             <LanguageProvider>
               <AuthProvider>
-                <ToastContainer />
-                {children}
+                <SocketProvider>
+                  <ToastContainer />
+                  {children}
+                </SocketProvider>
               </AuthProvider>
             </LanguageProvider>
           </ThemeProvider>

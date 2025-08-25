@@ -36,7 +36,6 @@ module.exports = (sequelize, DataTypes) => {
       // Pharmacy has many user applications
       Pharmacy.hasMany(models.UserApplication, {
         foreignKey: "typeId",
-        scope: { applicationType: "pharmacy" },
         as: "applications",
       });
     }

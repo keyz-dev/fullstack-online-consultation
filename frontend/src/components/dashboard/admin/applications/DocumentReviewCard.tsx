@@ -43,12 +43,12 @@ const DocumentReviewCard: React.FC<DocumentReviewCardProps> = ({
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
 
-      const link = document.createElement("a");
+      const link = window.document.createElement("a");
       link.href = url;
       link.download = document.fileName || "document";
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
 
       window.URL.revokeObjectURL(url);
     } catch (error) {

@@ -120,6 +120,60 @@ exports.googleLogin = async (req, res, next) => {
   }
 };
 
+// Google OAuth sign up
+exports.googleSignUp = async (req, res, next) => {
+  try {
+    const { error } = googleLoginSchema.validate(req.body);
+    if (error) return next(new BadRequestError(error.details[0].message));
+
+    const { access_token, role } = req.body;
+
+    if (!access_token) return next(new NotFoundError("Access token not found"));
+
+    // 1. Validate token & get user profile from Google
+    const response = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      }
+    );
+    const { email, name, picture } = response.data;
+
+    if (!email)
+      return next(new NotFoundError("Email not available from Google"));
+
+    let user = await User.findOne({ where: { email } });
+    if (!user) {
+      // Create new user
+      user = await User.create({
+        email,
+        name,
+        avatar: picture,
+        authProvider: "google",
+        isVerified: true,
+        isActive: true,
+        emailVerified: true,
+        emailVerificationCode: null,
+        emailVerificationExpires: null,
+        role,
+      });
+    }
+
+    // Generate token
+    const authToken = user.generateAuthToken();
+
+    res.json({
+      status: "success",
+      data: {
+        user: formatUserData(user),
+        token: authToken,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 // ==================== EMAIL VERIFICATION ====================
 exports.verifyEmail = async (req, res, next) => {
   try {

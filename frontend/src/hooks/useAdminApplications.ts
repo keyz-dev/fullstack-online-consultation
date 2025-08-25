@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { adminApi } from "@/api/admin";
 import { toast } from "react-toastify";
 import { Application, ApplicationStats } from "@/api/admin";
-import { extractErrorMessage } from "@/utils/extractError";
 
 export const useAdminApplications = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -35,10 +34,8 @@ export const useAdminApplications = () => {
     try {
       const response = await adminApi.getApplications({
         page: 1,
-        limit: 1000, // Get all applications for client-side filtering
+        limit: 1000,
       });
-      console.log("Frontend received response:", response);
-      console.log("Applications array:", response.applications);
       setApplications(response.applications || []);
     } catch (err: unknown) {
       const errorMessage =
@@ -86,9 +83,6 @@ export const useAdminApplications = () => {
 
   // Client-side filtering (like the reference)
   const filteredApplications = useMemo(() => {
-    console.log("Filtering applications:", applications.length, "applications");
-    console.log("Current filters:", filters);
-
     const filtered = applications.filter((application) => {
       // Status filter
       if (filters.status && application.status !== filters.status) {
@@ -122,7 +116,6 @@ export const useAdminApplications = () => {
       return true;
     });
 
-    console.log("Filtered applications:", filtered.length, "applications");
     return filtered;
   }, [applications, filters]);
 
@@ -131,13 +124,7 @@ export const useAdminApplications = () => {
     const startIndex = (pagination.currentPage - 1) * pagination.limit;
     const endIndex = startIndex + pagination.limit;
     const paginated = filteredApplications.slice(startIndex, endIndex);
-    console.log("Paginated applications:", paginated.length, "applications");
-    console.log("Pagination info:", {
-      startIndex,
-      endIndex,
-      currentPage: pagination.currentPage,
-      limit: pagination.limit,
-    });
+
     return paginated;
   }, [filteredApplications, pagination.currentPage, pagination.limit]);
 
