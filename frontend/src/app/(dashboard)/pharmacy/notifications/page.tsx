@@ -11,7 +11,7 @@ import {
   NotificationListView,
 } from "@/components/dashboard/admin/notifications";
 
-const PendingPharmacyNotificationsPage: React.FC = () => {
+const PharmacyNotificationsPage: React.FC = () => {
   const {
     notifications,
     loading,
@@ -45,30 +45,20 @@ const PendingPharmacyNotificationsPage: React.FC = () => {
     }
   }, []);
 
+  // Fetch stats on component mount
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, []);
-
-  const handleFilterChange = useCallback((key: string, value: string) => {
-    if (key === "search") {
-      setSearchQuery(value);
-    } else {
-      setFilters((prev) => ({ ...prev, [key]: value }));
-    }
-  }, []);
-
-  const handleClearAll = useCallback(() => {
-    setFilters({
-      type: "all",
-      priority: "all",
-      status: "all",
+  // Update stats when notifications change
+  useEffect(() => {
+    setStats({
+      total: notifications.length,
+      unread: unreadCount,
+      urgent: notifications.filter((n) => n.priority === "urgent").length,
+      high: notifications.filter((n) => n.priority === "high").length,
     });
-    setSearchQuery("");
-  }, []);
+  }, [notifications, unreadCount]);
 
   const handleMarkAllAsRead = useCallback(async () => {
     try {
@@ -77,7 +67,7 @@ const PendingPharmacyNotificationsPage: React.FC = () => {
       await fetchStats();
       toast.success("All notifications marked as read");
     } catch (error) {
-      console.error("Failed to mark all as read:", error);
+      console.error("Failed to mark all notifications as read:", error);
       toast.error("Failed to mark all notifications as read");
     }
   }, [refreshNotifications, fetchStats]);
@@ -103,8 +93,7 @@ const PendingPharmacyNotificationsPage: React.FC = () => {
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
         notification.title.toLowerCase().includes(searchLower) ||
-        notification.message.toLowerCase().includes(searchLower) ||
-        notification.type.toLowerCase().includes(searchLower);
+        notification.message.toLowerCase().includes(searchLower);
       if (!matchesSearch) return false;
     }
 
@@ -122,9 +111,11 @@ const PendingPharmacyNotificationsPage: React.FC = () => {
     }
 
     // Status filter
-    if (filters.status !== "all") {
-      if (filters.status === "read" && !notification.readAt) return false;
-      if (filters.status === "unread" && notification.readAt) return false;
+    if (filters.status === "unread" && notification.isRead) {
+      return false;
+    }
+    if (filters.status === "read" && !notification.isRead) {
+      return false;
     }
 
     return true;
@@ -141,13 +132,23 @@ const PendingPharmacyNotificationsPage: React.FC = () => {
       <NotificationFilters
         filters={filters}
         searchQuery={searchQuery}
-        onFilterChange={handleFilterChange}
-        onSearch={handleSearch}
-        onClearAll={handleClearAll}
+        onFilterChange={(key, value) => {
+          if (key === "search") {
+            setSearchQuery(value);
+          } else {
+            setFilters((prev) => ({ ...prev, [key]: value }));
+          }
+        }}
+        onSearch={setSearchQuery}
+        onClearAll={() => {
+          setFilters({ type: "all", priority: "all", status: "all" });
+          setSearchQuery("");
+        }}
         onRefresh={refreshNotifications}
         loading={loading}
       />
 
+      {/* Notifications List */}
       <NotificationListView
         notifications={filteredNotifications}
         loading={loading}
@@ -161,4 +162,4 @@ const PendingPharmacyNotificationsPage: React.FC = () => {
   );
 };
 
-export default PendingPharmacyNotificationsPage;
+export default PharmacyNotificationsPage;

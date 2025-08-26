@@ -115,24 +115,40 @@ export interface DoctorAvailability {
   startTime: string;
   endTime: string;
   isAvailable: boolean;
+  maxPatients?: number;
+  consultationDuration: number;
+}
+
+export interface TimeSlot {
+  startTime: string;
+  endTime: string;
+  available: boolean;
 }
 
 export interface Consultation {
   id: string;
   patientId: string;
   doctorId: string;
-  specialtyId: string;
-  status: "pending" | "active" | "completed" | "cancelled";
-  symptoms: string;
-  diagnosis?: string;
-  prescription?: string;
-  consultationFee: number;
+  status: "scheduled" | "in_progress" | "completed" | "cancelled" | "no_show";
+  type: "video_call" | "voice_call" | "chat" | "in_person";
   scheduledAt: string;
   startedAt?: string;
   endedAt?: string;
+  duration?: number; // in minutes
+  symptoms?: string[];
+  diagnosis?: string;
+  notes?: string;
+  prescription?: any;
+  followUpDate?: string;
+  followUpNotes?: string;
+  rating?: number;
+  review?: string;
+  cancellationReason?: string;
+  cancelledBy?: "patient" | "doctor" | "system";
+  createdAt: string;
+  updatedAt: string;
   patient: Patient;
   doctor: Doctor;
-  specialty: Specialty;
   messages: ConsultationMessage[];
 }
 

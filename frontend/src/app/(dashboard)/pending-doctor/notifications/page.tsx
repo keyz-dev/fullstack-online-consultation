@@ -132,22 +132,20 @@ const PendingDoctorNotificationsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <NotificationHeader
-        title="Notifications"
-        description="Stay updated on your application status and important updates"
-        unreadCount={unreadCount}
-        onMarkAllAsRead={handleMarkAllAsRead}
-        onClearAll={handleClearAllNotifications}
-      />
+      {/* Stats Section */}
+      <NotificationStatsSection stats={stats} loading={loading} />
+      {/* Header */}
+      <NotificationHeader onMarkAllAsRead={handleMarkAllAsRead} />
 
-      <NotificationStatsSection stats={stats} />
-
+      {/* Filters */}
       <NotificationFilters
         filters={filters}
         searchQuery={searchQuery}
         onFilterChange={handleFilterChange}
         onSearch={handleSearch}
         onClearAll={handleClearAll}
+        onRefresh={refreshNotifications}
+        loading={loading}
       />
 
       <NotificationListView
@@ -155,7 +153,9 @@ const PendingDoctorNotificationsPage: React.FC = () => {
         loading={loading}
         onMarkAsRead={markAsRead}
         onDelete={deleteNotification}
-        isConnected={isConnected}
+        onClearAll={handleClearAllNotifications}
+        searchQuery={searchQuery}
+        filters={filters}
       />
     </div>
   );
