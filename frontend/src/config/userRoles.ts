@@ -76,6 +76,7 @@ export const ROLE_CONFIGS = {
     basePath: "/pending-doctor",
     displayName: "Pending Doctor",
     navItems: [
+      { path: "home", label: "Home", icon: "Home" },
       { path: "", label: "Application Status", icon: "FileText" },
       { path: "notifications", label: "Notifications", icon: "Bell" },
       { path: "profile", label: "My Profile", icon: "User" },
@@ -85,6 +86,7 @@ export const ROLE_CONFIGS = {
     basePath: "/pending-pharmacy",
     displayName: "Pending Pharmacy",
     navItems: [
+      { path: "home", label: "Home", icon: "Home" },
       { path: "", label: "Application Status", icon: "FileText" },
       { path: "notifications", label: "Notifications", icon: "Bell" },
       { path: "profile", label: "My Profile", icon: "User" },

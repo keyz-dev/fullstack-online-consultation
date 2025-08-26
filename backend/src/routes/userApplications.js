@@ -7,18 +7,34 @@ const userApplicationController = require("../controllers/userApplication");
 router.use(authenticateUser);
 
 // Get user's application status
-router.get("/user", userApplicationController.getUserApplication);
+router.get("/me", userApplicationController.getUserApplication);
 
-// Get specific application status
-router.get("/:id/status", userApplicationController.getApplicationStatus);
-
-// Reapply for rejected application
-router.put("/:id/reapply", userApplicationController.reapplyApplication);
+// Refresh application status
+router.post("/me/refresh", userApplicationController.refreshApplicationStatus);
 
 // Activate account after approval
-router.post("/:id/activate", userApplicationController.activateAccount);
+router.post("/me/activate", userApplicationController.activateAccount);
 
-// Cancel application
+// Reapply for rejected application
+router.post("/me/reapply", userApplicationController.reapplyApplication);
+
+// Get application timeline/history
+router.get("/me/timeline", userApplicationController.getApplicationTimeline);
+
+// Download application document
+router.get(
+  "/me/documents/:documentId/download",
+  userApplicationController.downloadDocument
+);
+
+// Get application statistics
+router.get("/me/stats", userApplicationController.getApplicationStats);
+
+// Legacy routes for backward compatibility
+router.get("/user", userApplicationController.getUserApplication);
+router.get("/:id/status", userApplicationController.getApplicationStatus);
+router.put("/:id/reapply", userApplicationController.reapplyApplication);
+router.post("/:id/activate", userApplicationController.activateAccount);
 router.delete("/:id", userApplicationController.cancelApplication);
 
 module.exports = router;

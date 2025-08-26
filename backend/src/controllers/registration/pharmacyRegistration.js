@@ -10,7 +10,8 @@ exports.registerPharmacy = async (req, res, next) => {
     // Parse form data before validation (similar to vendorApp)
     req.body.address = JSON.parse(req.body.address || "{}");
     req.body.contactInfo = JSON.parse(req.body.contactInfo || "{}");
-    req.body.deliveryInfo = JSON.parse(req.body.deliveryInfo || "{}");
+    req.body.shipping = JSON.parse(req.body.shipping || "{}");
+    req.body.languages = JSON.parse(req.body.languages || "[]");
     req.body.paymentMethods = JSON.parse(req.body.paymentMethods || "[]");
     req.body.documentNames = req.body.documentNames
       ? Array.isArray(req.body.documentNames)
@@ -27,8 +28,9 @@ exports.registerPharmacy = async (req, res, next) => {
       description,
       address,
       contactInfo,
-      deliveryInfo,
+      shipping,
       paymentMethods,
+      languages,
     } = req.body;
 
     // Handle file uploads (similar to vendorApp)
@@ -47,14 +49,18 @@ exports.registerPharmacy = async (req, res, next) => {
       description,
       logo: uploadedFiles.logo,
       images: uploadedFiles.images || [],
+      documents: uploadedFiles.documents || [],
+      languages: languages || [],
       address,
       contactInfo,
-      deliveryInfo: deliveryInfo || {},
+      deliveryInfo: shipping || {},
       paymentMethods: paymentMethods || ["cash"],
     };
 
     // Get user ID from authenticated user
     const userId = req.authUser.id;
+
+    console.log("\n\n Pharmacy Data: \n\n", pharmacyData);
 
     // Use the registration service
     const result = await RegistrationService.registerPharmacy(

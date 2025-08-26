@@ -375,21 +375,19 @@ class RegistrationService {
 
       // 4. Create ApplicationDocuments
       if (uploadedFiles.documents) {
-        const documentPromises = Object.entries(uploadedFiles.documents).map(
-          ([type, file]) =>
-            ApplicationDocument.create(
-              {
-                applicationId: application.id,
-                documentType: type,
-                fileName: file.originalName || file.originalname,
-                filePath: file.path, // Use filePath for local files
-                fileUrl: file.url, // Use fileUrl for cloud storage
-                fileSize: file.size,
-                mimeType: file.mimetype,
-                uploadedAt: new Date(),
-              },
-              { transaction }
-            )
+        const documentPromises = uploadedFiles.documents.map((doc, index) =>
+          ApplicationDocument.create(
+            {
+              applicationId: application.id,
+              documentType: doc.documentName,
+              fileName: doc.originalName,
+              fileUrl: doc.url,
+              fileSize: doc.size,
+              mimeType: doc.fileType,
+              uploadedAt: new Date(),
+            },
+            { transaction }
+          )
         );
         await Promise.all(documentPromises);
       }

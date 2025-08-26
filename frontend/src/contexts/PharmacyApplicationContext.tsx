@@ -38,11 +38,31 @@ export interface PharmacyData {
   pharmacyImages?: Array<{ id: string; file: File; url: string; name: string }>;
 
   // Step 7: Payment & Delivery
-  deliveryInfo: {
-    deliveryRadius?: number;
-    deliveryFee?: number;
-    deliveryTime?: string;
-    freeDeliveryThreshold?: number;
+  shipping: {
+    // Zone-based rates (stored in XAF as base currency)
+    sameCityRate: number;
+    sameRegionRate: number;
+    sameCountryRate: number;
+    othersRate: number;
+    freeShippingThreshold: number;
+
+    // Customizable processing days
+    sameCityDays: string;
+    sameRegionDays: string;
+    sameCountryDays: string;
+    othersDays: string;
+
+    // Delivery areas
+    deliverLocally: boolean;
+    deliverNationally: boolean;
+    deliverInternationally: boolean;
+
+    // Cash on delivery settings
+    allowCashOnDelivery: boolean;
+    codConditions: string;
+
+    // Additional shipping settings
+    processingTime: string;
   };
   paymentMethods?: PaymentMethod[];
 
@@ -59,6 +79,7 @@ export enum STEPS {
   IMAGES = 6,
   PAYMENT_DELIVERY = 7,
   REVIEW_SUBMIT = 8,
+  SUCCESS = 9,
 }
 
 interface PharmacyApplicationContextType {
@@ -162,11 +183,31 @@ export const PharmacyApplicationProvider: React.FC<{
     pharmacyImages: [],
 
     // Step 7: Payment & Delivery
-    deliveryInfo: {
-      deliveryRadius: undefined,
-      deliveryFee: undefined,
-      deliveryTime: "",
-      freeDeliveryThreshold: undefined,
+    shipping: {
+      // Zone-based rates (stored in XAF as base currency)
+      sameCityRate: 1000,
+      sameRegionRate: 2000,
+      sameCountryRate: 5000,
+      othersRate: 15000,
+      freeShippingThreshold: 50000,
+
+      // Customizable processing days
+      sameCityDays: "1",
+      sameRegionDays: "2-3",
+      sameCountryDays: "3-5",
+      othersDays: "5-10",
+
+      // Delivery areas
+      deliverLocally: true,
+      deliverNationally: true,
+      deliverInternationally: false,
+
+      // Cash on delivery settings
+      allowCashOnDelivery: false,
+      codConditions: "",
+
+      // Additional shipping settings
+      processingTime: "1-2 business days",
     },
     paymentMethods: [] as PaymentMethod[],
 
@@ -224,7 +265,7 @@ export const PharmacyApplicationProvider: React.FC<{
     setPharmacyData((prev) => ({ ...prev, [field]: value }));
     // Clear field error when user starts typing
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -329,8 +370,8 @@ export const PharmacyApplicationProvider: React.FC<{
         licenseNumber: pharmacyData.licenseNumber,
         description: pharmacyData.description,
         contactInfo: pharmacyData.contactInfo,
-        address: pharmacyData.address,
-        deliveryInfo: pharmacyData.deliveryInfo,
+        address: pharmacyData.pharmacyAddress,
+        shipping: pharmacyData.shipping,
         paymentMethods: pharmacyData.paymentMethods,
         languages: pharmacyData.languages,
         pharmacyLogo: pharmacyData.pharmacyLogo,
@@ -339,14 +380,18 @@ export const PharmacyApplicationProvider: React.FC<{
         pharmacyDocument: pharmacyData.pharmacyDocuments || [],
       };
 
+      console.log(submissionData);
+
       const result = await authAPI.registerPharmacy(submissionData);
 
       if (result.status === "success") {
         // Clear sessionStorage context
         sessionStorage.removeItem("registrationContext");
 
-        // Redirect to application status page
-        router.push("/pharmacy/application-status");
+        // Move to success step
+        setActiveStep(STEPS.SUCCESS);
+        setVisitedSteps((prev) => [...new Set([...prev, STEPS.SUCCESS])]);
+
         return { success: true };
       } else {
         return { success: false, error: result.message };
@@ -367,7 +412,7 @@ export const PharmacyApplicationProvider: React.FC<{
       case STEPS.BASIC_USER_INFO:
       case STEPS.EMAIL_VERIFICATION:
         // These steps are completed for incomplete_pharmacy users
-        return user?.role === "incomplete_pharmacy";
+        return Boolean(user?.role === "incomplete_pharmacy");
 
       case STEPS.PHARMACY_INFO:
         return !!(pharmacyData.pharmacyName && pharmacyData.licenseNumber);
@@ -404,13 +449,16 @@ export const PharmacyApplicationProvider: React.FC<{
           isStepCompleted(STEPS.PAYMENT_DELIVERY)
         );
 
+      case STEPS.SUCCESS:
+        return true;
+
       default:
         return false;
     }
   };
 
   const canContinue = (step: STEPS): boolean => {
-    return isStepCompleted(step);
+    return isStepCompleted(step) || false;
   };
 
   // ==================== UTILITIES ====================
@@ -432,6 +480,8 @@ export const PharmacyApplicationProvider: React.FC<{
         return "Payment & Delivery Setup";
       case STEPS.REVIEW_SUBMIT:
         return "Review & Submit";
+      case STEPS.SUCCESS:
+        return "Application Submitted";
       default:
         return "";
     }
@@ -455,6 +505,8 @@ export const PharmacyApplicationProvider: React.FC<{
         return "Set up payment methods and delivery";
       case STEPS.REVIEW_SUBMIT:
         return "Review your application before submitting";
+      case STEPS.SUCCESS:
+        return "Your application has been submitted successfully";
       default:
         return "";
     }

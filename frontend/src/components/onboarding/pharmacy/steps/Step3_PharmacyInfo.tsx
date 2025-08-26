@@ -66,6 +66,13 @@ const Step3_PharmacyInfo = () => {
     }
   }, [pharmacyData.contactInfo, contactTypes]);
 
+  useEffect(() => {
+    if (pharmacyData.pharmacyLogo) {
+      setLogo(pharmacyData.pharmacyLogo);
+      setLogoPreview(URL.createObjectURL(pharmacyData.pharmacyLogo));
+    }
+  }, [pharmacyData.pharmacyLogo]);
+
   const [errors, setErrors] = useState({
     pharmacyName: "",
     licenseNumber: "",
@@ -205,6 +212,7 @@ const Step3_PharmacyInfo = () => {
     }));
     // Update the pharmacy data with contact info
     updateField("contactInfo", contactInfo);
+    updateField("pharmacyLogo", logo);
     nextStep();
   };
 

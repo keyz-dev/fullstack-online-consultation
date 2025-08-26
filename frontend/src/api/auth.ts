@@ -198,15 +198,37 @@ export interface PharmacyApplicationData {
   description?: string;
   address: Address | undefined;
   contactInfo?: ContactInfo[];
-  deliveryInfo?: {
-    deliveryRadius?: number;
-    deliveryFee?: number;
-    deliveryTime?: string;
+  shipping?: {
+    // Zone-based rates
+    sameCityRate: number;
+    sameRegionRate: number;
+    sameCountryRate: number;
+    othersRate: number;
+    freeShippingThreshold: number;
+
+    // Processing days
+    sameCityDays: string;
+    sameRegionDays: string;
+    sameCountryDays: string;
+    othersDays: string;
+
+    // Delivery areas
+    deliverLocally: boolean;
+    deliverNationally: boolean;
+    deliverInternationally: boolean;
+
+    // Cash on delivery
+    allowCashOnDelivery: boolean;
+    codConditions: string;
+
+    // Processing time
+    processingTime: string;
   };
   paymentMethods?: PaymentMethod[];
   pharmacyLogo?: File | null;
   pharmacyImage?: File[] | any[];
   pharmacyDocument?: File[] | any[];
+  languages?: string[];
 }
 
 // ==================== OTHER INTERFACES ====================
@@ -421,7 +443,7 @@ class AuthAPI {
 
     // Files
     if (doctorData.documents) {
-      doctorData.documents.forEach((doc, index) => {
+      doctorData.documents.forEach((doc: any, index: number) => {
         formData.append(`doctorDocument`, doc.file);
         formData.append("documentNames", doc.documentName);
       });
@@ -454,31 +476,18 @@ class AuthAPI {
     if (pharmacyData.address) {
       formData.append("address", JSON.stringify(pharmacyData.address));
     }
+    //languages
+    if (pharmacyData.languages) {
+      formData.append("languages", JSON.stringify(pharmacyData.languages));
+    }
     // Contact info
     if (pharmacyData.contactInfo) {
       formData.append("contactInfo", JSON.stringify(pharmacyData.contactInfo));
     }
 
-    // Delivery info
-    if (pharmacyData.deliveryInfo) {
-      if (pharmacyData.deliveryInfo.deliveryRadius) {
-        formData.append(
-          "deliveryInfo[deliveryRadius]",
-          pharmacyData.deliveryInfo.deliveryRadius.toString()
-        );
-      }
-      if (pharmacyData.deliveryInfo.deliveryFee) {
-        formData.append(
-          "deliveryInfo[deliveryFee]",
-          pharmacyData.deliveryInfo.deliveryFee.toString()
-        );
-      }
-      if (pharmacyData.deliveryInfo.deliveryTime) {
-        formData.append(
-          "deliveryInfo[deliveryTime]",
-          pharmacyData.deliveryInfo.deliveryTime
-        );
-      }
+    // Shipping configuration
+    if (pharmacyData.shipping) {
+      formData.append("shipping", JSON.stringify(pharmacyData.shipping));
     }
 
     // Payment methods
@@ -500,9 +509,11 @@ class AuthAPI {
       });
     }
 
+    // Files
     if (pharmacyData.pharmacyDocument) {
-      pharmacyData.pharmacyDocument.forEach((file) => {
-        formData.append("pharmacyDocument", file);
+      pharmacyData.pharmacyDocument.forEach((doc: any, index: number) => {
+        formData.append(`pharmacyDocument`, doc.file);
+        formData.append("documentNames", doc.documentName);
       });
     }
 

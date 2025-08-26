@@ -11,8 +11,15 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { usePharmacyApplication } from "@/contexts/PharmacyApplicationContext";
 
 const Step5_Documents = () => {
-  const { pharmacyData, updateField, nextStep, prevStep, isLoading } =
-    usePharmacyApplication();
+  const {
+    pharmacyData,
+    updateField,
+    nextStep,
+    prevStep,
+    isLoading,
+    getStepTitle,
+    getStepSubtitle,
+  } = usePharmacyApplication();
 
   const [previewDocument, setPreviewDocument] = useState<DocumentData | null>(
     null
@@ -150,14 +157,13 @@ const Step5_Documents = () => {
     pharmacyData.pharmacyDocuments.every((doc) => doc.documentName.trim());
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-          Pharmacy Verification Documents
+    <div className="max-w-4xl mx-auto min-w-3xl">
+      <div className="text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          {getStepTitle(5)}
         </h1>
-        <p className="text-gray-500 dark:text-gray-300 mt-2">
-          Upload your pharmacy documents for verification. Accepted formats:
-          Images (JPG, PNG, GIF, WebP) and PDF files.
+        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+          {getStepSubtitle(5)}
         </p>
       </div>
 

@@ -26,11 +26,8 @@ const Step6_Images = () => {
     // Update the context with the images
     const images = pharmacyImages.map(({ file }) => file);
 
-    console.log(images);
-    console.log(pharmacyImages);
-
-    // updatePharmacyData({ pharmacyImages });
-    // nextStep();
+    updatePharmacyData({ pharmacyImages });
+    nextStep();
   };
 
   return (

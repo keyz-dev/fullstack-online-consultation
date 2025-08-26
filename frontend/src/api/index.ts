@@ -41,6 +41,7 @@ export default api;
 export { default as authAPI } from "./auth";
 export { default as specialtiesAPI } from "./specialties";
 export { default as symptomsAPI } from "./symptoms";
+export { userApplicationsAPI } from "./userApplications";
 export type {
   User,
   Address,

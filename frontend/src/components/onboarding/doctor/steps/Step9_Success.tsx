@@ -76,7 +76,7 @@ const Step9_Success = () => {
             {/* Button to track application */}
             <Button
               onClickHandler={() => {
-                router.push("/pending-doctor/application-status");
+                router.push("/pending-doctor");
               }}
               additionalClasses="primarybtn"
             >

@@ -101,7 +101,7 @@ const PharmacyApplicationStatusPage = () => {
               No Application Found
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              You don't have any pharmacy application submitted.
+              You don&apos;t have any pharmacy application submitted.
             </p>
             <Button
               onClickHandler={() => router.push("/register/pharmacy")}

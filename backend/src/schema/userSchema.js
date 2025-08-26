@@ -200,12 +200,33 @@ const pharmacyRegisterSchema = Joi.object({
     "string.max": "Description cannot exceed 2000 characters",
   }),
   address: addressSchema.required(),
+  languages: Joi.array().items(Joi.string()).optional().allow(null, ""),
   contactInfo: Joi.array().items(contactInfoSchema).optional().allow(null, ""),
-  deliveryInfo: Joi.object({
-    deliveryRadius: Joi.number().positive().optional(),
-    deliveryFee: Joi.number().min(0).optional(),
-    deliveryTime: Joi.string().optional(),
-    freeDeliveryThreshold: Joi.number().min(0).optional(),
+  shipping: Joi.object({
+    // Zone-based rates
+    sameCityRate: Joi.number().min(0).default(1000),
+    sameRegionRate: Joi.number().min(0).default(2000),
+    sameCountryRate: Joi.number().min(0).default(5000),
+    othersRate: Joi.number().min(0).default(15000),
+    freeShippingThreshold: Joi.number().min(0).default(50000),
+
+    // Processing days
+    sameCityDays: Joi.string().default("1-2"),
+    sameRegionDays: Joi.string().default("2-3"),
+    sameCountryDays: Joi.string().default("3-5"),
+    othersDays: Joi.string().default("5-10"),
+
+    // Delivery areas
+    deliverLocally: Joi.boolean().default(true),
+    deliverNationally: Joi.boolean().default(true),
+    deliverInternationally: Joi.boolean().default(false),
+
+    // Cash on delivery
+    allowCashOnDelivery: Joi.boolean().default(false),
+    codConditions: Joi.string().allow("", null).default(""),
+
+    // Processing time
+    processingTime: Joi.string().default("1-2 business days"),
   }).optional(),
   paymentMethods: Joi.array()
     .items(paymentMethodSchema)

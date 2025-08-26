@@ -71,7 +71,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
             height={40}
             className="w-10 h-10 rounded-full object-cover"
           />
-          <div className="hidden lg:block">
+          <div className="hidden lg:block text-left">
             <p className="font-semibold text-gray-800 dark:text-white text-sm">
               {user.name}
             </p>
@@ -115,7 +115,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
               <button
                 onClick={() => {
                   setShowUserDropdown(false);
-                  router.push("/doctor/application-status");
+                  router.push("/pending-doctor");
                 }}
                 className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
               >
@@ -126,7 +126,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
               <button
                 onClick={() => {
                   setShowUserDropdown(false);
-                  router.push("/pharmacy/application-status");
+                  router.push("/pending-pharmacy");
                 }}
                 className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
               >

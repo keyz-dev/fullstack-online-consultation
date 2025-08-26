@@ -268,7 +268,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({
       </div>
 
       {/* Map */}
-      <div className="h-[300px] md:h-[350px] overflow-hidden">
+      <div className="h-[300px] md:h-[370px] overflow-hidden">
         <LeafletMapView coordinates={coordinates} address={address} />
       </div>
 

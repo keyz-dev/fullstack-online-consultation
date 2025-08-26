@@ -10,6 +10,9 @@ import {
   Step4_AddressLocation,
   Step5_Documents,
   Step6_Images,
+  Step7_PaymentDelivery,
+  Step8_Review,
+  Step9_Success,
 } from "./steps";
 import PharmacySidebar from "./PharmacySidebar";
 
@@ -17,7 +20,6 @@ const PharmacyApplicationFlow = () => {
   const { activeStep } = usePharmacyApplication();
 
   const renderStep = () => {
-    return <Step6_Images />;
     switch (activeStep) {
       case STEPS.BASIC_USER_INFO:
         return <Step1_BasicUserInfo />;
@@ -32,9 +34,11 @@ const PharmacyApplicationFlow = () => {
       case STEPS.IMAGES:
         return <Step6_Images />;
       case STEPS.PAYMENT_DELIVERY:
-        return <div>Payment & Delivery Step (Coming Soon)</div>;
+        return <Step7_PaymentDelivery />;
       case STEPS.REVIEW_SUBMIT:
-        return <div>Review & Submit Step (Coming Soon)</div>;
+        return <Step8_Review />;
+      case STEPS.SUCCESS:
+        return <Step9_Success />;
       default:
         return <Step1_BasicUserInfo />;
     }
@@ -42,10 +46,12 @@ const PharmacyApplicationFlow = () => {
 
   return (
     <section className="flex flex-col lg:flex-row bg-white dark:bg-gray-900 max-h-[90vh]">
-      {/* Sidebar */}
-      <div className="hidden lg:block lg:w-80 xl:w-96">
-        <PharmacySidebar />
-      </div>
+      {/* Don't show the sidebar on the success page */}
+      {activeStep !== STEPS.SUCCESS && (
+        <div className="hidden lg:block lg:w-80 xl:w-96">
+          <PharmacySidebar />
+        </div>
+      )}
 
       {/* Main Content */}
       <main

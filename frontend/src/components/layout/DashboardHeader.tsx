@@ -71,6 +71,16 @@ const DashboardHeader = () => {
     };
   }, []);
 
+  const getDestination = () => {
+    if (user?.role === "admin") return "/admin";
+    if (user?.role === "doctor") return "/doctor";
+    if (user?.role === "patient") return "/patient";
+    if (user?.role === "pharmacy") return "/pharmacy";
+    if (user?.role === "pending_doctor") return "/pending-doctor";
+    if (user?.role === "pending_pharmacy") return "/pending-pharmacy";
+    return "/";
+  };
+
   if (!roleConfig) return null;
 
   return (
@@ -82,7 +92,7 @@ const DashboardHeader = () => {
           <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             {/* Logo - Hidden on very small screens when title is long */}
             <div className="hidden xs:block sm:block">
-              <Logo />
+              <Logo destination={getDestination()} />
             </div>
 
             {/* Desktop Sidebar Toggle */}

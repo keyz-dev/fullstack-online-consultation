@@ -175,10 +175,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Application tracking users
       case "pending_doctor":
-        router.push("/doctor/application-status");
+        router.push("/pending-doctor");
         break;
       case "pending_pharmacy":
-        router.push("/pharmacy/application-status");
+        router.push("/pending-pharmacy");
         break;
 
       // Application form users

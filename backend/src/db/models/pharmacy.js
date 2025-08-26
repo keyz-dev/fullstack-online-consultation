@@ -87,9 +87,6 @@ module.exports = (sequelize, DataTypes) => {
       logo: {
         type: DataTypes.STRING(500),
         allowNull: true,
-        validate: {
-          isUrl: true,
-        },
       },
       images: {
         type: DataTypes.ARRAY(DataTypes.STRING),
@@ -127,16 +124,6 @@ module.exports = (sequelize, DataTypes) => {
       contactInfo: {
         type: DataTypes.JSONB,
         allowNull: false,
-        validate: {
-          isValidContactInfo(value) {
-            if (!value || typeof value !== "object") {
-              throw new Error("Contact info must be a valid object");
-            }
-            if (!value.phone || !value.email) {
-              throw new Error("Contact info must include phone and email");
-            }
-          },
-        },
       },
       deliveryInfo: {
         type: DataTypes.JSONB,
@@ -180,6 +167,14 @@ module.exports = (sequelize, DataTypes) => {
           min: 0,
         },
       },
+      documents: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+      },
+      languages: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        allowNull: true,
+      },
     },
     {
       sequelize,
@@ -209,6 +204,14 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
           fields: ["paymentMethods"],
+          using: "gin",
+        },
+        {
+          fields: ["documents"],
+          using: "gin",
+        },
+        {
+          fields: ["languages"],
           using: "gin",
         },
       ],

@@ -167,11 +167,15 @@ exports.getApplicationStatus = async (req, res, next) => {
 // Reapply for rejected application
 exports.reapplyApplication = async (req, res, next) => {
   try {
-    const { id } = req.params;
     const userId = req.authUser.id;
 
+    // For /me/reapply route, find the user's application
+    // For /:id/reapply route, use the provided id
+    const { id } = req.params;
+    const whereClause = id ? { id, userId } : { userId };
+
     const application = await UserApplication.findOne({
-      where: { id, userId },
+      where: whereClause,
       include: [
         {
           model: User,
@@ -266,11 +270,17 @@ exports.reapplyApplication = async (req, res, next) => {
 // Activate account after approval
 exports.activateAccount = async (req, res, next) => {
   try {
-    const { id } = req.params;
     const userId = req.authUser.id;
 
+    // For /me/activate route, find the user's application
+    // For /:id/activate route, use the provided id
+    const { id } = req.params;
+    const whereClause = id
+      ? { id, userId, status: "approved" }
+      : { userId, status: "approved" };
+
     const application = await UserApplication.findOne({
-      where: { id, userId },
+      where: whereClause,
       include: [
         {
           model: User,
@@ -316,6 +326,7 @@ exports.activateAccount = async (req, res, next) => {
       data: {
         role: newRole,
         applicationId: application.id,
+        redirectUrl: `/${newRole.toLowerCase()}`,
       },
     });
   } catch (error) {
@@ -371,6 +382,235 @@ exports.cancelApplication = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Application cancelled successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Refresh application status
+exports.refreshApplicationStatus = async (req, res, next) => {
+  try {
+    const userId = req.authUser.id;
+
+    const application = await UserApplication.findOne({
+      where: { userId },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "role"],
+        },
+      ],
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "No application found for this user",
+      });
+    }
+
+    // In a real implementation, you might want to check with external systems
+    // or update the status based on time elapsed, etc.
+    const lastChecked = new Date().toISOString();
+
+    res.status(200).json({
+      success: true,
+      message: "Application status refreshed",
+      data: {
+        status: application.status,
+        lastChecked,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get application timeline/history
+exports.getApplicationTimeline = async (req, res, next) => {
+  try {
+    const userId = req.authUser.id;
+
+    const application = await UserApplication.findOne({
+      where: { userId },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "role"],
+        },
+      ],
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "No application found for this user",
+      });
+    }
+
+    // Create timeline based on application events
+    const timeline = [];
+
+    // Application submitted
+    if (application.submittedAt) {
+      timeline.push({
+        id: 1,
+        action: "application_submitted",
+        description: "Application submitted for review",
+        timestamp: application.submittedAt,
+        status: "completed",
+      });
+    }
+
+    // Application under review
+    if (
+      application.status === "under_review" ||
+      application.status === "approved" ||
+      application.status === "rejected"
+    ) {
+      timeline.push({
+        id: 2,
+        action: "application_reviewed",
+        description: "Application reviewed by admin",
+        timestamp: application.reviewedAt || application.submittedAt,
+        status: "completed",
+      });
+    }
+
+    // Application approved
+    if (application.status === "approved" && application.approvedAt) {
+      timeline.push({
+        id: 3,
+        action: "application_approved",
+        description: "Application approved",
+        timestamp: application.approvedAt,
+        status: "completed",
+      });
+    }
+
+    // Application rejected
+    if (application.status === "rejected" && application.rejectedAt) {
+      timeline.push({
+        id: 4,
+        action: "application_rejected",
+        description: `Application rejected: ${application.rejectionReason || "No reason provided"}`,
+        timestamp: application.rejectedAt,
+        status: "completed",
+      });
+    }
+
+    // Sort timeline by timestamp
+    timeline.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    res.status(200).json({
+      success: true,
+      data: timeline,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Download application document
+exports.downloadDocument = async (req, res, next) => {
+  try {
+    const { documentId } = req.params;
+    const userId = req.authUser.id;
+
+    // Find the document and ensure it belongs to the user's application
+    const document = await ApplicationDocument.findOne({
+      include: [
+        {
+          model: UserApplication,
+          as: "application",
+          where: { userId },
+          attributes: ["id", "userId"],
+        },
+      ],
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      return next(new NotFoundError("Document not found"));
+    }
+
+    // Check if file exists
+    const fs = require("fs");
+    const path = require("path");
+    const filePath = path.join(__dirname, "../uploads", document.fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return next(new NotFoundError("File not found"));
+    }
+
+    // Set headers for file download
+    res.setHeader(
+      "Content-Type",
+      document.mimeType || "application/octet-stream"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${document.fileName}"`
+    );
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get application statistics
+exports.getApplicationStats = async (req, res, next) => {
+  try {
+    const userId = req.authUser.id;
+
+    const application = await UserApplication.findOne({
+      where: { userId },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "role"],
+        },
+      ],
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "No application found for this user",
+      });
+    }
+
+    // Calculate statistics
+    const now = new Date();
+    const submittedDate = new Date(application.submittedAt);
+    const daysSinceSubmission = Math.floor(
+      (now - submittedDate) / (1000 * 60 * 60 * 24)
+    );
+
+    // Estimate review time based on application type
+    const estimatedReviewTime =
+      application.applicationType === "doctor"
+        ? "5-7 business days"
+        : "3-5 business days";
+
+    const stats = {
+      totalApplications: 1, // User can only have one active application
+      currentStatus: application.status,
+      daysSinceSubmission,
+      estimatedReviewTime,
+      lastUpdated: application.updatedAt.toISOString(),
+    };
+
+    res.status(200).json({
+      success: true,
+      data: stats,
     });
   } catch (error) {
     next(error);
