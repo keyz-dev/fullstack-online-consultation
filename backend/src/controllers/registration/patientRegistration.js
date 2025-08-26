@@ -9,19 +9,18 @@ exports.registerPatient = async (req, res, next) => {
     // Parse form data before validation
     req.body.emergencyContact = JSON.parse(req.body.emergencyContact || "{}");
     req.body.address = JSON.parse(req.body.address || "{}");
-    req.body.contactInfo = JSON.parse(req.body.contactInfo || "{}");
+    req.body.contactInfo = JSON.parse(req.body.contactInfo || "[]");
 
     const { error } = patientRegisterSchema.validate(req.body);
     if (error) throw new BadRequestError(error.details[0].message);
 
-    const { email, phoneNumber, emergencyContact, ...userData } = req.body;
+    const { emergencyContact, ...userData } = req.body;
 
     let avatar = undefined;
     if (req.file) avatar = req.file.path;
 
     // Prepare data for service
     const patientData = {
-      phoneNumber,
       emergencyContact,
     };
 

@@ -358,14 +358,9 @@ class AuthAPI {
 
     // Emergency contact
     if (userData.emergencyContact) {
-      formData.append("emergencyContact[name]", userData.emergencyContact.name);
       formData.append(
-        "emergencyContact[phoneNumber]",
-        userData.emergencyContact.phoneNumber
-      );
-      formData.append(
-        "emergencyContact[relationship]",
-        userData.emergencyContact.relationship
+        "emergencyContact",
+        JSON.stringify(userData.emergencyContact)
       );
     }
 

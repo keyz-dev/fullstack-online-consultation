@@ -88,16 +88,6 @@ module.exports = (sequelize, DataTypes) => {
       emergencyContact: {
         type: DataTypes.JSONB,
         allowNull: true,
-        validate: {
-          isValidEmergencyContact(value) {
-            if (value && typeof value !== "object") {
-              throw new Error("Emergency contact must be a valid object");
-            }
-            if (value && (!value.name || !value.phone)) {
-              throw new Error("Emergency contact must have name and phone");
-            }
-          },
-        },
       },
       contactInfo: {
         type: DataTypes.JSONB,

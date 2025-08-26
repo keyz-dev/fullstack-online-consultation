@@ -293,7 +293,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       const errorMessage = extractErrorMessage(error);
       setAuthError(errorMessage);
-      throw error;
+      throw errorMessage;
     } finally {
       setLoading(false);
     }

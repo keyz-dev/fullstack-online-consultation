@@ -116,12 +116,6 @@ const patientRegisterSchema = baseUserSchema.keys({
     "string.max": "Password cannot exceed 255 characters",
     "any.required": "Password is required",
   }),
-  phoneNumber: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
-    .optional()
-    .messages({
-      "string.pattern.base": "Please provide a valid phone number",
-    }),
   emergencyContact: Joi.object({
     name: Joi.string().required(),
     phoneNumber: Joi.string()
@@ -129,6 +123,15 @@ const patientRegisterSchema = baseUserSchema.keys({
       .required(),
     relationship: Joi.string().required(),
   }).optional(),
+  preferredLanguage: Joi.string().optional(),
+  bloodGroup: Joi.string().optional(),
+  allergies: Joi.array().items(Joi.string()).optional(),
+  insuranceInfo: Joi.object({
+    provider: Joi.string().optional(),
+    policyNumber: Joi.string().optional(),
+    expiryDate: Joi.date().optional(),
+  }).optional(),
+  contactInfo: Joi.array().items(contactInfoSchema).optional(),
 });
 
 // Doctor registration schema
