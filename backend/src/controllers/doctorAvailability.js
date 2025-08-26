@@ -6,6 +6,7 @@ const {
   TimeSlot,
   DoctorSpecialty,
   Specialty,
+  User,
 } = require("../db/models");
 const { Op } = require("sequelize");
 const {
@@ -23,7 +24,7 @@ const timeSlotService = require("../services/timeSlotService");
 // ==================== CREATE MULTIPLE AVAILABILITIES ====================
 const createAvailabilities = async (req, res, next) => {
   try {
-    const doctorId = req.authUser.id;
+    const userId = req.authUser.id;
 
     // Validate request body
     const { error, value } = multipleAvailabilitiesSchema.validate(req.body);
@@ -31,8 +32,13 @@ const createAvailabilities = async (req, res, next) => {
 
     const { availabilities } = value;
 
+    console.log("availabilities: ", availabilities);
+    console.log("userId: ", userId);
+
     // Validate doctor exists
-    const doctor = await Doctor.findByPk(doctorId);
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
     if (!doctor) {
       throw new NotFoundError("Doctor not found");
     }
@@ -40,7 +46,7 @@ const createAvailabilities = async (req, res, next) => {
     // Check for conflicts with existing availabilities
     const existingDays = await DoctorAvailability.findAll({
       where: {
-        doctorId,
+        doctorId: doctor.id,
         dayOfWeek: { [Op.in]: availabilities.map((av) => av.dayOfWeek) },
         isInvalidated: false,
       },
@@ -111,7 +117,7 @@ const createAvailabilities = async (req, res, next) => {
       for (const availabilityData of availabilities) {
         const availability = await DoctorAvailability.create(
           {
-            doctorId,
+            doctorId: doctor.id,
             ...availabilityData,
             isAvailable: true,
             isInvalidated: false,
@@ -124,7 +130,7 @@ const createAvailabilities = async (req, res, next) => {
 
       // Generate time slots for all availabilities
       try {
-        await timeSlotService.generateWeeklySlots(doctorId, 4);
+        await timeSlotService.generateWeeklySlots(doctor.id, 4);
       } catch (slotError) {
         console.error("Error generating time slots:", slotError);
         // Don't fail the transaction if slot generation fails
@@ -146,10 +152,18 @@ const createAvailabilities = async (req, res, next) => {
 // ==================== GET ALL AVAILABILITIES FOR DOCTOR ====================
 const getAllByDoctor = async (req, res, next) => {
   try {
-    const doctorId = req.authUser.id;
+    const userId = req.authUser.id;
     const { includeInvalidated = false } = req.query;
 
-    const whereClause = { doctorId };
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
+
+    const whereClause = { doctorId: doctor.id };
     if (!includeInvalidated) {
       whereClause.isInvalidated = false;
     }
@@ -160,7 +174,13 @@ const getAllByDoctor = async (req, res, next) => {
         {
           model: Doctor,
           as: "doctor",
-          attributes: ["id", "name", "email"],
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["id", "name", "email"],
+            },
+          ],
         },
       ],
       order: [["dayOfWeek", "ASC"]],
@@ -179,15 +199,29 @@ const getAllByDoctor = async (req, res, next) => {
 const getById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const doctorId = req.authUser.id;
+    const userId = req.authUser.id;
+
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
 
     const availability = await DoctorAvailability.findOne({
-      where: { id, doctorId },
+      where: { id, doctorId: doctor.id },
       include: [
         {
           model: Doctor,
           as: "doctor",
-          attributes: ["id", "name", "email"],
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["id", "name", "email"],
+            },
+          ],
         },
         {
           model: TimeSlot,
@@ -219,14 +253,22 @@ const getById = async (req, res, next) => {
 const updateAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const doctorId = req.authUser.id;
+    const userId = req.authUser.id;
+
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
 
     // Validate request body
     const { error, value } = updateAvailabilitySchema.validate(req.body);
     if (error) throw new BadRequestError(error.details[0].message);
 
     const availability = await DoctorAvailability.findOne({
-      where: { id, doctorId },
+      where: { id, doctorId: doctor.id },
     });
 
     if (!availability) {
@@ -237,7 +279,7 @@ const updateAvailability = async (req, res, next) => {
     if (value.dayOfWeek && value.dayOfWeek !== availability.dayOfWeek) {
       const existingAvailability = await DoctorAvailability.findOne({
         where: {
-          doctorId,
+          doctorId: doctor.id,
           dayOfWeek: value.dayOfWeek,
           isInvalidated: false,
           id: { [Op.ne]: id },
@@ -302,14 +344,22 @@ const updateAvailability = async (req, res, next) => {
 const invalidateAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const doctorId = req.authUser.id;
+    const userId = req.authUser.id;
+
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
 
     // Validate request body
     const { error, value } = invalidationSchema.validate(req.body);
     if (error) throw new BadRequestError(error.details[0].message);
 
     const availability = await DoctorAvailability.findOne({
-      where: { id, doctorId },
+      where: { id, doctorId: doctor.id },
     });
 
     if (!availability) {
@@ -336,10 +386,18 @@ const invalidateAvailability = async (req, res, next) => {
 const reactivateAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const doctorId = req.authUser.id;
+    const userId = req.authUser.id;
+
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
 
     const availability = await DoctorAvailability.findOne({
-      where: { id, doctorId },
+      where: { id, doctorId: doctor.id },
     });
 
     if (!availability) {

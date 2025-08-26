@@ -1,11 +1,19 @@
 "use client";
 
-import { AvailabilityManager } from "@/components/dashboard/doctor/availability";
+import { useState } from "react";
+import { AvailabilityManager } from "@/components/dashboard/doctor/schedule/AvailabilityManager";
+import { AddSchedulePage } from "@/components/dashboard/doctor/schedule/AddSchedulePage";
 
-export default function DoctorSchedulePage() {
+export default function SchedulePage() {
+  const [view, setView] = useState("main");
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <AvailabilityManager />
+    <div>
+      {view === "main" ? (
+        <AvailabilityManager setView={setView} />
+      ) : (
+        <AddSchedulePage setView={setView} />
+      )}
     </div>
   );
 }

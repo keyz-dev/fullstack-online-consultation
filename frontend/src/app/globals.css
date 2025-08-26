@@ -97,6 +97,10 @@ html {
   .secondarybtn {
     @apply bg-primary dark:bg-accent2 text-white hover:opacity-75 border border-line_clr;
   }
+
+  .outlinebtn {
+    @apply bg-transparent text-secondary hover:opacity-75 border border-line_clr;
+  }
 }
 
 @layer utilities {

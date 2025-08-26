@@ -186,7 +186,13 @@ class TimeSlotService {
               {
                 model: Doctor,
                 as: "doctor",
-                attributes: ["id", "name", "email"],
+                include: [
+                  {
+                    model: require("../db/models").User,
+                    as: "user",
+                    attributes: ["id", "name", "email"],
+                  },
+                ],
               },
             ],
           },

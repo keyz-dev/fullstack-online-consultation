@@ -210,6 +210,88 @@ export const validationUtils = {
     return errors;
   },
 
+  // Validate a single time block
+  validateTimeBlock: (
+    timeBlock: Partial<TimeBlock>
+  ): { isValid: boolean; errors: Record<string, string> } => {
+    const errors: Record<string, string> = {};
+
+    // Required fields
+    if (!timeBlock.startTime) {
+      errors.startTime = "Start time is required";
+    } else if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeBlock.startTime)) {
+      errors.startTime = "Start time must be in HH:MM format";
+    }
+
+    if (!timeBlock.endTime) {
+      errors.endTime = "End time is required";
+    } else if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeBlock.endTime)) {
+      errors.endTime = "End time must be in HH:MM format";
+    }
+
+    // Time validation
+    if (timeBlock.startTime && timeBlock.endTime) {
+      if (
+        timeUtils.timeToMinutes(timeBlock.startTime) >=
+        timeUtils.timeToMinutes(timeBlock.endTime)
+      ) {
+        errors.endTime = "End time must be after start time";
+      }
+    }
+
+    // Duration validation
+    if (
+      timeBlock.consultationDuration &&
+      (timeBlock.consultationDuration < 15 ||
+        timeBlock.consultationDuration > 120)
+    ) {
+      errors.consultationDuration =
+        "Consultation duration must be between 15 and 120 minutes";
+    }
+
+    // Fee validation
+    if (timeBlock.consultationFee && timeBlock.consultationFee < 0) {
+      errors.consultationFee = "Consultation fee cannot be negative";
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+    };
+  },
+
+  // Check for time conflicts with existing availabilities
+  checkTimeConflict: (
+    timeBlock: Partial<TimeBlock>,
+    existingAvailabilities: Availability[]
+  ): string | null => {
+    if (!timeBlock.startTime || !timeBlock.endTime) return null;
+
+    for (const availability of existingAvailabilities) {
+      const start1 = timeUtils.timeToMinutes(timeBlock.startTime);
+      const end1 = timeUtils.timeToMinutes(timeBlock.endTime);
+      const start2 = timeUtils.timeToMinutes(availability.startTime);
+      const end2 = timeUtils.timeToMinutes(availability.endTime);
+
+      if (start1 < end2 && start2 < end1) {
+        const dayNames = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
+        return `Time conflict with existing session on ${
+          dayNames[availability.dayOfWeek]
+        }`;
+      }
+    }
+
+    return null;
+  },
+
   // Validate multiple availabilities
   validateAvailabilities: (
     availabilities: Availability[]
