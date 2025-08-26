@@ -14,7 +14,7 @@ import {
   Play,
 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { pharmacyAppApi, PharmacyApplicationData } from "@/api/pharmacyApp";
+import { pharmacyAppApi } from "@/api/pharmacyApp";
 import { toast } from "react-toastify";
 
 interface ApplicationStatus {
@@ -341,7 +341,7 @@ const PharmacyApplicationStatusPage = () => {
                         role: response.data.role as "pharmacy",
                       });
                     }
-                    router.push("/dashboard/pharmacy");
+                    router.push("/pharmacy");
                   } catch (error: any) {
                     const errorMessage =
                       error instanceof Error

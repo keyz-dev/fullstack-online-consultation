@@ -58,11 +58,8 @@ class EmailService {
         html: finalHtml,
       };
 
-      // Add logo attachment for doctor emails
-      if (
-        template &&
-        (template.includes("doctor") || template.includes("Doctor"))
-      ) {
+      // Add logo attachment for all notification emails
+      if (template && template.includes("notification")) {
         mailOptions.attachments = [
           {
             filename: "logo.png",
@@ -97,24 +94,6 @@ class EmailService {
     });
   }
 
-  async sendBookingConfirmation(booking) {
-    return this.sendEmail({
-      to: booking.passengerDetails.email,
-      subject: "Booking Confirmation - DrogCine",
-      html: `
-        <h1>Booking Confirmed!</h1>
-        <p>Your booking has been confirmed. Booking ID: ${booking.bookingNumber}</p>
-        <p>Details:</p>
-        <ul>
-          <li>From: ${booking.trip.route.startStation.name}</li>
-          <li>To: ${booking.trip.route.endStation.name}</li>
-          <li>Date: ${new Date(booking.trip.departureDate).toLocaleDateString()}</li>
-          <li>Seats: ${booking.seats.join(", ")}</li>
-        </ul>
-      `,
-    });
-  }
-
   async sendVerificationEmail(user, verificationCode) {
     return this.sendEmail({
       to: user.email,
@@ -127,19 +106,19 @@ class EmailService {
     });
   }
 
-  // Doctor application confirmation email
-  async sendDoctorAppConfirmation(doctorApp, user) {
+  // ==================== NOTIFICATION EMAILS ====================
+
+  // Application submission notification email
+  async sendApplicationSubmittedEmail(application, user) {
     return this.sendEmail({
       to: user.email,
-      subject: "Doctor Application Submitted Successfully - DrogCine",
-      template: "doctorApplicationConfirmation",
+      subject: "Application Submitted Successfully - DrogCine",
+      template: "notificationApplicationSubmitted",
       data: {
         userName: user.name,
-        userEmail: user.email,
-        applicationId: doctorApp._id,
-        applicationVersion: doctorApp.applicationVersion,
-        businessName: doctorApp.businessName,
-        submittedDate: new Date(doctorApp.createdAt).toLocaleDateString(
+        applicationId: application.id,
+        applicationType: application.applicationType,
+        submissionDate: new Date(application.createdAt).toLocaleDateString(
           "en-US",
           {
             year: "numeric",
@@ -149,26 +128,22 @@ class EmailService {
             minute: "2-digit",
           }
         ),
-        status: doctorApp.status,
-        homeUrl: `${process.env.FRONTEND_URL}`,
+        dashboardUrl: `${process.env.FRONTEND_URL}/dashboard`,
       },
     });
   }
 
-  // Doctor application approval email
-  async sendDoctorAppApproval(doctorApp, user, adminRemarks = null) {
+  // Application approval notification email
+  async sendApplicationApprovedEmail(application, user, adminRemarks = null) {
     return this.sendEmail({
       to: user.email,
-      subject:
-        "🎉 Congratulations! Your Doctor Application is Approved - DrogCine",
-      template: "doctorApplicationApproval",
+      subject: "🎉 Application Approved - DrogCine",
+      template: "notificationApplicationApproved",
       data: {
         userName: user.name,
-        userEmail: user.email,
-        applicationId: doctorApp._id,
-        applicationVersion: doctorApp.applicationVersion,
-        businessName: doctorApp.businessName,
-        approvalDate: new Date(doctorApp.approvedAt).toLocaleDateString(
+        applicationId: application.id,
+        applicationType: application.applicationType,
+        approvalDate: new Date(application.approvedAt).toLocaleDateString(
           "en-US",
           {
             year: "numeric",
@@ -178,41 +153,40 @@ class EmailService {
             minute: "2-digit",
           }
         ),
-        status: doctorApp.status,
         adminRemarks: adminRemarks,
-        homeUrl: `${process.env.FRONTEND_URL}`,
+        dashboardUrl: `${process.env.FRONTEND_URL}/dashboard`,
       },
     });
   }
 
-  // Doctor application rejection email
-  async sendDoctorAppRejection(
-    doctorApp,
+  // Application rejection notification email
+  async sendApplicationRejectedEmail(
+    application,
     user,
     rejectionReason,
     adminRemarks = null
   ) {
     return this.sendEmail({
       to: user.email,
-      subject: "Doctor Application Status Update - DrogCine",
-      template: "doctorApplicationRejection",
+      subject: "Application Status Update - DrogCine",
+      template: "notificationApplicationRejected",
       data: {
         userName: user.name,
-        userEmail: user.email,
-        applicationId: doctorApp._id,
-        applicationVersion: doctorApp.applicationVersion,
-        businessName: doctorApp.businessName,
-        reviewDate: new Date(doctorApp.rejectedAt).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: doctorApp.status,
+        applicationId: application.id,
+        applicationType: application.applicationType,
+        reviewDate: new Date(application.rejectedAt).toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        ),
         rejectionReason: rejectionReason,
         adminRemarks: adminRemarks,
-        homeUrl: `${process.env.FRONTEND_URL}`,
+        applicationUrl: `${process.env.FRONTEND_URL}/application-status`,
       },
     });
   }

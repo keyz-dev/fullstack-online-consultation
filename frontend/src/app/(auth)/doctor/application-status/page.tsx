@@ -153,6 +153,19 @@ const DoctorApplicationStatusPage = () => {
     }
   };
 
+  const getButtonColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "border border-green-600 dark:border-green-400 bg-green-500 dark:bg-green-400 text-white";
+      case "rejected":
+        return "border border-red-600 dark:border-red-400 bg-red-500 dark:bg-red-400 text-white";
+      case "under_review":
+        return "border border-blue-600 dark:border-blue-400 bg-blue-500 dark:bg-blue-400 text-white";
+      default:
+        return "border border-yellow-600 dark:border-yellow-400 bg-yellow-500 dark:bg-yellow-400 text-white";
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
@@ -278,19 +291,19 @@ const DoctorApplicationStatusPage = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               onClickHandler={() => router.push("/profile")}
-              additionalClasses="flex-1"
+              additionalClasses={getButtonColor("approved")}
               text="Update Profile"
               variant="outline"
             />
             <Button
               onClickHandler={() => router.push("/contact")}
-              additionalClasses="flex-1"
+              additionalClasses={getButtonColor("pending")}
               text="Contact Support"
               variant="outline"
             />
             <Button
               onClickHandler={fetchApplicationStatus}
-              additionalClasses="flex-1"
+              additionalClasses={getButtonColor("pending")}
               text="Refresh Status"
               variant="outline"
               disabled={actionLoading}
@@ -320,7 +333,7 @@ const DoctorApplicationStatusPage = () => {
                     setActionLoading(false);
                   }
                 }}
-                additionalClasses="flex-1"
+                additionalClasses={getButtonColor("rejected")}
                 text="Reapply"
                 variant="primary"
                 disabled={actionLoading}
@@ -341,7 +354,7 @@ const DoctorApplicationStatusPage = () => {
                         role: response.data.role as "doctor",
                       });
                     }
-                    router.push("/dashboard/doctor");
+                    router.push("/doctor");
                   } catch (error: any) {
                     const errorMessage =
                       error instanceof Error
@@ -352,7 +365,7 @@ const DoctorApplicationStatusPage = () => {
                     setActionLoading(false);
                   }
                 }}
-                additionalClasses="flex-1"
+                additionalClasses={getButtonColor("approved")}
                 text="Activate Account"
                 variant="primary"
                 disabled={actionLoading}

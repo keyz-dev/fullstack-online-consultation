@@ -12,6 +12,7 @@ const {
   ForbiddenError,
 } = require("../utils/errors");
 const { logger } = require("../utils/logger");
+const emailService = require("../services/emailService");
 
 // Helper function to create notifications
 const createNotification = async (
@@ -189,10 +190,12 @@ exports.reapplyApplication = async (req, res, next) => {
       );
     }
 
-    // Check if user has incomplete role
+    // Check if user has incomplete role (after rejection, role should be downgraded)
     if (!application.user.role.startsWith("incomplete_")) {
       return next(
-        new BadRequestError("User must have incomplete role to reapply")
+        new BadRequestError(
+          "User must have incomplete role to reapply. Please contact support if you believe this is an error."
+        )
       );
     }
 
@@ -223,6 +226,20 @@ exports.reapplyApplication = async (req, res, next) => {
       `Your ${application.applicationType} application has been resubmitted and is under review.`,
       "medium"
     );
+
+    // Send email notification for resubmission
+    try {
+      await emailService.sendApplicationSubmittedEmail(
+        application,
+        application.user
+      );
+    } catch (emailError) {
+      logger.error(
+        "Failed to send application resubmission email:",
+        emailError
+      );
+      // Don't fail the main operation if email fails
+    }
 
     // Notify admins
     const admins = await User.findAll({ where: { role: "admin" } });

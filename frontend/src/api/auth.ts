@@ -196,7 +196,7 @@ export interface PharmacyApplicationData {
   pharmacyName: string;
   licenseNumber: string;
   description?: string;
-  address: Address;
+  address: Address | undefined;
   contactInfo?: ContactInfo[];
   deliveryInfo?: {
     deliveryRadius?: number;
@@ -204,9 +204,9 @@ export interface PharmacyApplicationData {
     deliveryTime?: string;
   };
   paymentMethods?: PaymentMethod[];
-  pharmacyLogo?: File;
-  pharmacyImage?: File[];
-  pharmacyDocument?: File[];
+  pharmacyLogo?: File | null;
+  pharmacyImage?: File[] | any[];
+  pharmacyDocument?: File[] | any[];
 }
 
 // ==================== OTHER INTERFACES ====================

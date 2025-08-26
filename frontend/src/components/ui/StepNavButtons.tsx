@@ -4,7 +4,7 @@ import Button from "./Button";
 interface StepNavButtonsProps {
   onBack?: (() => void) | null;
   onContinue?: ((e: React.FormEvent) => void) | null;
-  canContinue?: boolean;
+  canContinue?: boolean | number;
   isLoading?: boolean;
   onBackText?: string;
   onContinueText?: string;

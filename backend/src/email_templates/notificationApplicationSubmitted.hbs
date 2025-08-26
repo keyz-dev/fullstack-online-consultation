@@ -1,0 +1,176 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Application Submitted - DrogCine</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2563eb;
+        margin-bottom: 10px;
+      }
+      .submitted-icon {
+        font-size: 48px;
+        color: #3b82f6;
+        margin-bottom: 20px;
+      }
+      .title {
+        color: #3b82f6;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .content {
+        margin-bottom: 30px;
+      }
+      .greeting {
+        font-size: 18px;
+        margin-bottom: 15px;
+      }
+      .message {
+        margin-bottom: 20px;
+        color: #4b5563;
+      }
+      .details {
+        background-color: #eff6ff;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        border-left: 4px solid #3b82f6;
+      }
+      .detail-item {
+        margin-bottom: 10px;
+      }
+      .detail-label {
+        font-weight: bold;
+        color: #374151;
+      }
+      .status-info {
+        background-color: #f0f9ff;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        border-left: 3px solid #0ea5e9;
+      }
+      .cta-button {
+        display: inline-block;
+        background-color: #2563eb;
+        color: white;
+        padding: 12px 30px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+      }
+      .cta-button:hover {
+        background-color: #1d4ed8;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 14px;
+      }
+      .contact-info {
+        margin-top: 15px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <img
+            src="cid:logo"
+            alt="DrogCine Logo"
+            style="height: 60px; width: auto;"
+          />
+        </div>
+        <div class="submitted-icon">📋</div>
+      </div>
+
+      <div class="title">Application Submitted Successfully!</div>
+
+      <div class="content">
+        <div class="greeting">Dear {{userName}},</div>
+
+        <div class="message">
+          Thank you for submitting your
+          <strong>{{applicationType}}</strong>
+          application to DrogCine. We have received your application and it is
+          now under review.
+        </div>
+
+        <div class="details">
+          <div class="detail-item">
+            <span class="detail-label">Application ID:</span>
+            {{applicationId}}
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Application Type:</span>
+            {{applicationType}}
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Submission Date:</span>
+            {{submissionDate}}
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Current Status:</span>
+            Under Review
+          </div>
+        </div>
+
+        <div class="status-info">
+          <strong>What happens next?</strong><br />
+          Our team will carefully review your application and supporting
+          documents. This process typically takes 2-3 business days. You will
+          receive an email notification once the review is complete.
+        </div>
+
+        <div class="message">
+          You can track the status of your application through your dashboard at
+          any time.
+        </div>
+
+        <div style="text-align: center;">
+          <a href="{{dashboardUrl}}" class="cta-button">View Application Status</a>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>We appreciate your patience!</p>
+        <div class="contact-info">
+          <p>If you have any questions about your application, please contact
+            our support team.</p>
+          <p>Email: support@drogcine.com</p>
+          <p>Phone: +237 682 980 313</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

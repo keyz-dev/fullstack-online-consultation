@@ -20,7 +20,7 @@ export default function AuthLayout({
       <header className="top-0 z-50 w-full border-b border-gray-200 dark:border-gray-700 min-h-[10vh] bg-white dark:bg-gray-900 flex items-center">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center">
-            <Logo destination="/" size={80} />
+            <Logo destination="/" size={100} />
             {isDoctorApplication && (
               <div className="ml-6 pl-6 border-l border-gray-200 dark:border-gray-700">
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white">

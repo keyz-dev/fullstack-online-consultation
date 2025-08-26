@@ -317,8 +317,8 @@ export const DoctorApplicationProvider: React.FC<{
         if (token) {
           await verifyToken(token);
         }
-
         setActiveStep(STEPS.SUCCESS);
+
         return { success: true, data: response.data };
       } else {
         return {

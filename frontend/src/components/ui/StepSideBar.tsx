@@ -30,7 +30,7 @@ export default function StepSideBar({
 
   const getStepStatus = (stepId: number) => {
     if (currentStep === stepId) return "active";
-    if (visitedSteps.includes(stepId)) return "visited";
+    if (visitedSteps && visitedSteps.includes(stepId)) return "visited";
     return "pending";
   };
 

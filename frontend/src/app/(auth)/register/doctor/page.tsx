@@ -71,7 +71,7 @@ const DoctorApplicationPage = () => {
   return (
     <BaseSpecialtyProvider>
       <DoctorApplicationProvider>
-        <RouteProtection restrictedRoles={["pending_doctor"]} redirectTo="/">
+        <RouteProtection restrictedRoles={["doctor"]} redirectTo="/">
           <DoctorApplicationFlow />
         </RouteProtection>
       </DoctorApplicationProvider>

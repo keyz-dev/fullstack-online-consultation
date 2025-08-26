@@ -66,7 +66,7 @@ router.post(
   upload.fields([
     { name: "avatar", maxCount: 1 },
     { name: "pharmacyLogo", maxCount: 1 },
-    { name: "pharmacyImage", maxCount: 5 },
+    { name: "pharmacyImage", maxCount: 10 },
     { name: "pharmacyDocument", maxCount: 10 },
   ]),
   handleCloudinaryUpload,

@@ -11,6 +11,7 @@ const {
 const { sequelize } = require("../db/models");
 const { BadRequestError, ConflictError } = require("../utils/errors");
 const { sendVerificationEmail } = require("../utils/sendVerificationEmail");
+const emailService = require("./emailService");
 
 // Helper function to create notifications (similar to vendorApp)
 const createNotification = async (
@@ -290,6 +291,17 @@ class RegistrationService {
         "UserApplication"
       );
 
+      // Send email notification to user
+      try {
+        await emailService.sendApplicationSubmittedEmail(application, user);
+      } catch (emailError) {
+        console.error(
+          "Failed to send application submission email:",
+          emailError
+        );
+        // Don't fail the main operation if email fails
+      }
+
       // Notify admins
       await notifyAdmins(
         "system_announcement",
@@ -394,6 +406,17 @@ class RegistrationService {
         application.id,
         "UserApplication"
       );
+
+      // Send email notification to user
+      try {
+        await emailService.sendApplicationSubmittedEmail(application, user);
+      } catch (emailError) {
+        console.error(
+          "Failed to send application submission email:",
+          emailError
+        );
+        // Don't fail the main operation if email fails
+      }
 
       // Notify admins
       await notifyAdmins(

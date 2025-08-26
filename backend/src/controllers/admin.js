@@ -14,6 +14,7 @@ const {
   formatApplicationStats,
 } = require("../utils/returnFormats/applicationData");
 const { logger } = require("../utils/logger");
+const emailService = require("../services/emailService");
 
 // Helper function to create notifications
 const createNotification = async (
@@ -24,15 +25,6 @@ const createNotification = async (
   priority = "medium"
 ) => {
   try {
-    console.log("\n\nabout to create notification\n\n");
-    console.log("Notification data:", {
-      userId,
-      type,
-      title,
-      message,
-      priority,
-    });
-
     const notification = await Notification.create({
       user_id: userId,
       type,
@@ -40,10 +32,6 @@ const createNotification = async (
       message,
       priority,
     });
-
-    console.log("\n\nnotification created\n\n");
-    console.log(notification, "notification");
-
     // Emit real-time notification if socket is available
     if (global.io) {
       global.io.to(`user-${userId}`).emit("notification:new", {
@@ -369,9 +357,6 @@ exports.reviewApplication = async (req, res, next) => {
       reviewedAt: new Date(),
     };
 
-    console.log("\n\nabout to update data\n\n");
-    console.log(updateData, "updateData");
-
     if (status === "approved") {
       updateData.approvedAt = new Date();
 
@@ -380,29 +365,55 @@ exports.reviewApplication = async (req, res, next) => {
         application.userId,
         "application_approved",
         "Application Approved!",
-        `Congratulations! Your ${application.applicationType} application has been approved. You can now access your dashboard.`,
+        `Congratulations! Your ${application.applicationType} application has been approved. You can now access your dashboard by simply activating your account. Please check your email, ${application.user.email || "your email"} for more information.`,
         "high"
       );
 
-      console.log("Notification created");
+      // Send approval email to the user
+      try {
+        await emailService.sendApplicationApprovedEmail(
+          application,
+          application.user,
+          remarks
+        );
+      } catch (emailError) {
+        logger.error("Failed to send application approval email:", emailError);
+        // Don't fail the main operation if email fails
+      }
     } else if (status === "rejected") {
       updateData.rejectedAt = new Date();
       updateData.rejectionReason = rejectionReason;
       updateData.adminReview.rejectionReason = rejectionReason;
+
+      // Downgrade user role back to incomplete when application is rejected
+      const incompleteRole =
+        application.applicationType === "doctor"
+          ? "incomplete_doctor"
+          : "incomplete_pharmacy";
+      await application.user.update({ role: incompleteRole });
 
       // Create notification for user
       await createNotification(
         application.userId,
         "application_rejected",
         "Application Update",
-        `Your ${application.applicationType} application requires attention. Please check the details for more information.`,
+        `Your ${application.applicationType} application requires attention. Please check your email, ${application.user.email || "your email"} for more information.`,
         "high"
       );
 
-      console.log("Notification created");
+      // Send rejection email to the user
+      try {
+        await emailService.sendApplicationRejectedEmail(
+          application,
+          application.user,
+          rejectionReason,
+          remarks
+        );
+      } catch (emailError) {
+        logger.error("Failed to send application rejection email:", emailError);
+        // Don't fail the main operation if email fails
+      }
     }
-
-    console.log("\n\nabout to update document reviews\n\n");
 
     // Handle document reviews if provided
     if (documentReviews && documentReviews.length > 0) {
