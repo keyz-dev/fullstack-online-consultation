@@ -9,16 +9,10 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // Consultation belongs to a patient
-      Consultation.belongsTo(models.Patient, {
-        foreignKey: "patientId",
-        as: "patient",
-      });
-
-      // Consultation belongs to a doctor
-      Consultation.belongsTo(models.Doctor, {
-        foreignKey: "doctorId",
-        as: "doctor",
+      // Consultation belongs to an Appointment
+      Consultation.belongsTo(models.Appointment, {
+        foreignKey: "appointmentId",
+        as: "appointment",
       });
 
       // Consultation has many consultation messages
@@ -40,9 +34,9 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    // Instance method to check if consultation is scheduled
-    isScheduled() {
-      return this.status === "scheduled";
+    // Instance method to check if consultation is not started
+    isNotStarted() {
+      return this.status === "not_started";
     }
 
     // Instance method to check if consultation is in progress
@@ -67,12 +61,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // Instance method to check if consultation can be started
     canBeStarted() {
-      return this.status === "scheduled" && new Date() >= this.scheduledAt;
-    }
-
-    // Instance method to check if consultation can be cancelled
-    canBeCancelled() {
-      return this.status === "scheduled" && new Date() < this.scheduledAt;
+      return this.status === "not_started";
     }
 
     // Instance method to calculate duration
@@ -93,21 +82,11 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
       },
-      patientId: {
+      appointmentId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Patients",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
-      },
-      doctorId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Doctors",
+          model: "Appointments",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -115,37 +94,25 @@ module.exports = (sequelize, DataTypes) => {
       },
       status: {
         type: DataTypes.ENUM(
-          "scheduled",
+          "not_started",
           "in_progress",
           "completed",
           "cancelled",
           "no_show"
         ),
         allowNull: false,
-        defaultValue: "scheduled",
+        defaultValue: "not_started",
         validate: {
           isIn: [
-            ["scheduled", "in_progress", "completed", "cancelled", "no_show"],
+            ["not_started", "in_progress", "completed", "cancelled", "no_show"],
           ],
         },
       },
       type: {
         type: DataTypes.ENUM("video_call", "voice_call", "chat", "in_person"),
         allowNull: false,
-        defaultValue: "video_call",
         validate: {
           isIn: [["video_call", "voice_call", "chat", "in_person"]],
-        },
-      },
-      scheduledAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        validate: {
-          isFuture(value) {
-            if (value && new Date(value) <= new Date()) {
-              throw new Error("Scheduled time must be in the future");
-            }
-          },
         },
       },
       startedAt: {
@@ -162,18 +129,6 @@ module.exports = (sequelize, DataTypes) => {
         comment: "Duration in minutes",
         validate: {
           min: 0,
-        },
-      },
-      symptoms: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        allowNull: true,
-        defaultValue: [],
-        validate: {
-          isValidSymptoms(value) {
-            if (value && !Array.isArray(value)) {
-              throw new Error("Symptoms must be an array");
-            }
-          },
         },
       },
       diagnosis: {
@@ -223,20 +178,6 @@ module.exports = (sequelize, DataTypes) => {
           len: [0, 1000],
         },
       },
-      cancellationReason: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: {
-          len: [0, 500],
-        },
-      },
-      cancelledBy: {
-        type: DataTypes.ENUM("patient", "doctor", "system"),
-        allowNull: true,
-        validate: {
-          isIn: [["patient", "doctor", "system"]],
-        },
-      },
     },
     {
       sequelize,
@@ -245,37 +186,26 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       indexes: [
         {
-          fields: ["patientId"],
-        },
-        {
-          fields: ["doctorId"],
+          fields: ["appointmentId"],
         },
         {
           fields: ["status"],
         },
         {
-          fields: ["scheduledAt"],
-        },
-        {
           fields: ["type"],
         },
         {
-          fields: ["patientId", "doctorId"],
+          fields: ["startedAt"],
+        },
+        {
+          fields: ["endedAt"],
+        },
+        {
+          fields: ["followUpDate"],
         },
       ],
       hooks: {
-        beforeCreate: (consultation) => {
-          // Ensure symptoms is an array
-          if (consultation.symptoms && !Array.isArray(consultation.symptoms)) {
-            consultation.symptoms = [consultation.symptoms];
-          }
-        },
         beforeUpdate: (consultation) => {
-          // Ensure symptoms is an array
-          if (consultation.symptoms && !Array.isArray(consultation.symptoms)) {
-            consultation.symptoms = [consultation.symptoms];
-          }
-
           // Calculate duration when consultation ends
           if (
             consultation.changed("endedAt") &&

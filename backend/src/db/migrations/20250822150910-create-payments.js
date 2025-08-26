@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("ApplicationPayments", {
+    await queryInterface.createTable("Payments", {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -20,15 +20,35 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
+      appointmentId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Appointments",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
       applicationId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: "UserApplications",
           key: "id",
         },
         onUpdate: "CASCADE",
-        onDelete: "CASCADE",
+        onDelete: "SET NULL",
+      },
+      prescriptionId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Prescriptions",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       amount: {
         type: Sequelize.DECIMAL(10, 2),
@@ -43,9 +63,27 @@ module.exports = {
         defaultValue: "USD",
       },
       status: {
-        type: Sequelize.ENUM('pending', 'processing', 'completed', 'failed', 'refunded'),
+        type: Sequelize.ENUM(
+          "pending",
+          "processing",
+          "completed",
+          "failed",
+          "refunded"
+        ),
         allowNull: false,
         defaultValue: "pending",
+      },
+      type: {
+        type: Sequelize.ENUM(
+          "consultation",
+          "prescription",
+          "application_fee",
+          "subscription",
+          "order",
+          "other"
+        ),
+        allowNull: false,
+        defaultValue: "consultation",
       },
       paymentMethod: {
         type: Sequelize.STRING(50),
@@ -66,6 +104,11 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
+      metadata: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        comment: "Additional payment metadata",
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
@@ -79,14 +122,19 @@ module.exports = {
     });
 
     // Indexes
-    await queryInterface.addIndex("ApplicationPayments", ["userId"]);
-    await queryInterface.addIndex("ApplicationPayments", ["applicationId"]);
-    await queryInterface.addIndex("ApplicationPayments", ["status"]);
-    await queryInterface.addIndex("ApplicationPayments", ["transactionId"], { unique: true });
-    await queryInterface.addIndex("ApplicationPayments", ["createdAt"]);
+    await queryInterface.addIndex("Payments", ["userId"]);
+    await queryInterface.addIndex("Payments", ["appointmentId"]);
+    await queryInterface.addIndex("Payments", ["applicationId"]);
+    await queryInterface.addIndex("Payments", ["prescriptionId"]);
+    await queryInterface.addIndex("Payments", ["status"]);
+    await queryInterface.addIndex("Payments", ["type"]);
+    await queryInterface.addIndex("Payments", ["transactionId"], {
+      unique: true,
+    });
+    await queryInterface.addIndex("Payments", ["createdAt"]);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("ApplicationPayments");
+    await queryInterface.dropTable("Payments");
   },
 };

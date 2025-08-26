@@ -69,6 +69,14 @@ module.exports = {
         type: Sequelize.JSONB,
         allowNull: true,
       },
+      documents: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+      },
+      languages: {
+        type: Sequelize.ARRAY(Sequelize.STRING),
+        allowNull: true,
+      },
       isVerified: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
@@ -117,6 +125,12 @@ module.exports = {
     await queryInterface.addIndex("Pharmacies", ["isActive"]);
     await queryInterface.addIndex("Pharmacies", ["averageRating"]);
     await queryInterface.addIndex("Pharmacies", ["paymentMethods"], {
+      using: "gin",
+    });
+    await queryInterface.addIndex("Pharmacies", ["documents"], {
+      using: "gin",
+    });
+    await queryInterface.addIndex("Pharmacies", ["languages"], {
       using: "gin",
     });
   },

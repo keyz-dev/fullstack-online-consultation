@@ -9,21 +9,11 @@ module.exports = {
         autoIncrement: true,
         allowNull: false,
       },
-      patientId: {
+      appointmentId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "Patients",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
-      },
-      doctorId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "Doctors",
+          model: "Appointments",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -31,22 +21,17 @@ module.exports = {
       },
       status: {
         type: Sequelize.ENUM(
-          "scheduled",
+          "not_started",
           "in_progress",
           "completed",
           "cancelled",
           "no_show"
         ),
         allowNull: false,
-        defaultValue: "scheduled",
+        defaultValue: "not_started",
       },
       type: {
         type: Sequelize.ENUM("video_call", "voice_call", "chat", "in_person"),
-        allowNull: false,
-        defaultValue: "video_call",
-      },
-      scheduledAt: {
-        type: Sequelize.DATE,
         allowNull: false,
       },
       startedAt: {
@@ -61,11 +46,6 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         comment: "Duration in minutes",
-      },
-      symptoms: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
-        allowNull: true,
-        defaultValue: [],
       },
       diagnosis: {
         type: Sequelize.TEXT,
@@ -95,14 +75,6 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      cancellationReason: {
-        type: Sequelize.TEXT,
-        allowNull: true,
-      },
-      cancelledBy: {
-        type: Sequelize.ENUM("patient", "doctor", "system"),
-        allowNull: true,
-      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
@@ -116,14 +88,12 @@ module.exports = {
     });
 
     // Indexes
-    await queryInterface.addIndex("Consultations", ["patientId"]);
-    await queryInterface.addIndex("Consultations", ["doctorId"]);
+    await queryInterface.addIndex("Consultations", ["appointmentId"]);
     await queryInterface.addIndex("Consultations", ["status"]);
-    await queryInterface.addIndex("Consultations", ["scheduledAt"]);
     await queryInterface.addIndex("Consultations", ["type"]);
-    await queryInterface.addIndex("Consultations", ["patientId", "doctorId"]);
     await queryInterface.addIndex("Consultations", ["startedAt"]);
     await queryInterface.addIndex("Consultations", ["endedAt"]);
+    await queryInterface.addIndex("Consultations", ["followUpDate"]);
   },
 
   async down(queryInterface, Sequelize) {

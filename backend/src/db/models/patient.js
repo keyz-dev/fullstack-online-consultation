@@ -15,10 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         as: "user",
       });
 
-      // Patient has many consultations
-      Patient.hasMany(models.Consultation, {
+      // Patient has many appointments
+      Patient.hasMany(models.Appointment, {
         foreignKey: "patientId",
-        as: "consultations",
+        as: "appointments",
       });
 
       // Patient has many payments

@@ -14,6 +14,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "doctorId",
         as: "doctor",
       });
+
+      // DoctorAvailability has many TimeSlots
+      DoctorAvailability.hasMany(models.TimeSlot, {
+        foreignKey: "doctorAvailabilityId",
+        as: "timeSlots",
+      });
     }
 
     // Instance method to check if availability is active
@@ -134,6 +140,34 @@ module.exports = (sequelize, DataTypes) => {
         },
         comment: "Duration in minutes",
       },
+      consultationType: {
+        type: DataTypes.ENUM("online", "physical", "both"),
+        allowNull: false,
+        defaultValue: "online",
+      },
+      consultationFee: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.0,
+        comment: "Consultation fee in XAF",
+      },
+      // Invalidation support
+      isInvalidated: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        comment: "Whether this availability has been invalidated",
+      },
+      invalidationReason: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: "Reason for invalidation",
+      },
+      invalidatedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: "When this availability was invalidated",
+      },
     },
     {
       sequelize,
@@ -151,7 +185,13 @@ module.exports = (sequelize, DataTypes) => {
           fields: ["isAvailable"],
         },
         {
+          fields: ["isInvalidated"],
+        },
+        {
           fields: ["doctorId", "dayOfWeek"],
+        },
+        {
+          fields: ["doctorId", "isAvailable", "isInvalidated"],
         },
       ],
       hooks: {

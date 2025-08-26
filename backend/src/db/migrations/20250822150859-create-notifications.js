@@ -21,9 +21,21 @@ module.exports = {
         onDelete: "CASCADE",
       },
       type: {
-        type: Sequelize.ENUM('consultation', 'prescription', 'payment', 'system', 'reminder', 'alert'),
+        type: Sequelize.ENUM(
+          "consultation_reminder",
+          "consultation_confirmation",
+          "consultation_cancelled",
+          "prescription_ready",
+          "payment_successful",
+          "payment_failed",
+          "application_approved",
+          "application_rejected",
+          "application_under_review",
+          "system_announcement",
+          "general"
+        ),
         allowNull: false,
-        defaultValue: "system",
+        defaultValue: "general",
       },
       title: {
         type: Sequelize.STRING(255),
@@ -34,7 +46,7 @@ module.exports = {
         allowNull: false,
       },
       priority: {
-        type: Sequelize.ENUM('low', 'medium', 'high', 'urgent'),
+        type: Sequelize.ENUM("low", "medium", "high", "urgent"),
         allowNull: false,
         defaultValue: "medium",
       },
@@ -62,6 +74,11 @@ module.exports = {
         allowNull: true,
         comment: "When notification was actually sent",
       },
+      expiresAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        comment: "For scheduled notifications",
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
@@ -81,6 +98,7 @@ module.exports = {
     await queryInterface.addIndex("Notifications", ["isRead"]);
     await queryInterface.addIndex("Notifications", ["scheduledAt"]);
     await queryInterface.addIndex("Notifications", ["createdAt"]);
+    await queryInterface.addIndex("Notifications", ["expiresAt"]);
   },
 
   async down(queryInterface, Sequelize) {

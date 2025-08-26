@@ -70,6 +70,14 @@ export {
   CardFooter,
 } from "./Card";
 
+// Tabs Components
+export {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "./Tabs";
+
 // Form Components
 export { default as Avatar } from "./Avatar";
 export { default as Badge } from "./Badge";
@@ -87,3 +95,4 @@ export { default as PreferencesSettings } from "../dashboard/profile/Preferences
 export { default as ProfileStats } from "../dashboard/profile/ProfileStats";
 export { default as ContactInfo } from "./ContactInfo";
 export { default as ContactModal } from "./ContactModal";
+export { default as Separator } from "./Separator";

@@ -3,9 +3,17 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AppointmentList from "@/components/dashboard/appointments/AppointmentList";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui";
 import {
   Calendar,
   Clock,
@@ -15,7 +23,6 @@ import {
   MessageSquare,
   MapPin,
   TrendingUp,
-  Users,
   Activity,
   BarChart3,
   Filter,

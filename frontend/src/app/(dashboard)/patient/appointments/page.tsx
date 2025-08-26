@@ -6,7 +6,7 @@ import AppointmentList from "@/components/dashboard/appointments/AppointmentList
 import AppointmentBooking from "@/components/dashboard/appointments/AppointmentBooking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import {
   Plus,
   Calendar,

@@ -26,6 +26,11 @@ module.exports = {
           isEmail: true,
         },
       },
+      gender: {
+        type: Sequelize.ENUM("male", "female", "prefer_not_to_say"),
+        allowNull: true,
+        defaultValue: "prefer_not_to_say",
+      },
       phoneNumber: {
         type: Sequelize.STRING(20),
         allowNull: true,
@@ -50,10 +55,6 @@ module.exports = {
         ),
         allowNull: false,
         defaultValue: "patient",
-      },
-      gender: {
-        type: Sequelize.ENUM("male", "female", "other"),
-        allowNull: true,
       },
       dob: {
         type: Sequelize.DATE,

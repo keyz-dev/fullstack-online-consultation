@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
       });
 
       // UserApplication has many application payments
-      UserApplication.hasMany(models.ApplicationPayment, {
+      UserApplication.hasMany(models.Payment, {
         foreignKey: "applicationId",
         as: "payments",
       });

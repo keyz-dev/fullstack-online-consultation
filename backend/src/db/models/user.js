@@ -34,16 +34,16 @@ module.exports = (sequelize, DataTypes) => {
         as: "testimonials",
       });
 
-      // User has many application payments
-      User.hasMany(models.ApplicationPayment, {
-        foreignKey: "userId",
-        as: "applicationPayments",
-      });
-
       // User has many user applications
       User.hasMany(models.UserApplication, {
         foreignKey: "userId",
         as: "applications",
+      });
+
+      // User has many payments
+      User.hasMany(models.Payment, {
+        foreignKey: "userId",
+        as: "payments",
       });
 
       // User has many notifications

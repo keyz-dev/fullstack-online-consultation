@@ -59,6 +59,35 @@ module.exports = {
         },
         comment: "Duration in minutes",
       },
+      consultationType: {
+        type: Sequelize.ENUM("online", "physical", "both"),
+        allowNull: false,
+        defaultValue: "online",
+        comment: "The type of consultation",
+      },
+      consultationFee: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.0,
+        comment: "Consultation fee in XAF",
+      },
+      // Invalidation support
+      isInvalidated: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        comment: "Whether this availability has been invalidated",
+      },
+      invalidationReason: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+        comment: "Reason for invalidation",
+      },
+      invalidatedAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        comment: "When this availability was invalidated",
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
@@ -75,9 +104,15 @@ module.exports = {
     await queryInterface.addIndex("DoctorAvailabilities", ["doctorId"]);
     await queryInterface.addIndex("DoctorAvailabilities", ["dayOfWeek"]);
     await queryInterface.addIndex("DoctorAvailabilities", ["isAvailable"]);
+    await queryInterface.addIndex("DoctorAvailabilities", ["isInvalidated"]);
     await queryInterface.addIndex("DoctorAvailabilities", [
       "doctorId",
       "dayOfWeek",
+    ]);
+    await queryInterface.addIndex("DoctorAvailabilities", [
+      "doctorId",
+      "isAvailable",
+      "isInvalidated",
     ]);
   },
 

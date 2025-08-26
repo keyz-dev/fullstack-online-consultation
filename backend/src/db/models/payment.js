@@ -9,22 +9,22 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // Payment belongs to a patient
-      Payment.belongsTo(models.Patient, {
-        foreignKey: "patientId",
-        as: "patient",
+      // Payment belongs to a user
+      Payment.belongsTo(models.Appointment, {
+        foreignKey: "userId",
+        as: "user",
       });
 
-      // Payment belongs to a doctor
-      Payment.belongsTo(models.Doctor, {
-        foreignKey: "doctorId",
-        as: "doctor",
+      // Payment belongs to an appointment
+      Payment.belongsTo(models.Appointment, {
+        foreignKey: "appointmentId",
+        as: "appointment",
       });
 
-      // Payment belongs to a consultation
-      Payment.belongsTo(models.Consultation, {
-        foreignKey: "consultationId",
-        as: "consultation",
+      // Payment belongs to an application
+      Payment.belongsTo(models.UserApplication, {
+        foreignKey: "applicationId",
+        as: "application",
       });
     }
 
@@ -72,31 +72,32 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
       },
-      patientId: {
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+        comment: "who made the payment",
+      },
+      appointmentId: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "Patients",
+          model: "Appointments",
           key: "id",
         },
         onUpdate: "CASCADE",
         onDelete: "SET NULL",
       },
-      doctorId: {
+      applicationId: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "Doctors",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "SET NULL",
-      },
-      consultationId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        references: {
-          model: "Consultations",
+          model: "UserApplications",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -107,12 +108,22 @@ module.exports = (sequelize, DataTypes) => {
           "consultation",
           "prescription",
           "subscription",
-          "application_fee"
+          "application_fee",
+          "order",
+          "other"
         ),
         allowNull: false,
+        defaultValue: "consultation",
         validate: {
           isIn: [
-            ["consultation", "prescription", "subscription", "application_fee"],
+            [
+              "consultation",
+              "prescription",
+              "subscription",
+              "application_fee",
+              "order",
+              "other",
+            ],
           ],
         },
       },
