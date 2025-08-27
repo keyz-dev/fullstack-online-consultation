@@ -29,12 +29,6 @@ module.exports = (sequelize, DataTypes) => {
         as: "consultations",
       });
 
-      // Doctor has many payments
-      Doctor.hasMany(models.Payment, {
-        foreignKey: "doctorId",
-        as: "payments",
-      });
-
       // Doctor has many prescriptions
       Doctor.hasMany(models.Prescription, {
         foreignKey: "doctorId",

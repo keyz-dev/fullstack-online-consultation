@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // Payment belongs to a user
-      Payment.belongsTo(models.Appointment, {
+      Payment.belongsTo(models.User, {
         foreignKey: "userId",
         as: "user",
       });
@@ -181,14 +181,8 @@ module.exports = (sequelize, DataTypes) => {
           len: [0, 255],
         },
       },
-      paymentProvider: {
-        type: DataTypes.STRING(50),
-        allowNull: false,
-        validate: {
-          isIn: [["stripe", "paypal", "campay", "flutterwave"]],
-        },
-      },
-      paymentProviderResponse: {
+
+      gatewayResponse: {
         type: DataTypes.JSONB,
         allowNull: true,
         validate: {
@@ -201,26 +195,12 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-      failureReason: {
+      description: {
         type: DataTypes.TEXT,
         allowNull: true,
-        validate: {
-          len: [0, 1000],
-        },
       },
-      refundReason: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: {
-          len: [0, 1000],
-        },
-      },
-      processedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      refundedAt: {
-        type: DataTypes.DATE,
+      metadata: {
+        type: DataTypes.JSONB,
         allowNull: true,
       },
     },
@@ -231,13 +211,13 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       indexes: [
         {
-          fields: ["patientId"],
+          fields: ["userId"],
         },
         {
-          fields: ["doctorId"],
+          fields: ["appointmentId"],
         },
         {
-          fields: ["consultationId"],
+          fields: ["applicationId"],
         },
         {
           fields: ["status"],
@@ -250,10 +230,7 @@ module.exports = (sequelize, DataTypes) => {
           unique: true,
         },
         {
-          fields: ["paymentProvider"],
-        },
-        {
-          fields: ["processedAt"],
+          fields: ["createdAt"],
         },
       ],
       hooks: {
@@ -261,22 +238,21 @@ module.exports = (sequelize, DataTypes) => {
           // Ensure currency is uppercase
           if (payment.currency) {
             payment.currency = payment.currency.toUpperCase();
+          } else {
+            payment.currency = "XAF";
           }
         },
         beforeUpdate: (payment) => {
           // Ensure currency is uppercase
           if (payment.currency) {
             payment.currency = payment.currency.toUpperCase();
+          } else {
+            payment.currency = "XAF";
           }
 
           // Set processedAt when status changes to completed
           if (payment.changed("status") && payment.status === "completed") {
-            payment.processedAt = new Date();
-          }
-
-          // Set refundedAt when status changes to refunded
-          if (payment.changed("status") && payment.status === "refunded") {
-            payment.refundedAt = new Date();
+            payment.createdAt = new Date();
           }
         },
       },

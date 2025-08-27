@@ -181,10 +181,15 @@ const DashboardSidebar = () => {
         >
           {roleConfig.navItems.map((item: any) => {
             const IconComponent = (Icons as any)[item.icon] || Icons.Circle;
-            const fullPath = item.path
+            const isExternalLink = item.external || item.path === "home";
+            const fullPath = isExternalLink
+              ? item.path === "home"
+                ? "/"
+                : item.path
+              : item.path
               ? `${roleConfig.basePath}/${item.path}`
               : roleConfig.basePath;
-            const active = isActive(item.path);
+            const active = isExternalLink ? false : isActive(item.path);
 
             return (
               <Link
@@ -205,6 +210,7 @@ const DashboardSidebar = () => {
                   }
                 `}
                 aria-current={active ? "page" : undefined}
+                {...(isExternalLink && { target: "_self" })}
               >
                 {/* Icon */}
                 <IconComponent
@@ -231,6 +237,9 @@ const DashboardSidebar = () => {
                   `}
                 >
                   {item.label}
+                  {isExternalLink && (
+                    <Icons.ExternalLink className="inline-block ml-1 w-3 h-3 text-gray-400" />
+                  )}
                 </span>
 
                 {/* Tooltip for collapsed desktop sidebar */}
@@ -239,7 +248,12 @@ const DashboardSidebar = () => {
                     className="invisible group-hover:visible absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-200 text-sm rounded whitespace-nowrap z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 border border-gray-700 dark:border-gray-600"
                     role="tooltip"
                   >
-                    {item.label}
+                    <div className="flex items-center gap-1">
+                      {item.label}
+                      {isExternalLink && (
+                        <Icons.ExternalLink className="w-3 h-3 text-gray-300" />
+                      )}
+                    </div>
                     <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 w-0 h-0 border-r-2 border-r-gray-900 dark:border-r-gray-800 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
                   </div>
                 )}

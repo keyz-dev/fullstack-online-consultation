@@ -16,3 +16,11 @@ export {
 } from "./NotificationContext";
 export { SymptomProvider, useSymptom } from "./SymptomContext";
 export { SocketProvider, useSocketContext } from "./SocketProvider";
+export {
+  PatientAppointmentProvider,
+  usePatientAppointments,
+} from "./PatientAppointmentContext";
+export {
+  DoctorAppointmentProvider,
+  useDoctorAppointments,
+} from "./DoctorAppointmentContext";

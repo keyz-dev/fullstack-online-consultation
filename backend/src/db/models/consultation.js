@@ -26,12 +26,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "consultationId",
         as: "prescriptions",
       });
-
-      // Consultation has many payments
-      Consultation.hasMany(models.Payment, {
-        foreignKey: "consultationId",
-        as: "payments",
-      });
     }
 
     // Instance method to check if consultation is not started

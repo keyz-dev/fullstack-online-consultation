@@ -3,6 +3,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Star, MapPin, Clock, ArrowRight } from "lucide-react";
 import { Doctor } from "../../api/doctors";
+import { useAuth } from "../../contexts/AuthContext";
+import { useBookingIntent } from "../../hooks/useBookingIntent";
 
 interface DoctorCardProps {
   doctor: Doctor;
@@ -11,14 +13,32 @@ interface DoctorCardProps {
 
 const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, className = "" }) => {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const { setBookingIntent } = useBookingIntent();
 
   const handleViewProfile = () => {
     router.push(`/doctors/${doctor.id}`);
   };
 
   const handleBookAppointment = () => {
-    // TODO: Navigate to booking flow with doctor data
-    console.log("Book appointment for:", doctor.user.name);
+    if (!isAuthenticated) {
+      // Set booking intent with doctor data and redirect to login
+      setBookingIntent({
+        type: "doctor",
+        doctorId: doctor.id,
+      });
+      router.push("/login");
+      return;
+    }
+
+    if (user?.role !== "patient") {
+      // Show error or redirect appropriately
+      console.log("Only patients can book appointments");
+      return;
+    }
+
+    // User is authenticated patient, redirect to booking with doctor data
+    router.push(`/booking?doctorId=${doctor.id}`);
   };
 
   const getPrimarySpecialty = () => {

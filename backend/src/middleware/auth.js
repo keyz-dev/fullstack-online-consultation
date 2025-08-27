@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { UnauthorizedError, NotFoundError } = require("../utils/errors");
-const { User } = require("../db/models");
+const { User, Patient, Doctor } = require("../db/models");
 
 // Authentication middleware
 const authenticate = async (req, res, next) => {
@@ -13,7 +13,18 @@ const authenticate = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findByPk(decoded.id, {
+      include: [
+        {
+          model: Patient,
+          as: "patient",
+        },
+        {
+          model: Doctor,
+          as: "doctor",
+        },
+      ],
+    });
     if (!user) {
       return next(new NotFoundError("User not found."));
     }

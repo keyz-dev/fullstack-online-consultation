@@ -131,6 +131,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const redirectBasedOnRole = (userData: User) => {
+    // Check for booking intent first (for patients)
+    if (userData.role === "patient") {
+      const bookingIntent = sessionStorage.getItem("bookingIntent");
+      if (bookingIntent) {
+        try {
+          const intent = JSON.parse(bookingIntent);
+          // Check if intent is still valid (not older than 1 hour)
+          const oneHourAgo = Date.now() - 60 * 60 * 1000;
+          if (intent.timestamp && intent.timestamp > oneHourAgo) {
+            // Clear the booking intent
+            sessionStorage.removeItem("bookingIntent");
+            // Redirect to booking page with intent parameters
+            const params = new URLSearchParams();
+            if (intent.doctorId) params.append("doctorId", intent.doctorId);
+            if (intent.symptomId) params.append("symptomId", intent.symptomId);
+            if (intent.specialtyId)
+              params.append("specialtyId", intent.specialtyId);
+            if (intent.timeSlotId)
+              params.append("timeSlotId", intent.timeSlotId);
+            if (intent.consultationType)
+              params.append("consultationType", intent.consultationType);
+            if (intent.symptomIds?.length)
+              params.append("symptomIds", intent.symptomIds.join(","));
+            if (intent.notes) params.append("notes", intent.notes);
+
+            const queryString = params.toString();
+            const bookingUrl = `/booking${
+              queryString ? `?${queryString}` : ""
+            }`;
+            router.push(bookingUrl);
+            return;
+          }
+        } catch (error) {
+          console.error("Error parsing booking intent:", error);
+          sessionStorage.removeItem("bookingIntent");
+        }
+      }
+    }
+
     // Check for registration context first (for new registrations)
     const context = sessionStorage.getItem("registrationContext");
     if (context) {

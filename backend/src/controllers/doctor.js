@@ -64,35 +64,57 @@ class DoctorsController {
           ],
           where: userWhere,
         },
-        {
-          model: Specialty,
-          as: "specialties",
-          through: { attributes: [] },
-          attributes: ["id", "name", "description", "icon"],
-        },
       ];
+
+      // Add specialties include with conditional filters
+      let specialtiesInclude = {
+        model: Specialty,
+        as: "specialties",
+        through: "DoctorSpecialties",
+        attributes: ["id", "name", "description", "icon"],
+      };
 
       // Add specialty filter
       if (specialtyId) {
-        includes[1].where = { id: specialtyId };
+        specialtiesInclude.where = { id: specialtyId };
       }
 
       // Add symptom filter through specialties
       if (symptomId) {
-        includes.push({
-          model: Specialty,
-          as: "specialties",
-          through: { attributes: [] },
-          include: [
-            {
-              model: Symptom,
-              as: "symptoms",
-              where: { id: symptomId },
-              through: { attributes: [] },
-            },
-          ],
-        });
+        try {
+          // First get the specialty that has this symptom
+          const symptom = await Symptom.findByPk(symptomId);
+          if (symptom && symptom.specialtyId) {
+            // Filter by the specialty that contains this symptom
+            if (specialtiesInclude.where) {
+              // If we already have a specialty filter, make sure it matches
+              if (specialtiesInclude.where.id !== symptom.specialtyId) {
+                // If the symptom's specialty doesn't match the filter, return empty results
+                return res.json({
+                  success: true,
+                  data: {
+                    doctors: [],
+                    pagination: {
+                      page: parseInt(page),
+                      limit: parseInt(limit),
+                      total: 0,
+                      totalPages: 0,
+                    },
+                  },
+                });
+              }
+            } else {
+              // Set the specialty filter to the symptom's specialty
+              specialtiesInclude.where = { id: symptom.specialtyId };
+            }
+          }
+        } catch (error) {
+          console.error("Error processing symptom filter:", error);
+          // If there's an error with symptom lookup, continue without the filter
+        }
       }
+
+      includes.push(specialtiesInclude);
 
       // Add experience filter
       if (experience) {
@@ -231,7 +253,7 @@ class DoctorsController {
           {
             model: Specialty,
             as: "specialties",
-            through: { attributes: [] },
+            through: "DoctorSpecialties",
             attributes: ["id", "name", "description", "icon"],
           },
           {
@@ -311,7 +333,7 @@ class DoctorsController {
           {
             model: Specialty,
             as: "specialties",
-            through: { attributes: [] },
+            through: "DoctorSpecialties",
             attributes: ["id", "name", "description", "icon"],
           },
         ],

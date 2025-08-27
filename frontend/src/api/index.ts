@@ -42,6 +42,7 @@ export { default as authAPI } from "./auth";
 export { default as specialtiesAPI } from "./specialties";
 export { default as symptomsAPI } from "./symptoms";
 export { userApplicationsAPI } from "./userApplications";
+export { appointmentsAPI } from "./appointments";
 export type {
   User,
   Address,
@@ -81,3 +82,15 @@ export type {
   SymptomResponse,
   SymptomStatsResponse,
 } from "./symptoms";
+export type {
+  PatientAppointment,
+  PatientAppointmentStats,
+  PatientAppointmentFilters,
+  PatientAppointmentResponse,
+  Appointment,
+  CreateAppointmentData,
+  InitiatePaymentData,
+  AppointmentResponse,
+  PaymentInitiationResponse,
+  AppointmentsListResponse,
+} from "./appointments";

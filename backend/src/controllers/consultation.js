@@ -21,7 +21,7 @@ class ConsultationController {
   async createConsultation(req, res) {
     try {
       const { doctorId, scheduledAt, type, symptoms, notes } = req.body;
-      const patientId = req.user.id;
+      const patientId = req.authUser.id;
 
       // Validate input data
       const validation = validateConsultationData(req.body);
@@ -142,10 +142,10 @@ class ConsultationController {
       const whereClause = {};
 
       // Add filters based on user role
-      if (req.user.role === "doctor") {
-        whereClause.doctorId = req.user.id;
-      } else if (req.user.role === "patient") {
-        whereClause.patientId = req.user.id;
+      if (req.authUser.role === "doctor") {
+        whereClause.doctorId = req.authUser.id;
+      } else if (req.authUser.role === "patient") {
+        whereClause.patientId = req.authUser.id;
       }
 
       // Apply additional filters
@@ -233,9 +233,9 @@ class ConsultationController {
 
       // Check if user has access to this consultation
       if (
-        req.user.role !== "admin" &&
-        consultation.doctorId !== req.user.id &&
-        consultation.patientId !== req.user.id
+        req.authUser.role !== "admin" &&
+        consultation.doctorId !== req.authUser.id &&
+        consultation.patientId !== req.authUser.id
       ) {
         return res.status(403).json({
           success: false,
@@ -275,9 +275,9 @@ class ConsultationController {
 
       // Check if user has permission to update
       if (
-        req.user.role !== "admin" &&
-        consultation.doctorId !== req.user.id &&
-        consultation.patientId !== req.user.id
+        req.authUser.role !== "admin" &&
+        consultation.doctorId !== req.authUser.id &&
+        consultation.patientId !== req.authUser.id
       ) {
         return res.status(403).json({
           success: false,
@@ -320,9 +320,9 @@ class ConsultationController {
 
       // Check if user has permission to delete
       if (
-        req.user.role !== "admin" &&
-        consultation.doctorId !== req.user.id &&
-        consultation.patientId !== req.user.id
+        req.authUser.role !== "admin" &&
+        consultation.doctorId !== req.authUser.id &&
+        consultation.patientId !== req.authUser.id
       ) {
         return res.status(403).json({
           success: false,
@@ -333,7 +333,7 @@ class ConsultationController {
       // Soft delete
       await consultation.update({
         status: "cancelled",
-        cancelledBy: req.user.role,
+        cancelledBy: req.authUser.role,
       });
 
       res.json({
@@ -387,7 +387,7 @@ class ConsultationController {
   async setDoctorAvailability(req, res) {
     try {
       const { availabilities } = req.body;
-      const doctorId = req.user.id;
+      const doctorId = req.authUser.id;
 
       // Delete existing availability
       await DoctorAvailability.destroy({ where: { doctorId } });
@@ -591,7 +591,7 @@ class ConsultationController {
       await consultation.update({
         status: "cancelled",
         cancellationReason: reason,
-        cancelledBy: req.user.role,
+        cancelledBy: req.authUser.role,
       });
 
       res.json({

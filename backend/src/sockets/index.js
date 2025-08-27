@@ -52,6 +52,16 @@ const initializeSocket = (server) => {
       socket.join("admin-room");
     }
 
+    // Join doctor room if user is a doctor
+    if (socket.user.role === "doctor" && socket.user.doctor) {
+      socket.join(`doctor-${socket.user.doctor.id}`);
+    }
+
+    // Join patient room if user is a patient
+    if (socket.user.role === "patient" && socket.user.patient) {
+      socket.join(`patient-${socket.user.patient.id}`);
+    }
+
     // Handle disconnection
     socket.on("disconnect", () => {
       console.log(`User ${socket.userId} disconnected`);
@@ -106,6 +116,34 @@ const initializeSocket = (server) => {
       socket.to(`user-${data.targetUserId}`).emit("video:end-call", {
         fromUserId: socket.userId,
       });
+    });
+
+    // Handle appointment payment tracking
+    socket.on("track-payment", (data) => {
+      const { paymentReference, userId, sessionId } = data;
+      socket.join(`payment-${paymentReference}`);
+      console.log(`User ${socket.userId} tracking payment ${paymentReference}`);
+    });
+
+    socket.on("stop-tracking-payment", (data) => {
+      const { paymentReference } = data;
+      socket.leave(`payment-${paymentReference}`);
+      console.log(
+        `User ${socket.userId} stopped tracking payment ${paymentReference}`
+      );
+    });
+
+    // Handle appointment status updates
+    socket.on("appointment:status-update", (data) => {
+      const { appointmentId, status } = data;
+      socket
+        .to(`appointment-${appointmentId}`)
+        .emit("appointment:status-changed", {
+          appointmentId,
+          status,
+          updatedBy: socket.userId,
+          timestamp: new Date(),
+        });
     });
   });
 

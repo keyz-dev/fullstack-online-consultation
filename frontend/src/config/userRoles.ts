@@ -48,6 +48,7 @@ export const ROLE_CONFIGS = {
     displayName: "Patient",
     navItems: [
       { path: "", label: "Overview", icon: "LayoutDashboard" },
+      { path: "home", label: "Home", icon: "Home", external: true },
       { path: "appointments", label: "My Appointments", icon: "CalendarCheck" },
       { path: "consultations", label: "Consultations", icon: "MessageSquare" },
       { path: "medications", label: "Medications", icon: "Package" },
@@ -76,7 +77,7 @@ export const ROLE_CONFIGS = {
     basePath: "/pending-doctor",
     displayName: "Pending Doctor",
     navItems: [
-      { path: "home", label: "Home", icon: "Home" },
+      { path: "home", label: "Home", icon: "Home", external: true },
       { path: "", label: "Application Status", icon: "FileText" },
       { path: "notifications", label: "Notifications", icon: "Bell" },
       { path: "profile", label: "My Profile", icon: "User" },
@@ -86,7 +87,7 @@ export const ROLE_CONFIGS = {
     basePath: "/pending-pharmacy",
     displayName: "Pending Pharmacy",
     navItems: [
-      { path: "home", label: "Home", icon: "Home" },
+      { path: "home", label: "Home", icon: "Home", external: true },
       { path: "", label: "Application Status", icon: "FileText" },
       { path: "notifications", label: "Notifications", icon: "Bell" },
       { path: "profile", label: "My Profile", icon: "User" },

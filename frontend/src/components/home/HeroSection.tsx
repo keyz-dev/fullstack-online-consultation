@@ -2,11 +2,34 @@ import React from "react";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "../ui";
+import { useAuth } from "../../contexts/AuthContext";
+import { useBookingIntent } from "../../hooks/useBookingIntent";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 const HeroSection = () => {
+  const { user } = useAuth();
+  const { setBookingIntent } = useBookingIntent();
+  const router = useRouter();
+
   const handleBookAppointment = () => {
-    // Add your booking logic here
-    console.log("Book appointment clicked");
+    if (!user) {
+      // Set booking intent and redirect to login
+      setBookingIntent({
+        type: "global",
+      });
+      router.push("/login");
+      return;
+    }
+
+    if (user?.role !== "patient") {
+      // Show error or redirect appropriately
+      toast.error("Only patients can book appointments for now");
+      return;
+    }
+
+    // User is authenticated patient, redirect to booking
+    router.push("/booking");
   };
 
   return (

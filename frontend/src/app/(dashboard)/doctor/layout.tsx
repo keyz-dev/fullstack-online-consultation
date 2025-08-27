@@ -1,9 +1,11 @@
 "use client";
 
+import { DoctorAppointmentProvider } from "@/contexts";
+
 export default function DoctorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <DoctorAppointmentProvider>{children}</DoctorAppointmentProvider>;
 }

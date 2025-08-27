@@ -54,6 +54,12 @@ export const colorThemes: Record<string, ColorTheme> = {
     iconBg: "bg-teal-100 dark:bg-teal-800/40",
     border: "border-teal-200 dark:border-teal-700",
   },
+  yellow: {
+    background: "bg-yellow-50 dark:bg-yellow-900/20",
+    iconColor: "text-yellow-600 dark:text-yellow-400",
+    iconBg: "bg-yellow-100 dark:bg-yellow-800/40",
+    border: "border-yellow-200 dark:border-yellow-700",
+  },
   white: {
     background: "bg-white dark:bg-gray-800",
     iconColor: "text-gray-600 dark:text-gray-400",
