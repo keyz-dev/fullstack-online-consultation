@@ -24,7 +24,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundPosition: "top",
         backgroundRepeat: "no-repeat",
       }}
     >

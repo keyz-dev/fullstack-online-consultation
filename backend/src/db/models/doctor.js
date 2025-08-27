@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
 
       // Doctor belongs to many specialties through DoctorSpecialties
       Doctor.belongsToMany(models.Specialty, {
-        through: "DoctorSpecialties",
+        through: models.DoctorSpecialty,
         foreignKey: "doctorId",
         otherKey: "specialtyId",
         as: "specialties",

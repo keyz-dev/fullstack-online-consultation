@@ -60,21 +60,15 @@ exports.getAllSpecialties = async (req, res, next) => {
     // Get statistics for each specialty using proper joins
     const specialtiesWithStats = await Promise.all(
       specialties.map(async (specialty) => {
-        // Count doctors for this specialty using proper joins
-        const doctorCount = await Doctor.count({
+        // Count doctors for this specialty using relationship method
+        const doctors = await specialty.getDoctors({
           where: {
             isActive: true,
-            isVerified: true,
+            // Temporarily remove isVerified filter since doctors don't have this set
+            // isVerified: true,
           },
-          include: [
-            {
-              model: Specialty,
-              as: "specialties",
-              through: { attributes: [] },
-              where: { id: specialty.id },
-            },
-          ],
         });
+        const doctorCount = doctors.length;
 
         // Count symptoms for this specialty
         const symptomCount = await Symptom.count({
@@ -125,21 +119,15 @@ exports.getSpecialtyById = async (req, res, next) => {
       return next(new NotFoundError("Specialty not found"));
     }
 
-    // Get statistics for this specialty using proper joins
-    const doctorCount = await Doctor.count({
+    // Get statistics for this specialty using relationship method
+    const doctors = await specialty.getDoctors({
       where: {
         isActive: true,
-        isVerified: true,
+        // Temporarily remove isVerified filter since doctors don't have this set
+        // isVerified: true,
       },
-      include: [
-        {
-          model: Specialty,
-          as: "specialties",
-          through: { attributes: [] },
-          where: { id: specialty.id },
-        },
-      ],
     });
+    const doctorCount = doctors.length;
 
     const symptomCount = await Symptom.count({
       where: {
@@ -270,21 +258,15 @@ exports.deleteSpecialty = async (req, res, next) => {
       return next(new NotFoundError("Specialty not found"));
     }
 
-    // Check if specialty is being used by doctors using proper joins
-    const doctorCount = await Doctor.count({
+    // Check if specialty is being used by doctors using relationship method
+    const doctors = await specialty.getDoctors({
       where: {
         isActive: true,
-        isVerified: true,
+        // Temporarily remove isVerified filter since doctors don't have this set
+        // isVerified: true,
       },
-      include: [
-        {
-          model: Specialty,
-          as: "specialties",
-          through: { attributes: [] },
-          where: { id: specialty.id },
-        },
-      ],
     });
+    const doctorCount = doctors.length;
 
     if (doctorCount > 0) {
       return next(
@@ -333,29 +315,22 @@ exports.getSpecialtyStats = async (req, res, next) => {
     });
     const inactiveSpecialties = totalSpecialties - activeSpecialties;
 
-    // Get top specialties by doctor count using proper joins
+    // Get top specialties by doctor count using relationship method
     const specialties = await Specialty.findAll();
     const specialtiesWithDoctorCounts = await Promise.all(
       specialties.map(async (specialty) => {
-        const doctorCount = await Doctor.count({
+        const doctors = await specialty.getDoctors({
           where: {
             isActive: true,
-            isVerified: true,
+            // Temporarily remove isVerified filter since doctors don't have this set
+            // isVerified: true,
           },
-          include: [
-            {
-              model: Specialty,
-              as: "specialties",
-              through: { attributes: [] },
-              where: { id: specialty.id },
-            },
-          ],
         });
 
         return {
           id: specialty.id,
           name: specialty.name,
-          doctorCount,
+          doctorCount: doctors.length,
         };
       })
     );

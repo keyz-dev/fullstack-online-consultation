@@ -31,10 +31,6 @@ const createAvailabilities = async (req, res, next) => {
     if (error) throw new BadRequestError(error.details[0].message);
 
     const { availabilities } = value;
-
-    console.log("availabilities: ", availabilities);
-    console.log("userId: ", userId);
-
     // Validate doctor exists
     const doctor = await Doctor.findOne({
       where: { userId: userId },

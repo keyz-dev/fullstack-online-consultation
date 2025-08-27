@@ -65,7 +65,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {DAY_NAMES.map((dayName, dayIndex) => {
           const dayAvailabilities = getAvailabilitiesForDay(dayIndex);
           const stats = calculateDayStats(dayAvailabilities);

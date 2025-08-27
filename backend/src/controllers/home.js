@@ -8,12 +8,8 @@ const {
   DoctorSpecialty,
 } = require("../db/models");
 const { Op } = require("sequelize");
-const {
-  formatSpecialtyData,
-} = require("../utils/returnFormats/specialtyData");
-const {
-  formatSymptomsData,
-} = require("../utils/returnFormats/symptomData");
+const { formatSpecialtyData } = require("../utils/returnFormats/specialtyData");
+const { formatSymptomsData } = require("../utils/returnFormats/symptomData");
 
 class HomeController {
   // Get home page data
@@ -27,27 +23,21 @@ class HomeController {
         limit: 5,
       });
 
-      // Get doctor count for each specialty using proper joins
+      // Get doctor count for each specialty using proper relationship queries
       const specialtiesWithCount = await Promise.all(
         specialties.map(async (specialty) => {
-          const doctorCount = await Doctor.count({
+          // Use the relationship method to get doctors for this specialty
+          const doctors = await specialty.getDoctors({
             where: {
               isActive: true,
-              isVerified: true,
+              // Temporarily remove isVerified filter since doctors don't have this set
+              // isVerified: true,
             },
-            include: [
-              {
-                model: Specialty,
-                as: "specialties",
-                through: { attributes: [] },
-                where: { id: specialty.id },
-              },
-            ],
           });
 
           return formatSpecialtyData(specialty, {
             includeStats: true,
-            doctorCount,
+            doctorCount: doctors.length,
           });
         })
       );
@@ -75,7 +65,8 @@ class HomeController {
       const doctorCount = await Doctor.count({
         where: {
           isActive: true,
-          isVerified: true,
+          // Temporarily remove isVerified filter since doctors don't have this set
+          // isVerified: true,
         },
       });
 
@@ -134,7 +125,8 @@ class HomeController {
       const doctorCount = await Doctor.count({
         where: {
           isActive: true,
-          isVerified: true,
+          // Temporarily remove isVerified filter since doctors don't have this set
+          // isVerified: true,
         },
       });
 
@@ -188,27 +180,21 @@ class HomeController {
         },
       });
 
-      // Get doctor count for each specialty using proper joins
+      // Get doctor count for each specialty using proper relationship queries
       const specialtiesWithCount = await Promise.all(
         specialties.map(async (specialty) => {
-          const doctorCount = await Doctor.count({
+          // Use the relationship method to get doctors for this specialty
+          const doctors = await specialty.getDoctors({
             where: {
               isActive: true,
-              isVerified: true,
+              // Temporarily remove isVerified filter since doctors don't have this set
+              // isVerified: true,
             },
-            include: [
-              {
-                model: Specialty,
-                as: "specialties",
-                through: { attributes: [] },
-                where: { id: specialty.id },
-              },
-            ],
           });
 
           return formatSpecialtyData(specialty, {
             includeStats: true,
-            doctorCount,
+            doctorCount: doctors.length,
           });
         })
       );
@@ -241,19 +227,14 @@ class HomeController {
         });
       }
 
-      // Get doctors for this specialty using proper joins
-      const doctors = await Doctor.findAll({
+      // Get doctors for this specialty using relationship method
+      const doctors = await specialty.getDoctors({
         where: {
           isActive: true,
-          isVerified: true,
+          // Temporarily remove isVerified filter since doctors don't have this set
+          // isVerified: true,
         },
         include: [
-          {
-            model: Specialty,
-            as: "specialties",
-            through: { attributes: [] },
-            where: { id: specialty.id },
-          },
           {
             model: User,
             as: "user",
@@ -324,27 +305,21 @@ class HomeController {
         order: [["name", "ASC"]],
       });
 
-      // Get doctor count for each specialty using proper joins
+      // Get doctor count for each specialty using proper relationship queries
       const specialtiesWithCount = await Promise.all(
         specialties.map(async (specialty) => {
-          const doctorCount = await Doctor.count({
+          // Use the relationship method to get doctors for this specialty
+          const doctors = await specialty.getDoctors({
             where: {
               isActive: true,
-              isVerified: true,
+              // Temporarily remove isVerified filter since doctors don't have this set
+              // isVerified: true,
             },
-            include: [
-              {
-                model: Specialty,
-                as: "specialties",
-                through: { attributes: [] },
-                where: { id: specialty.id },
-              },
-            ],
           });
 
           return formatSpecialtyData(specialty, {
             includeStats: true,
-            doctorCount,
+            doctorCount: doctors.length,
           });
         })
       );
@@ -379,18 +354,14 @@ class HomeController {
 
       const offset = (page - 1) * limit;
 
-      const doctors = await Doctor.findAndCountAll({
+      // Use the relationship method to get doctors for this specialty
+      const doctors = await specialty.getDoctors({
         where: {
           isActive: true,
-          isVerified: true,
+          // Temporarily remove isVerified filter since doctors don't have this set
+          // isVerified: true,
         },
         include: [
-          {
-            model: Specialty,
-            as: "specialties",
-            through: { attributes: [] },
-            where: { id: specialtyId },
-          },
           {
             model: User,
             as: "user",
@@ -402,18 +373,27 @@ class HomeController {
         order: [["createdAt", "DESC"]],
       });
 
-      const totalPages = Math.ceil(doctors.count / limit);
+      // Get total count for pagination
+      const totalCount = await specialty.countDoctors({
+        where: {
+          isActive: true,
+          // Temporarily remove isVerified filter since doctors don't have this set
+          // isVerified: true,
+        },
+      });
+
+      const totalPages = Math.ceil(totalCount / limit);
 
       const formattedSpecialty = formatSpecialtyData(specialty);
 
       res.json({
         success: true,
         data: {
-          doctors: doctors.rows,
+          doctors,
           pagination: {
             page: parseInt(page),
             limit: parseInt(limit),
-            total: doctors.count,
+            total: totalCount,
             totalPages,
           },
           specialty: formattedSpecialty,
