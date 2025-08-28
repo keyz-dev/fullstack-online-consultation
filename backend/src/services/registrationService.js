@@ -7,6 +7,7 @@ const {
   ApplicationDocument,
   DoctorSpecialty,
   Notification,
+  PatientDocument,
 } = require("../db/models");
 const { sequelize } = require("../db/models");
 const { BadRequestError, ConflictError } = require("../utils/errors");
@@ -153,42 +154,77 @@ class RegistrationService {
 
   // ==================== PATIENT REGISTRATION ====================
   static async registerPatient(userData, patientData, avatar = null) {
+    const { documents = [], ...otherPatientData } = patientData;
     const { email, ...otherUserData } = userData;
 
     // Check if user already exists
     let user = await User.findOne({ where: { email } });
     if (user) throw new ConflictError("User already exists with this email");
 
-    // Create user first
-    user = await User.create({
-      ...otherUserData,
-      email,
-      avatar,
-      role: "patient",
-      authProvider: "local",
-      emailVerified: false,
-      isApproved: true, // Patients are auto-approved
-      isActive: true,
-    });
+    const transaction = await sequelize.transaction();
 
-    // Create patient profile
-    await Patient.create({
-      userId: user.id,
-      ...patientData,
-    });
-
-    // Send verification email
     try {
-      await sendVerificationEmail(user, email, user.name);
-    } catch (err) {
-      await user.destroy();
-      throw new BadRequestError(err.message);
-    }
+      // Create user first
+      user = await User.create(
+        {
+          ...otherUserData,
+          email,
+          avatar,
+          role: "patient",
+          authProvider: "local",
+          emailVerified: false,
+          isApproved: true, // Patients are auto-approved
+          isActive: true,
+        },
+        { transaction }
+      );
 
-    return {
-      user: { id: user.id, email: user.email },
-      message: "Patient registration successful. Please verify your email.",
-    };
+      // Create patient profile
+      const patient = await Patient.create(
+        {
+          userId: user.id,
+          ...otherPatientData,
+        },
+        { transaction }
+      );
+
+      // Create patient documents if any
+      if (documents && documents.length > 0) {
+        const documentPromises = documents.map((doc) =>
+          PatientDocument.create(
+            {
+              patientId: patient.id,
+              documentType: doc.documentName,
+              fileName: doc.originalName,
+              fileUrl: doc.url,
+              fileSize: doc.size,
+              mimeType: doc.fileType,
+            },
+            { transaction }
+          )
+        );
+        await Promise.all(documentPromises);
+      }
+
+      await transaction.commit();
+
+      // Send verification email
+      try {
+        await sendVerificationEmail(user, email, user.name);
+      } catch (err) {
+        // If email fails, we don't rollback the transaction since user is already created
+        // Just log the error and continue
+        console.error("Failed to send verification email:", err);
+      }
+
+      return {
+        user: { id: user.id, email: user.email },
+        message: "Patient registration successful. Please verify your email.",
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   // ==================== DOCTOR REGISTRATION (ACID-COMPLIANT) ====================

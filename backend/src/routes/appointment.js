@@ -3,9 +3,23 @@ const router = express.Router();
 const appointmentController = require("../controllers/appointment");
 const { verifyCamPayWebhook } = require("../middleware/verifyCampayWebhook");
 const { authenticate, authorizeRoles } = require("../middleware/auth");
+const {
+  upload,
+  handleCloudinaryUpload,
+  formatFilePaths,
+  handleUploadError,
+} = require("../middleware/multer");
 
 // Create appointment (requires authentication)
-router.post("/create", authenticate, appointmentController.createAppointment);
+router.post(
+  "/create",
+  authenticate,
+  upload.fields([{ name: "patientDocument", maxCount: 10 }]),
+  handleCloudinaryUpload,
+  formatFilePaths,
+  handleUploadError,
+  appointmentController.createAppointment
+);
 
 // Initiate payment for appointment (requires authentication)
 router.post(

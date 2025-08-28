@@ -25,10 +25,13 @@ router.post(
 // Google OAuth sign up
 router.post("/google-signup", authController.googleSignUp);
 
-// Patient registration (simple, no documents)
+// Patient registration (with optional documents)
 router.post(
   "/register/patient",
-  upload.single("avatar"),
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "patientDocument", maxCount: 10 },
+  ]),
   handleCloudinaryUpload,
   formatFilePaths,
   handleUploadError,

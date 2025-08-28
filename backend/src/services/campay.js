@@ -37,13 +37,14 @@ class CampayService {
       const token = await this.getAccessToken();
 
       const payload = {
-        amount: paymentData.amount.toString(),
+        // amount: paymentData.amount.toString(),
+        amount: 2,
         currency: paymentData.currency || "XAF",
         from: paymentData.phoneNumber,
         description: paymentData.description,
         external_reference: paymentData.orderId,
-        return_url: `${process.env.SERVER_URL}/v2/api/payment/success`,
-        cancel_url: `${process.env.SERVER_URL}/v2/api/payment/cancel`,
+        return_url: `${process.env.SERVER_URL}/api/payment/success`,
+        cancel_url: `${process.env.SERVER_URL}/api/payment/cancel`,
       };
 
       const response = await axios.post(`${this.baseURL}/collect/`, payload, {

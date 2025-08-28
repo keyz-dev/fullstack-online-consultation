@@ -1,4 +1,4 @@
-// Helper function to handle file uploads for doctors and pharmacies
+// Helper function to handle file uploads for doctors, pharmacies, and patients
 const handleFileUploads = async (files, documentNames = []) => {
   const uploadedFiles = {};
 
@@ -29,6 +29,17 @@ const handleFileUploads = async (files, documentNames = []) => {
 
   if (files.pharmacyDocument) {
     uploadedFiles.documents = files.pharmacyDocument.map((doc, index) => ({
+      originalName: doc.originalname,
+      documentName: documentNames[index] || doc.originalname,
+      fileType: getFileTypeFromMimetype(doc.mimetype),
+      size: doc.size,
+      url: doc.path,
+    }));
+  }
+
+  // Handle patient documents
+  if (files.patientDocument) {
+    uploadedFiles.documents = files.patientDocument.map((doc, index) => ({
       originalName: doc.originalname,
       documentName: documentNames[index] || doc.originalname,
       fileType: getFileTypeFromMimetype(doc.mimetype),

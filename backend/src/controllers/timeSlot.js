@@ -18,10 +18,7 @@ const getDoctorTimeSlots = async (req, res) => {
     }
 
     // Build where clause
-    const whereClause = {
-      doctorId: parseInt(doctorId),
-      isBooked: false,
-    };
+    const whereClause = {};
 
     // Add date filter if provided
     if (date) {
@@ -47,6 +44,7 @@ const getDoctorTimeSlots = async (req, res) => {
         {
           model: DoctorAvailability,
           as: "availability",
+          where: { doctorId: parseInt(doctorId) },
           attributes: ["consultationType", "consultationFee"],
         },
       ],

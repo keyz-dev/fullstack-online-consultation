@@ -8,7 +8,9 @@ const {
   User,
   Specialty,
   Symptom,
+  PatientDocument,
 } = require("../db/models");
+const { sequelize } = require("../db/models");
 const campayService = require("../services/campay");
 const paymentTrackingService = require("../services/paymentTracking");
 const appointmentNotificationService = require("../services/appointmentNotificationService");
@@ -21,25 +23,48 @@ const {
   formatAppointmentData,
 } = require("../utils/returnFormats/appointmentData");
 const logger = require("../utils/logger");
+const { handleFileUploads } = require("../utils/documentUtil");
+const { cleanUpFileImages } = require("../utils/imageCleanup");
 
 class AppointmentController {
   // Create appointment with pending payment status
   async createAppointment(req, res, next) {
+    const transaction = await sequelize.transaction();
+
     try {
-      const {
-        doctorId,
-        timeSlotId,
-        consultationType,
-        symptomIds = [],
-        notes,
-      } = req.body;
+      const { doctorId, timeSlotId, consultationType, notes } = req.body;
+
+      req.body.documentNames = req.body.documentNames
+        ? Array.isArray(req.body.documentNames)
+          ? req.body.documentNames
+          : [req.body.documentNames]
+        : [];
+
+      // parse symptomIds
+      let symptomIds = req.body.symptomIds
+        ? Array.isArray(req.body.symptomIds)
+          ? req.body.symptomIds
+          : [req.body.symptomIds]
+        : [];
+
+      // convertt symptomIds to integers
+      symptomIds = symptomIds.map((id) => parseInt(id));
+
+      // Handle document uploads
+      let uploadedFiles = {};
+      if (req.files) {
+        uploadedFiles = await handleFileUploads(
+          req.files,
+          req.body.documentNames
+        );
+      }
 
       // Get patient ID from authenticated user
       const patient = await Patient.findOne({
         where: { userId: req.authUser.id },
       });
       if (!patient) {
-        return next(new NotFoundError("Patient not found"));
+        throw new NotFoundError("Patient not found");
       }
       const patientId = patient.id;
 
@@ -67,46 +92,135 @@ class AppointmentController {
       });
 
       if (!timeSlot) {
-        return next(new NotFoundError("Time slot not found"));
+        throw new NotFoundError("Time slot not found");
       }
 
-      if (!timeSlot.isAvailable) {
-        return next(new BadRequestError("Time slot is not available"));
+      if (timeSlot.isBooked) {
+        throw new BadRequestError("Time slot is already booked");
       }
 
       // Create appointment with pending_payment status
-      const appointment = await Appointment.create({
-        timeSlotId,
-        patientId,
-        consultationType,
-        symptomIds,
-        notes,
-        status: "pending_payment",
-        paymentStatus: "pending",
-      });
+      const appointment = await Appointment.create(
+        {
+          timeSlotId,
+          patientId,
+          consultationType,
+          symptomIds,
+          notes,
+          status: "pending_payment",
+          paymentStatus: "pending",
+        },
+        { transaction }
+      );
+
+      // Mark time slot as booked
+      await timeSlot.update({ isBooked: true }, { transaction });
+
+      // Create patient documents if any
+      if (uploadedFiles.documents && uploadedFiles.documents.length > 0) {
+        const documentPromises = uploadedFiles.documents.map((doc) =>
+          PatientDocument.create(
+            {
+              patientId: patientId,
+              documentType: doc.documentName,
+              fileName: doc.originalName,
+              fileUrl: doc.url,
+              fileSize: doc.size,
+              mimeType: doc.fileType,
+            },
+            { transaction }
+          )
+        );
+        await Promise.all(documentPromises);
+      }
 
       // Create payment record
-      const payment = await Payment.create({
-        userId: req.authUser.id,
-        appointmentId: appointment.id,
-        type: "consultation",
-        amount: timeSlot.availability.consultationFee,
-        currency: "XAF",
-        status: "pending",
-        paymentMethod: "mobile_money",
-        description: `Payment for appointment with Dr. ${timeSlot.availability.doctor.user.name}`,
-      });
+      const payment = await Payment.create(
+        {
+          userId: req.authUser.id,
+          appointmentId: appointment.id,
+          type: "consultation",
+          amount: timeSlot.availability.consultationFee,
+          currency: "XAF",
+          status: "pending",
+          paymentMethod: "mobile_money",
+          description: `Payment for appointment with Dr. ${timeSlot.availability.doctor.user.name}`,
+        },
+        { transaction }
+      );
 
-      const formattedAppointment = await formatAppointmentData(appointment, {
-        includePayment: true,
-        includeDoctor: true,
-        includePatient: true,
-      });
+      // Commit transaction first
+      await transaction.commit();
+
+      // Fetch the appointment with all necessary associations for formatting
+      const appointmentWithAssociations = await Appointment.findByPk(
+        appointment.id,
+        {
+          include: [
+            {
+              model: TimeSlot,
+              as: "timeSlot",
+              include: [
+                {
+                  model: DoctorAvailability,
+                  as: "availability",
+                  include: [
+                    {
+                      model: Doctor,
+                      as: "doctor",
+                      include: [
+                        {
+                          model: User,
+                          as: "user",
+                          attributes: ["id", "name", "email"],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              model: Patient,
+              as: "patient",
+              include: [
+                {
+                  model: User,
+                  as: "user",
+                  attributes: [
+                    "id",
+                    "name",
+                    "email",
+                    "phoneNumber",
+                    "gender",
+                    "dob",
+                    "avatar",
+                  ],
+                },
+              ],
+            },
+            {
+              model: Payment,
+              as: "payments",
+              order: [["createdAt", "DESC"]],
+            },
+          ],
+        }
+      );
+
+      const formattedAppointment = await formatAppointmentData(
+        appointmentWithAssociations,
+        {
+          includePayment: true,
+          includeDoctor: true,
+          includePatient: true,
+        }
+      );
 
       // Send notification to patient
       await appointmentNotificationService.notifyAppointmentCreated(
-        appointment,
-        req.user.patient
+        appointmentWithAssociations,
+        req.authUser.patient
       );
 
       res.status(201).json({
@@ -123,6 +237,19 @@ class AppointmentController {
         },
       });
     } catch (error) {
+      // Only rollback if transaction hasn't been committed or rolled back
+      if (transaction && !transaction.finished) {
+        try {
+          await transaction.rollback();
+          logger.info("Transaction rolled back successfully");
+        } catch (rollbackError) {
+          logger.error("Error rolling back transaction:", rollbackError);
+        }
+      } else {
+        logger.info("Transaction already finished, cannot rollback");
+      }
+
+      cleanUpFileImages(req);
       logger.error("Error creating appointment:", error);
       next(error);
     }
@@ -169,8 +296,11 @@ class AppointmentController {
       });
 
       if (!appointment) {
-        return next(new NotFoundError("Appointment not found"));
+        throw new NotFoundError("Appointment not found");
       }
+
+      const amount = appointment.timeSlot.availability.consultationFee;
+      const doctorName = appointment.timeSlot.availability.doctor.user.name;
 
       // Get or create payment record
       let payment = appointment.payments[0];
@@ -179,16 +309,13 @@ class AppointmentController {
           userId: req.authUser.id,
           appointmentId: appointment.id,
           type: "consultation",
-          amount: appointment.timeSlot.availability.consultationFee,
+          amount: amount,
           currency: "XAF",
           status: "pending",
           paymentMethod: "mobile_money",
           description: `Payment for appointment with Dr. ${doctorName}`,
         });
       }
-
-      const amount = appointment.timeSlot.availability.consultationFee;
-      const doctorName = appointment.timeSlot.availability.doctor.user.name;
 
       // Initiate Campay payment
       const paymentData = {
@@ -214,9 +341,9 @@ class AppointmentController {
       // Send notification to patient about payment initiation
       await appointmentNotificationService.notifyPaymentInitiated(
         appointment,
-        req.user.patient,
+        req.authUser,
         campayResponse.reference
-      );
+      )
 
       res.json({
         success: true,
@@ -399,7 +526,7 @@ class AppointmentController {
       });
 
       if (!appointment) {
-        return next(new NotFoundError("Appointment not found"));
+        throw new NotFoundError("Appointment not found");
       }
 
       // Check if user is authorized to view this appointment
@@ -409,10 +536,8 @@ class AppointmentController {
       const isAdmin = req.authUser.role === "admin";
 
       if (!isPatient && !isDoctor && !isAdmin) {
-        return next(
-          new UnauthorizedError(
-            "You are not authorized to view this appointment"
-          )
+        throw new UnauthorizedError(
+          "You are not authorized to view this appointment"
         );
       }
 

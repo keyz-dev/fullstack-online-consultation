@@ -132,6 +132,7 @@ const patientRegisterSchema = baseUserSchema.keys({
     expiryDate: Joi.date().optional(),
   }).optional(),
   contactInfo: Joi.array().items(contactInfoSchema).optional(),
+  documentNames: Joi.array().items(Joi.string()).optional(),
 });
 
 // Doctor registration schema

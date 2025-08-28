@@ -38,6 +38,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "patientId",
         as: "testimonials",
       });
+
+      // Patient has many documents
+      Patient.hasMany(models.PatientDocument, {
+        foreignKey: "patientId",
+        as: "documents",
+      });
     }
   }
 

@@ -46,6 +46,7 @@ class PaymentTrackingService {
               `Stopping polling for payment ${paymentReference} - status: ${statusResponse.status}`
             );
             this.stopPolling(paymentReference);
+            return;
           }
         }
 
@@ -93,31 +94,37 @@ class PaymentTrackingService {
 
       let paymentStatus = "pending";
       let appointmentStatus = "pending_payment";
+      let appointmentPaymentStatus = "pending";
 
       switch (status) {
         case "SUCCESSFUL":
-          paymentStatus = "paid";
+          paymentStatus = "completed";
           appointmentStatus = "paid";
+          appointmentPaymentStatus = "paid";
           break;
         case "FAILED":
         case "CANCELLED":
           paymentStatus = "failed";
           appointmentStatus = "cancelled";
+          appointmentPaymentStatus = "failed";
           break;
         case "PENDING":
           paymentStatus = "processing";
           appointmentStatus = "pending_payment";
+          appointmentPaymentStatus = "pending";
           break;
       }
 
       await payment.update({
         status: paymentStatus,
-        processedAt: status === "SUCCESSFUL" ? new Date() : null,
+        metadata: {
+          processedAt: status === "SUCCESSFUL" ? new Date() : null,
+        },
       });
 
       await payment.appointment.update({
         status: appointmentStatus,
-        paymentStatus: paymentStatus,
+        paymentStatus: appointmentPaymentStatus,
       });
 
       // Send notifications
