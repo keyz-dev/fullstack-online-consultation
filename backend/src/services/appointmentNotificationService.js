@@ -135,8 +135,8 @@ class AppointmentNotificationService {
       default:
         title = "Payment Update";
         message = "Your payment status has been updated.";
-        notificationType = "general";
-        priority = "low";
+        notificationType = "payment_update";
+        priority = "medium";
     }
 
     await this.createNotification(
@@ -164,44 +164,23 @@ class AppointmentNotificationService {
           message: message,
           timestamp: new Date(),
         });
-    }
-  }
 
-  /**
-   * Notify doctor about new appointment
-   */
-  async notifyDoctorNewAppointment(appointment, doctor, patient) {
-    const title = "New Appointment";
-    const message = `You have a new appointment with ${patient.user.name} on ${appointment.timeSlot.date} at ${appointment.timeSlot.startTime}.`;
-
-    await this.createNotification(
-      doctor.userId,
-      "new_appointment",
-      title,
-      message,
-      "high",
-      {
-        appointmentId: appointment.id,
-        patientName: patient.user.name,
-        appointmentDate: appointment.timeSlot.date,
-        appointmentTime: appointment.timeSlot.startTime,
-        consultationType: appointment.consultationType,
-        amount: appointment.timeSlot.availability.consultationFee,
+      // Emit payment confirmation to doctor
+      if (status === "SUCCESSFUL" && appointment.doctorId) {
+        global.io
+          .to(`doctor-${appointment.doctorId}`)
+          .emit("payment-confirmed", {
+            appointmentId: appointment.id,
+            patientName: patient.user.name,
+            patientId: patient.id,
+            amount: payment.amount,
+            appointmentDate: appointment.timeSlot.date,
+            appointmentTime: appointment.timeSlot.startTime,
+            consultationType: appointment.consultationType,
+            message: `Payment completed - Appointment confirmed`,
+            timestamp: new Date(),
+          });
       }
-    );
-
-    // Emit real-time notification to doctor
-    if (global.io) {
-      global.io.to(`doctor-${doctor.id}`).emit("new-appointment", {
-        appointmentId: appointment.id,
-        patientName: patient.user.name,
-        patientId: patient.id,
-        appointmentDate: appointment.timeSlot.date,
-        appointmentTime: appointment.timeSlot.startTime,
-        consultationType: appointment.consultationType,
-        amount: appointment.timeSlot.availability.consultationFee,
-        timestamp: new Date(),
-      });
     }
   }
 }

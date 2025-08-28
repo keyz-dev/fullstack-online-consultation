@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useContext,
 } from "react";
+import { useSocketContext } from "./SocketProvider";
 import {
   appointmentsAPI,
   DoctorAppointment,
@@ -156,6 +157,7 @@ export const DoctorAppointmentProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const [state, dispatch] = useReducer(doctorAppointmentReducer, initialState);
+  const socket = useSocketContext();
 
   // Fetch appointments
   const fetchAppointments = useCallback(async () => {
@@ -168,12 +170,14 @@ export const DoctorAppointmentProvider: React.FC<{
         limit: state.pagination.limit,
       });
 
+      const payload = {
+        appointments: response.data.appointments,
+        pagination: response.data.pagination,
+      };
+
       dispatch({
         type: DOCTOR_APPOINTMENT_ACTIONS.SET_APPOINTMENTS,
-        payload: {
-          appointments: response.data.appointments,
-          pagination: response.data.pagination,
-        },
+        payload,
       });
     } catch (err: unknown) {
       console.error("Error fetching doctor appointments:", err);
@@ -197,7 +201,7 @@ export const DoctorAppointmentProvider: React.FC<{
     } catch (err: unknown) {
       console.error("Error fetching doctor appointment stats:", err);
       const errorMessage = extractErrorMessage(err as any);
-      toast.error("Failed to load statistics");
+      toast.error(`Error: ${errorMessage}`);
     }
   }, []);
 
@@ -236,7 +240,39 @@ export const DoctorAppointmentProvider: React.FC<{
   // Auto-fetch stats when provider mounts
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+  }, [fetchStats, fetchAppointments]);
+
+  // Real-time socket listeners for doctor appointments
+  useEffect(() => {
+    if (!socket?.socket) return;
+
+    // Listen for payment confirmations only
+    socket.socket.on("payment-confirmed", (data: any) => {
+      console.log("💰 Payment confirmed:", data);
+      toast.success(
+        `New confirmed appointment with ${data.patientName} on ${data.appointmentDate}`
+      );
+      // Refresh appointments list
+      fetchAppointments();
+      // Refresh stats
+      fetchStats();
+    });
+
+    // // Listen for appointment status updates (for cancellations, completions, etc.)
+    // socket.socket.on("appointment-status-updated", (data: any) => {
+    //   console.log("🔄 Appointment status updated:", data);
+    //   toast.info(`Appointment status updated: ${data.status}`);
+    //   // Refresh appointments list
+    //   fetchAppointments();
+    //   // Refresh stats
+    //   fetchStats();
+    // });
+
+    return () => {
+      socket.socket.off("payment-confirmed");
+      socket.socket.off("appointment-status-updated");
+    };
+  }, [socket, fetchAppointments, fetchStats]);
 
   const value: DoctorAppointmentContextType = {
     // State

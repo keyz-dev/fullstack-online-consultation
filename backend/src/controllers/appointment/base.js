@@ -18,43 +18,41 @@ const logger = require("../../utils/logger");
 
 const getAppointmentIncludes = (
   includePayment = true,
-  includePatient = true
+  includePatient = true,
+  includeDoctor = true
 ) => [
   {
     model: TimeSlot,
     as: "timeSlot",
-    include: [
-      {
-        model: DoctorAvailability,
-        as: "availability",
-        include: [
-          {
-            model: Doctor,
-            as: "doctor",
-            include: [
-              {
-                model: User,
-                as: "user",
-                attributes: [
-                  "id",
-                  "name",
-                  "email",
-                  "avatar",
-                  "gender",
-                  "phoneNumber",
-                  "dob",
-                ],
-              },
-              {
-                model: Specialty,
-                as: "specialties",
-              },
-            ],
-          },
-        ],
-      },
-    ],
+    attributes: ["id", "date", "startTime", "endTime", "isBooked"],
   },
+  ...(includeDoctor
+    ? [
+        {
+          model: Doctor,
+          as: "doctor",
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: [
+                "id",
+                "name",
+                "email",
+                "avatar",
+                "gender",
+                "phoneNumber",
+                "dob",
+              ],
+            },
+            {
+              model: Specialty,
+              as: "specialties",
+            },
+          ],
+        },
+      ]
+    : []),
   ...(includePatient
     ? [
         {

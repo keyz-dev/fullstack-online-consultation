@@ -42,7 +42,7 @@ const BookingProgress: React.FC = () => {
                   {step.title}
                 </p>
                 <p
-                  className={`text-xs mt-1 transition-colors ${
+                  className={`text-xs hidden md:block mt-1 transition-colors ${
                     index <= state.currentStep
                       ? "text-gray-600 dark:text-gray-300"
                       : "text-gray-400 dark:text-gray-500"

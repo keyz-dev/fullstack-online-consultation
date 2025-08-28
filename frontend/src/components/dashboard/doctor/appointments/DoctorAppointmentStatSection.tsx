@@ -7,12 +7,20 @@ import { Calendar, Clock, TrendingUp, Activity } from "lucide-react";
 
 interface DoctorAppointmentStatSectionProps {
   stats: DoctorAppointmentStats;
+  loading?: boolean;
 }
 
 const DoctorAppointmentStatSection: React.FC<
   DoctorAppointmentStatSectionProps
-> = ({ stats }) => {
+> = ({ stats, loading }) => {
   const statCards = [
+    {
+      title: "Total",
+      value: stats.total.toString(),
+      icon: Activity,
+      colorTheme: "indigo" as const,
+      description: "Total appointments",
+    },
     {
       title: "Today",
       value: stats.today.toString(),
@@ -45,7 +53,11 @@ const DoctorAppointmentStatSection: React.FC<
 
   return (
     <div className="mb-6">
-      <StatRenderer statCards={statCards} />
+      <StatRenderer
+        statCards={statCards}
+        className="lg:w-[220px]"
+        isLoading={loading}
+      />
     </div>
   );
 };

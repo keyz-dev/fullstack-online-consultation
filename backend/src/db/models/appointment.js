@@ -21,6 +21,12 @@ module.exports = (sequelize, DataTypes) => {
         as: "patient",
       });
 
+      // Appointment belongs to a Doctor
+      Appointment.belongsTo(models.Doctor, {
+        foreignKey: "doctorId",
+        as: "doctor",
+      });
+
       // Appointment has one Consultation (actual session)
       Appointment.hasOne(models.Consultation, {
         foreignKey: "appointmentId",
@@ -121,6 +127,16 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         references: {
           model: "TimeSlots",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
+      doctorId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Doctors",
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -242,6 +258,9 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
           fields: ["patientId"],
+        },
+        {
+          fields: ["doctorId"],
         },
         {
           fields: ["status"],

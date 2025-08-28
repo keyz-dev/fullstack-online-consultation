@@ -37,6 +37,12 @@ export const useBookingPayment = () => {
         payload: "Creating appointment...",
       });
 
+      // Set a timeout to reset loading state if something goes wrong
+      const loadingTimeout = setTimeout(() => {
+        dispatch({ type: "SET_LOADING", payload: false });
+        console.warn("Payment loading timeout - resetting loading state");
+      }, 30000); // 30 seconds timeout
+
       try {
         // Create appointment
         const appointmentData = {
@@ -97,6 +103,9 @@ export const useBookingPayment = () => {
           toast.success(
             "Payment request sent to your phone. Please complete the payment."
           );
+
+          // Clear the timeout since payment was initiated successfully
+          clearTimeout(loadingTimeout);
         } else {
           throw new Error(
             paymentResponse.message || "Failed to initiate payment"
@@ -104,13 +113,16 @@ export const useBookingPayment = () => {
         }
       } catch (error: unknown) {
         console.error("Error creating appointment:", error);
-        const errorMessage = extractErrorMessage(error as any);
+        const errorMessage = extractErrorMessage(error as Error);
 
         dispatch({ type: "SET_PAYMENT_STATUS", payload: "failed" });
         dispatch({ type: "SET_PAYMENT_MESSAGE", payload: errorMessage });
         dispatch({ type: "SET_ERROR", payload: errorMessage });
 
         toast.error(errorMessage);
+
+        // Clear the timeout since we're handling the error
+        clearTimeout(loadingTimeout);
       } finally {
         dispatch({ type: "SET_LOADING", payload: false });
       }
@@ -124,6 +136,9 @@ export const useBookingPayment = () => {
       type: "SET_PAYMENT_MESSAGE",
       payload: "Payment successful! Your appointment has been confirmed.",
     });
+
+    // Reset loading state
+    dispatch({ type: "SET_LOADING", payload: false });
 
     // Mark step as completed
     dispatch({
@@ -159,9 +174,9 @@ export const useBookingPayment = () => {
       });
     }
 
-    // Redirect to appointments list after a delay
+    // Redirect to patient dashboard after a delay
     setTimeout(() => {
-      router.push("/patient/appointments");
+      router.push("/patient");
     }, 2000);
   }, [
     dispatch,
@@ -179,8 +194,11 @@ export const useBookingPayment = () => {
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "failed" });
     dispatch({
       type: "SET_PAYMENT_MESSAGE",
-      payload: "Payment failed. Please try again.",
+      payload: "Payment failed. Please try again or return to dashboard.",
     });
+
+    // Reset loading state
+    dispatch({ type: "SET_LOADING", payload: false });
 
     // Stop tracking payment
     if (state.paymentReference) {
@@ -228,6 +246,9 @@ export const useBookingPayment = () => {
       payload: "Ready to process payment",
     });
     dispatch({ type: "SET_PAYMENT_REFERENCE", payload: null });
+
+    // Reset loading state
+    dispatch({ type: "SET_LOADING", payload: false });
   }, [dispatch, state.paymentReference, stopTrackingPayment]);
 
   // Monitor payment status changes from the payment tracker
@@ -248,6 +269,46 @@ export const useBookingPayment = () => {
     handlePaymentSuccess,
     handlePaymentFailure,
   ]);
+
+  // Listen for payment status updates from socket events
+  useEffect(() => {
+    const handlePaymentStatusUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        status: string;
+        reference: string;
+      }>;
+      const { status, reference } = customEvent.detail;
+
+      // Only handle events for the current payment reference
+      if (reference === state.paymentReference) {
+        if (status === "SUCCESSFUL") {
+          handlePaymentSuccess();
+        } else if (status === "FAILED") {
+          handlePaymentFailure();
+        }
+      }
+    };
+
+    window.addEventListener(
+      "payment-status-updated",
+      handlePaymentStatusUpdate
+    );
+
+    return () => {
+      window.removeEventListener(
+        "payment-status-updated",
+        handlePaymentStatusUpdate
+      );
+    };
+  }, [state.paymentReference, handlePaymentSuccess, handlePaymentFailure]);
+
+  // Cleanup loading state on unmount
+  useEffect(() => {
+    return () => {
+      // Reset loading state when component unmounts
+      dispatch({ type: "SET_LOADING", payload: false });
+    };
+  }, [dispatch]);
 
   return {
     createAppointmentAndInitiatePayment,

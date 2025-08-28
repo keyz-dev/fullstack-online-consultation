@@ -212,22 +212,6 @@ export interface AppointmentsListResponse {
 // Doctor appointment types
 export interface DoctorAppointment {
   id: number;
-  patient: {
-    id: number;
-    user: {
-      id: number;
-      name: string;
-      email: string;
-      avatar?: string;
-    };
-  };
-  timeSlot: {
-    id: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-  };
-  consultationType: "online" | "physical";
   status:
     | "pending_payment"
     | "paid"
@@ -236,11 +220,67 @@ export interface DoctorAppointment {
     | "completed"
     | "cancelled"
     | "no_show";
-  paymentStatus: "pending" | "paid" | "failed" | "refunded";
-  notes?: string;
+  consultationType: "online" | "physical";
   symptomIds?: number[];
+  notes?: string;
+  cancellationReason?: string;
   createdAt: string;
   updatedAt: string;
+
+  // Time slot information
+  timeSlot: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    isAvailable: boolean;
+  };
+
+  // Patient information
+  patient?: {
+    id: number;
+    medicalHistory?: string;
+    allergies?: string[];
+    currentMedications?: string[];
+    emergencyContact?: string;
+    insuranceInfo?: string;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      phoneNumber?: string;
+      gender?: string;
+      dob?: string;
+      avatar?: string;
+    };
+    documents?: Array<{
+      id: number;
+      documentType: string;
+      fileName: string;
+      fileUrl: string;
+      fileSize?: number;
+      mimeType?: string;
+    }>;
+  };
+
+  // Payment information
+  payment?: {
+    id: number;
+    type: string;
+    amount: number;
+    currency: string;
+    status: string;
+    paymentMethod: string;
+    transactionId?: string;
+    gatewayResponse?: any;
+    description?: string;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  // Consultation fee from availability
+  consultationFee?: number;
 }
 
 export interface DoctorAppointmentStats {

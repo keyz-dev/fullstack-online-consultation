@@ -139,15 +139,6 @@ class PaymentTrackingService {
           payment,
           status
         );
-
-        // Send notification to doctor if payment successful
-        if (status === "SUCCESSFUL") {
-          await appointmentNotificationService.notifyDoctorNewAppointment(
-            payment.appointment,
-            payment.appointment.timeSlot.availability.doctor,
-            payment.appointment.patient
-          );
-        }
       }
 
       logger.info(`Payment ${paymentReference} status updated to ${status}`);

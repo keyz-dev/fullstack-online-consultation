@@ -242,7 +242,7 @@ const PaymentForm: React.FC = () => {
               ) : (
                 <>
                   <CreditCard className="w-5 h-5" />
-                  Pay FCFA {totalAmount.toFixed(2)}
+                  Pay {totalAmount.toFixed(2)} XAF
                 </>
               )}
             </Button>
@@ -255,19 +255,29 @@ const PaymentForm: React.FC = () => {
               Please complete the payment on your phone. You&apos;ll receive a
               notification once payment is confirmed.
             </p>
-            <Button
-              onClickHandler={cancelPayment}
-              additionalClasses="outlinebtn"
-              text="Cancel Payment"
-            />
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClickHandler={cancelPayment}
+                additionalClasses="outlinebtn"
+                text="Cancel Payment"
+              />
+              <Button
+                onClickHandler={() => router.push("/patient")}
+                additionalClasses="outlinebtn"
+                text="Back to Dashboard"
+              />
+            </div>
           </div>
         )}
 
         {paymentStatus === "success" && (
           <div className="text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-            <p className="text-green-600 dark:text-green-400 font-medium">
-              Payment successful! Redirecting to appointment details...
+            <p className="text-green-600 dark:text-green-400 font-medium mb-3">
+              Payment successful! Your appointment has been confirmed.
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Redirecting to your dashboard in a few seconds...
             </p>
           </div>
         )}
@@ -276,13 +286,20 @@ const PaymentForm: React.FC = () => {
           <div className="flex items-center w-full flex-col">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
             <p className="text-red-600 dark:text-red-400 mb-3">
-              Payment failed. Please try again.
+              Payment failed. Please try again or return to dashboard.
             </p>
-            <Button
-              onClickHandler={handleCreateAppointment}
-              additionalClasses="secondarybtn"
-              text="Try Again"
-            />
+            <div className="flex gap-3">
+              <Button
+                onClickHandler={handleCreateAppointment}
+                additionalClasses="secondarybtn"
+                text="Try Again"
+              />
+              <Button
+                onClickHandler={() => router.push("/patient")}
+                additionalClasses="outlinebtn"
+                text="Back to Dashboard"
+              />
+            </div>
           </div>
         )}
       </div>

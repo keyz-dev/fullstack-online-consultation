@@ -64,36 +64,11 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: "CASCADE",
       },
       type: {
-        type: DataTypes.ENUM(
-          "consultation_reminder",
-          "consultation_confirmation",
-          "consultation_cancelled",
-          "prescription_ready",
-          "payment_successful",
-          "payment_failed",
-          "application_approved",
-          "application_rejected",
-          "application_under_review",
-          "system_announcement",
-          "general"
-        ),
+        type: DataTypes.STRING(100),
         allowNull: false,
         validate: {
-          isIn: [
-            [
-              "consultation_reminder",
-              "consultation_confirmation",
-              "consultation_cancelled",
-              "prescription_ready",
-              "payment_successful",
-              "payment_failed",
-              "application_approved",
-              "application_rejected",
-              "application_under_review",
-              "system_announcement",
-              "general",
-            ],
-          ],
+          notEmpty: true,
+          len: [1, 100],
         },
       },
       title: {

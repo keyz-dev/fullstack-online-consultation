@@ -39,8 +39,13 @@ exports.getDoctorAppointments = async (req, res, next) => {
     } = req.query;
     const offset = (page - 1) * limit;
 
+    // Get doctor ID from authenticated user
+    const doctorId = req.authUser.doctor.id;
+
     let whereClause = {
-      paymentStatus: "paid", // Only show paid appointments
+      doctorId: doctorId,
+      status: ["paid", "confirmed", "in_progress", "completed"],
+      paymentStatus: "paid",
     };
 
     // Filter by status
@@ -53,19 +58,33 @@ exports.getDoctorAppointments = async (req, res, next) => {
       whereClause.consultationType = consultationType;
     }
 
-    // Sort options - simplified to avoid nested association issues
+    // Date range filters
+    if (dateFrom || dateTo) {
+      whereClause["$timeSlot.date$"] = {};
+      if (dateFrom) whereClause["$timeSlot.date$"].$gte = dateFrom;
+      if (dateTo) whereClause["$timeSlot.date$"].$lte = dateTo;
+    }
+
+    // Search filter
+    if (search) {
+      whereClause["$patient.user.name$"] = {
+        [Op.iLike]: `%${search}%`,
+      };
+    }
+
+    // Sort options
     let orderClause = [["createdAt", "DESC"]];
     if (sortBy === "date") {
-      orderClause = [["createdAt", "ASC"]]; // Use createdAt as proxy for date
+      orderClause = [["createdAt", "ASC"]];
     } else if (sortBy === "patient") {
-      orderClause = [["createdAt", "ASC"]]; // Use createdAt as proxy for patient sorting
+      orderClause = [["createdAt", "ASC"]];
     } else if (sortBy === "status") {
       orderClause = [["status", "ASC"]];
     }
 
     const appointments = await Appointment.findAndCountAll({
       where: whereClause,
-      include: getAppointmentIncludes(),
+      include: getAppointmentIncludes(true, true, false), // Don't include doctor since we're filtering by doctor
       order: orderClause,
       limit: parseInt(limit),
       offset: parseInt(offset),
@@ -75,7 +94,7 @@ exports.getDoctorAppointments = async (req, res, next) => {
       appointments.rows,
       {
         includePayment: true,
-        includeDoctor: true,
+        includeDoctor: false, // Don't include doctor since we're filtering by doctor
         includePatient: true,
       }
     );
@@ -101,47 +120,22 @@ exports.getDoctorAppointments = async (req, res, next) => {
 // Get doctor appointment statistics
 exports.getDoctorAppointmentStats = async (req, res, next) => {
   try {
-    // Check if user has a doctor record
-    if (!req.authUser.doctor) {
-      // Try to load the doctor record explicitly
-      const userWithDoctor = await User.findByPk(req.authUser.id, {
-        include: [
-          {
-            model: Doctor,
-            as: "doctor",
-          },
-        ],
-      });
-
-      if (!userWithDoctor || !userWithDoctor.doctor) {
-        throw new BadRequestError("User is not registered as a doctor");
-      }
-
-      // Update the authUser with the loaded doctor data
-      req.authUser = userWithDoctor;
-    }
-
     const doctorId = req.authUser.doctor.id;
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Get all appointments for the doctor (only paid ones)
+    // Get all appointments for the doctor using direct doctorId relationship
     const allAppointments = await Appointment.findAll({
       where: {
-        paymentStatus: "paid", // Only count paid appointments
+        doctorId: doctorId,
+        status: ["paid", "confirmed", "in_progress", "completed"], // Only count active appointments
+        paymentStatus: "paid",
       },
       include: [
         {
           model: TimeSlot,
           as: "timeSlot",
-          include: [
-            {
-              model: DoctorAvailability,
-              as: "availability",
-              attributes: [],
-            },
-          ],
           attributes: ["date"],
         },
       ],
@@ -154,16 +148,22 @@ exports.getDoctorAppointmentStats = async (req, res, next) => {
         const aptDate = new Date(apt.timeSlot.date);
         return (
           aptDate.toDateString() === now.toDateString() &&
-          apt.status === "confirmed"
+          (apt.status === "confirmed" || apt.status === "paid")
         );
       }).length,
       thisWeek: allAppointments.filter((apt) => {
         const aptDate = new Date(apt.timeSlot.date);
-        return aptDate >= startOfWeek && apt.status === "confirmed";
+        return (
+          aptDate >= startOfWeek &&
+          (apt.status === "confirmed" || apt.status === "paid")
+        );
       }).length,
       thisMonth: allAppointments.filter((apt) => {
         const aptDate = new Date(apt.timeSlot.date);
-        return aptDate >= startOfMonth && apt.status === "confirmed";
+        return (
+          aptDate >= startOfMonth &&
+          (apt.status === "confirmed" || apt.status === "paid")
+        );
       }).length,
       completed: allAppointments.filter((apt) => apt.status === "completed")
         .length,

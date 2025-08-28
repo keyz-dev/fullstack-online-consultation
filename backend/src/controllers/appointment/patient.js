@@ -26,7 +26,7 @@ exports.createAppointment = async (req, res, next) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const { timeSlotId, consultationType, notes } = req.body;
+    const { timeSlotId, consultationType, notes, doctorId } = req.body;
 
     req.body.documentNames = req.body.documentNames
       ? Array.isArray(req.body.documentNames)
@@ -62,25 +62,12 @@ exports.createAppointment = async (req, res, next) => {
     }
     const patientId = patient.id;
 
-    // Validate time slot availability
+    // Validate time slot availability and get doctor info
     const timeSlot = await TimeSlot.findByPk(timeSlotId, {
       include: [
         {
           model: DoctorAvailability,
           as: "availability",
-          include: [
-            {
-              model: Doctor,
-              as: "doctor",
-              include: [
-                {
-                  model: User,
-                  as: "user",
-                  attributes: ["id", "name", "email"],
-                },
-              ],
-            },
-          ],
         },
       ],
     });
@@ -93,10 +80,13 @@ exports.createAppointment = async (req, res, next) => {
       throw new BadRequestError("Time slot is already booked");
     }
 
+    console.log("timeSlot: ", timeSlot);
+
     // Create appointment with pending_payment status
     const appointment = await Appointment.create(
       {
         timeSlotId,
+        doctorId,
         patientId,
         consultationType,
         symptomIds,
@@ -106,6 +96,8 @@ exports.createAppointment = async (req, res, next) => {
       },
       { transaction }
     );
+
+    console.log("\n\nappointment created: ", appointment);
 
     // Mark time slot as booked
     await timeSlot.update({ isBooked: true }, { transaction });
@@ -127,6 +119,8 @@ exports.createAppointment = async (req, res, next) => {
       );
       await Promise.all(documentPromises);
     }
+
+    console.log("\n\npatient documents created: \n\n");
 
     // Create payment record
     const payment = await Payment.create(
@@ -244,7 +238,7 @@ exports.getPatientAppointments = async (req, res, next) => {
 
     // Search filter
     if (search) {
-      whereClause["$timeSlot.availability.doctor.user.name$"] = {
+      whereClause["$doctor.user.name$"] = {
         [require("sequelize").Op.iLike]: `%${search}%`,
       };
     }

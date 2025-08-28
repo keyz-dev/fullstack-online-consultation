@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useBooking } from "@/contexts/BookingContext";
-import { Calendar, Clock, Video, User } from "lucide-react";
+import { Calendar, Clock, Video, User, Filter, DollarSign } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import { toast } from "react-toastify";
 import api from "@/api";
-
-interface TimeSlot {
-  id: number;
-  doctorId: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  isBooked: boolean;
-  consultationType: "online" | "physical" | "both";
-  consultationFee: number;
-}
+import { useTimeSlotFilters, TimeSlot } from "@/hooks/useTimeSlotFilters";
+import TimeSlotFilters from "./TimeSlotFilters";
+import NextBookableSlot from "./NextBookableSlot";
 
 const TimeSlotSelector: React.FC = () => {
   const { state, dispatch } = useBooking();
@@ -26,7 +18,18 @@ const TimeSlotSelector: React.FC = () => {
   const [selectedConsultationType, setSelectedConsultationType] = useState<
     "online" | "physical" | null
   >(null);
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Use the custom hook for filtering
+  const {
+    filters,
+    filterOptions,
+    groupedTimeSlots,
+    nextBookableSlot,
+    updateFilter,
+    clearFilters,
+    activeFiltersCount,
+  } = useTimeSlotFilters(timeSlots);
 
   // Fetch time slots for the selected doctor
   useEffect(() => {
@@ -38,8 +41,18 @@ const TimeSlotSelector: React.FC = () => {
     const fetchTimeSlots = async () => {
       setLoading(true);
       try {
+        // Build query parameters for server-side filtering
+        const queryParams = new URLSearchParams();
+        if (filters.date) queryParams.append("date", filters.date);
+        if (filters.consultationType)
+          queryParams.append("consultationType", filters.consultationType);
+        if (filters.minFee) queryParams.append("minFee", filters.minFee);
+        if (filters.maxFee) queryParams.append("maxFee", filters.maxFee);
+
         const response = await api.get(
-          `/timeSlot/doctors/${state.doctorId}/time-slots`
+          `/timeSlot/doctors/${
+            state.doctorId
+          }/time-slots?${queryParams.toString()}`
         );
         setTimeSlots(response.data.timeSlots || []);
       } catch (error: any) {
@@ -53,13 +66,18 @@ const TimeSlotSelector: React.FC = () => {
     };
 
     fetchTimeSlots();
-  }, [state.doctorId]);
+  }, [
+    state.doctorId,
+    filters.date,
+    filters.consultationType,
+    filters.minFee,
+    filters.maxFee,
+  ]);
 
   // Initialize selected time slot and consultation type from booking context
   useEffect(() => {
     if (state.timeSlot && state.timeSlotId) {
       setSelectedTimeSlot(state.timeSlot);
-      setSelectedDate(state.timeSlot.date);
 
       // Set consultation type if it's not "both"
       if (state.timeSlot.consultationType !== "both") {
@@ -69,28 +87,6 @@ const TimeSlotSelector: React.FC = () => {
       }
     }
   }, [state.timeSlot, state.timeSlotId, state.consultationType]);
-
-  // Group time slots by date
-  const groupedTimeSlots = timeSlots.reduce((acc, slot) => {
-    const date = slot.date;
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(slot);
-    return acc;
-  }, {} as Record<string, TimeSlot[]>);
-
-  // Get available dates (next 7 days)
-  const getAvailableDates = () => {
-    const dates = [];
-    const today = new Date();
-
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(date.toISOString().split("T")[0]);
-    }
-
-    return dates;
-  };
 
   const handleTimeSlotSelect = (timeSlot: TimeSlot) => {
     setSelectedTimeSlot(timeSlot);
@@ -197,12 +193,50 @@ const TimeSlotSelector: React.FC = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Select Time Slot
-      </h2>
-      <p className="text-gray-600 dark:text-gray-400 mb-6">
-        Choose an available time slot for your consultation.
-      </p>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Select Time Slot
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Choose an available time slot for your consultation.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <Filter className="w-4 h-4" />
+          Filters
+          {activeFiltersCount > 0 && (
+            <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Next Bookable Slot Highlight */}
+      {nextBookableSlot && (
+        <NextBookableSlot
+          slot={nextBookableSlot}
+          onSelect={handleTimeSlotSelect}
+          formatDate={formatDate}
+          formatTime={formatTime}
+        />
+      )}
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <TimeSlotFilters
+          filters={filters}
+          filterOptions={filterOptions}
+          onFilterChange={updateFilter}
+          onClearFilters={clearFilters}
+          activeFiltersCount={activeFiltersCount}
+          formatDate={formatDate}
+        />
+      )}
 
       {/* Loading State */}
       {loading && (
@@ -218,8 +252,14 @@ const TimeSlotSelector: React.FC = () => {
             <div className="text-center py-8">
               <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
-                No available time slots found for the selected doctor.
+                No available time slots found for the selected criteria.
               </p>
+              <button
+                onClick={clearFilters}
+                className="mt-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                Clear filters to see all slots
+              </button>
             </div>
           ) : (
             Object.entries(groupedTimeSlots).map(([date, slots]) => (
@@ -240,7 +280,7 @@ const TimeSlotSelector: React.FC = () => {
                         key={slot.id}
                         onClick={() => handleTimeSlotSelect(slot)}
                         disabled={slot.isBooked}
-                        className={`p-3 text-center rounded-lg border transition-all ${
+                        className={`p-3 text-center rounded-lg border transition-all relative ${
                           selectedTimeSlot?.id === slot.id
                             ? "border-primary bg-primary/5 dark:bg-primary/10 text-primary"
                             : slot.isBooked
@@ -254,6 +294,24 @@ const TimeSlotSelector: React.FC = () => {
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {slot.isBooked ? "Booked" : "Available"}
                         </div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          {slot.consultationFee} XAF
+                        </div>
+                        {/* Consultation type indicator */}
+                        <div className="absolute top-1 right-1">
+                          {slot.consultationType === "online" && (
+                            <Video className="w-3 h-3 text-blue-500" />
+                          )}
+                          {slot.consultationType === "physical" && (
+                            <User className="w-3 h-3 text-green-500" />
+                          )}
+                          {slot.consultationType === "both" && (
+                            <div className="flex gap-0.5">
+                              <Video className="w-2 h-2 text-blue-500" />
+                              <User className="w-2 h-2 text-green-500" />
+                            </div>
+                          )}
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -261,46 +319,6 @@ const TimeSlotSelector: React.FC = () => {
               </div>
             ))
           )}
-        </div>
-      )}
-
-      {/* Consultation Type Selection */}
-      {selectedTimeSlot && selectedTimeSlot.consultationType === "both" && (
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-3">
-            Choose Consultation Type
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleConsultationTypeSelect("online")}
-              className={`p-4 border rounded-lg text-center transition-all ${
-                selectedConsultationType === "online"
-                  ? "border-primary bg-primary/5 dark:bg-primary/10 text-primary"
-                  : "border-gray-200 dark:border-gray-700 hover:border-primary/50"
-              }`}
-            >
-              <Video className="w-6 h-6 mx-auto mb-2" />
-              <div className="font-medium">Online</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Video consultation
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleConsultationTypeSelect("physical")}
-              className={`p-4 border rounded-lg text-center transition-all ${
-                selectedConsultationType === "physical"
-                  ? "border-primary bg-primary/5 dark:bg-primary/10 text-primary"
-                  : "border-gray-200 dark:border-gray-700 hover:border-primary/50"
-              }`}
-            >
-              <User className="w-6 h-6 mx-auto mb-2" />
-              <div className="font-medium">Physical</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                In-person visit
-              </div>
-            </button>
-          </div>
         </div>
       )}
 
@@ -334,6 +352,7 @@ const TimeSlotSelector: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
               <span className="font-medium">
                 Fee: {selectedTimeSlot.consultationFee} XAF
               </span>

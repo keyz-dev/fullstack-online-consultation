@@ -7,6 +7,7 @@ import {
   DoctorAppointmentStatSection,
   DoctorAppointmentListView,
 } from "@/components/dashboard/doctor/appointments";
+import AppointmentDetailsModal from "@/components/dashboard/doctor/appointments/AppointmentDetailsModal";
 import {
   Button,
   AdvancedFilters,
@@ -23,6 +24,7 @@ const DoctorAppointmentsPage: React.FC = () => {
   const [selectedAppointment, setSelectedAppointment] =
     useState<DoctorAppointment | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const {
     appointments,
@@ -98,8 +100,8 @@ const DoctorAppointmentsPage: React.FC = () => {
 
   // Handle appointment actions
   const handleViewAppointment = (appointment: DoctorAppointment) => {
-    // TODO: Navigate to appointment details page
-    console.log("View appointment:", appointment.id);
+    setSelectedAppointment(appointment);
+    setShowDetailsModal(true);
   };
 
   const handleStartConsultation = (appointment: DoctorAppointment) => {
@@ -107,9 +109,24 @@ const DoctorAppointmentsPage: React.FC = () => {
     console.log("Start consultation:", appointment.id);
   };
 
+  const handleStartVideoCall = (appointment: DoctorAppointment) => {
+    // TODO: Navigate to video call page
+    console.log("Start video call:", appointment.id);
+  };
+
+  const handleStartChat = (appointment: DoctorAppointment) => {
+    // TODO: Navigate to chat page
+    console.log("Start chat:", appointment.id);
+  };
+
   const handleRescheduleAppointment = (appointment: DoctorAppointment) => {
     // TODO: Open reschedule modal
     console.log("Reschedule appointment:", appointment.id);
+  };
+
+  const handleInvalidateAppointment = (appointment: DoctorAppointment) => {
+    // TODO: Open invalidate modal
+    console.log("Invalidate appointment:", appointment.id);
   };
 
   const handleCancelAppointment = (appointment: DoctorAppointment) => {
@@ -145,8 +162,8 @@ const DoctorAppointmentsPage: React.FC = () => {
   };
 
   return (
-    <FadeInContainer>
-      <div className="space-y-6">
+    <div className="space-y-6">
+      <FadeInContainer>
         {/* Header */}
         <div className="flex items-center justify-end">
           <div className="flex space-x-3">
@@ -201,8 +218,11 @@ const DoctorAppointmentsPage: React.FC = () => {
               appointments={appointments}
               onViewAppointment={handleViewAppointment}
               onStartConsultation={handleStartConsultation}
+              onStartVideoCall={handleStartVideoCall}
+              onStartChat={handleStartChat}
               onRescheduleAppointment={handleRescheduleAppointment}
               onCancelAppointment={handleCancelAppointment}
+              onInvalidateAppointment={handleInvalidateAppointment}
             />
 
             {/* Pagination */}
@@ -217,22 +237,32 @@ const DoctorAppointmentsPage: React.FC = () => {
             )}
           </>
         )}
+      </FadeInContainer>
 
-        {/* Cancel Appointment Modal */}
-        <DeleteModal
-          isOpen={showCancelModal}
-          onClose={() => {
-            setShowCancelModal(false);
-            setSelectedAppointment(null);
-          }}
-          onConfirm={handleCancelConfirm}
-          title="Cancel Appointment"
-          description={`Are you sure you want to cancel the appointment with ${selectedAppointment?.patient.user.name}? This action cannot be undone.`}
-          confirmText="Cancel Appointment"
-          cancelText="Keep Appointment"
-        />
-      </div>
-    </FadeInContainer>
+      {/* Cancel Appointment Modal */}
+      <DeleteModal
+        isOpen={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setSelectedAppointment(null);
+        }}
+        onConfirm={handleCancelConfirm}
+        title="Cancel Appointment"
+        description={`Are you sure you want to cancel the appointment with ${selectedAppointment?.patient?.user.name}? This action cannot be undone.`}
+        confirmText="Cancel Appointment"
+        cancelText="Keep"
+      />
+
+      {/* Appointment Details Modal */}
+      <AppointmentDetailsModal
+        appointment={selectedAppointment}
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedAppointment(null);
+        }}
+      />
+    </div>
   );
 };
 
