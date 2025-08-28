@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
+import { API_BASE_URL } from "@/api";
 
 interface PaymentStatus {
   reference: string;
@@ -39,13 +40,10 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
     if (!token) return;
 
     // Connect to Socket.IO server
-    socketRef.current = io(
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:4500",
-      {
-        auth: { token },
-        transports: ["websocket", "polling"],
-      }
-    );
+    socketRef.current = io(API_BASE_URL.replace("/api", ""), {
+      auth: { token },
+      transports: ["websocket", "polling"],
+    });
 
     // Connection event handlers
     socketRef.current.on("connect", () => {

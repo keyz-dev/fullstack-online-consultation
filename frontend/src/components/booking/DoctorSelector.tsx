@@ -4,6 +4,7 @@ import { useDoctor } from "@/contexts/DoctorContext";
 import { Doctor } from "@/types/doctor";
 import { Search, Filter, Star, MapPin, Clock, DollarSign } from "lucide-react";
 import Loader from "@/components/ui/Loader";
+import { Button } from "../ui";
 
 const DoctorSelector: React.FC = () => {
   const { state, dispatch } = useBooking();
@@ -36,6 +37,13 @@ const DoctorSelector: React.FC = () => {
     fetchDoctors();
   }, [state.symptomIds, state.specialtyId, fetchDoctors, handleFilterChange]);
 
+  // Initialize selected doctor from booking context
+  useEffect(() => {
+    if (state.doctor && state.doctorId) {
+      setSelectedDoctor(state.doctor);
+    }
+  }, [state.doctor, state.doctorId]);
+
   // Update search when searchTerm changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -58,15 +66,11 @@ const DoctorSelector: React.FC = () => {
         data: { doctorId: doctor.id, doctor: doctor },
       },
     });
-  };
-
-  const handleContinue = () => {
-    if (selectedDoctor) {
-      dispatch({
-        type: "SET_STEP_COMPLETED",
-        payload: { stepIndex: 1, completed: true },
-      });
-    }
+    // Mark step as completed when doctor is selected
+    dispatch({
+      type: "SET_STEP_COMPLETED",
+      payload: { stepIndex: 1, completed: true },
+    });
   };
 
   return (
@@ -87,12 +91,12 @@ const DoctorSelector: React.FC = () => {
             placeholder="Search doctors by name, specialty, or location..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 outline-none rounded-xs focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters
       <div className="mb-6 flex flex-wrap gap-2">
         <button
           onClick={() => handleFilterChange({ experience: "asc" })}
@@ -112,10 +116,9 @@ const DoctorSelector: React.FC = () => {
           onClick={() => handleFilterChange({ consultationFee: "asc" })}
           className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         >
-          <DollarSign className="w-4 h-4" />
           Price
         </button>
-      </div>
+      </div> */}
 
       {/* Loading State */}
       {loading && (
@@ -184,7 +187,11 @@ const DoctorSelector: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         <span>
-                          {doctor.clinicAddress || "Location not specified"}
+                          {typeof doctor.clinicAddress === "string"
+                            ? doctor.clinicAddress
+                            : doctor.clinicAddress?.fullAddress ||
+                              doctor.clinicAddress?.city ||
+                              "Location not specified"}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
@@ -192,8 +199,7 @@ const DoctorSelector: React.FC = () => {
                         <span>{doctor.experience} years experience</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
-                        <span>${doctor.consultationFee}/consultation</span>
+                        <span>{doctor.consultationFee} XAF/consultation</span>
                       </div>
                     </div>
 
@@ -215,18 +221,6 @@ const DoctorSelector: React.FC = () => {
               </div>
             ))
           )}
-        </div>
-      )}
-
-      {/* Continue Button */}
-      {selectedDoctor && (
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={handleContinue}
-            className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
-          >
-            Continue with Dr. {selectedDoctor.user.name}
-          </button>
         </div>
       )}
     </div>

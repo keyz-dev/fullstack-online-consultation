@@ -1,0 +1,67 @@
+1. Video Player Enhancements.txt
+Composer-Setup.exe
+CREATE TABLE `quizzes` (.txt
+cursor_requirements_for_bus_ticket_rese.md
+E Learning Features Doc.pdf
+Farmer Marketplace Green Design.html
+Farmer Marketplace Green Design_files
+Farmer_Marketplace_Internship_Presentation.pptx
+Git-2.48.1-64-bit.exe
+GoogleDriveSetup.exe
+jdk-17.0.13_windows-x64_bin.msi
+jobportail2.rar
+MicrosoftWindows.Client.CBS_cw5n1h2txyewy!InputApp
+mypublicwifi-31.2-installer.exe
+mypublicwifi-31.2-installer_C-sFof1.exe
+MyPublicWiFi.exe
+postgresql-17.4-1-windows-x64.exe
+Reader_en_install.exe
+setups.txt
+SupportAssistLauncher.exe
+VisualStudioSetup.exe
+VSCodeUserSetup-x64-1.98.0.exe
+Win10_22H2_EnglishInternational_x64v1.iso
+Win11_24H2_EnglishInternational_x64.iso
+winrar-x64-710.exe
+Adobe After Effects 2020 17.5.0.40.exe
+Adobe Illustrator 2021 25.0.0.60.rar
+Adobe Photoshop 2021 22.0.0.35.exe
+Adobe Premiere Pro 2020 14.5.0.51.exe
+Adobe.Animate.2020.v20.0.2.22168.exe
+agora-chat-1.3.1.zip
+Agora_RTM_JavaScript_SDK_for_Web_v2.2.2.zip
+Agora_Web_SDK_v4_23_3_FULL.zip
+android-studio-2024.2.2.13-windows.exe
+Apache-NetBeans-25-bin-windows-x64.exe
+apache-tomcat-9.0.102.exe
+BT-23.130.0-64UWD-Win10-Win11.exe
+codeblocks-25.03mingw-setup-64.exe
+CursorUserSetup-x64-1.0.0.exe
+Dev-Cpp 5.11 TDM-GCC 4.9.2 Setup.exe
+devcpp-4.9.9.2_setup.exe
+Drivers
+hadoop-2.7.0.tar.gz
+hadoop-winutils-2.7.0-mapr-1506.pom.sha1
+hadoop-winutils-2.7.0-mapr-1506.zip
+imyfone-android-data-recovery_setup.exe
+jdk-23.0.2
+jdk-8u431-windows-x64.exe
+mavis-beacon-free-20-installer_Q-Kfnx1.exe
+Meld-3.22.2-mingw.msi
+Microsoft_Office_2013_Prox86_APRIL_2022
+Ms office 24
+mysql-8.4.4-winx64.msi
+node-v22.14.0-x64.msi
+Password 123.txt
+Postman-win64-Setup.exe
+ProtonVPN_v4.1.12_x64.exe
+python-3.13.2-amd64.exe
+sketch-101.9-182113.zip
+spacedesk_driver_Win_10_64_v2135.msi
+tor-browser-windows-x86_64-portable-14.5.1.exe
+VisualStudioSetup.exe
+Visual_Paradigm_CE_17_2_20250321_Win64.exe
+WindsurfUserSetup-x64-1.10.1.exe
+xampp-win32-7.0.25-0-VC14-installer.exe
+xampp-windows-x64-5.6.40-1-VC11-installer.exe
+_Getintopc.com_Microsoft_Office_2013_Prox86_APRIL_2022.rar

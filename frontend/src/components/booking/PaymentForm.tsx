@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useBooking } from "@/contexts/BookingContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAppointmentPaymentTracker } from "@/hooks/useAppointmentPaymentTracker";
-import { appointmentsAPI } from "@/api/appointments";
+import { useBookingPayment } from "@/hooks/useBookingPayment";
+import { Button, DocumentFile, PhoneInput } from "@/components/ui";
 import {
   Calendar,
   Clock,
@@ -24,135 +24,36 @@ interface PaymentStatus {
 }
 
 const PaymentForm: React.FC = () => {
-  const { state, dispatch } = useBooking();
+  const { state } = useBooking();
   const { user } = useAuth();
   const router = useRouter();
-  const { trackPayment, stopTrackingPayment, paymentStatus } =
-    useAppointmentPaymentTracker();
+  const {
+    createAppointmentAndInitiatePayment,
+    cancelPayment,
+    paymentStatus,
+    paymentMessage,
+    isLoading,
+  } = useBookingPayment();
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentInfo, setPaymentInfo] = useState<PaymentStatus>({
-    status: "pending",
-    message: "Ready to process payment",
-  });
-  const [appointmentId, setAppointmentId] = useState<number | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
+  const [phoneError, setPhoneError] = useState("");
 
-  // Calculate total amount
-  const totalAmount = state.timeSlot?.consultationFee || 0;
+  // Calculate total amount - ensure it's a number
+  const totalAmount = Number(state.timeSlot?.consultationFee) || 0;
 
   const handleCreateAppointment = async () => {
-    if (!user || !state.doctorId || !state.timeSlotId) {
-      toast.error("Missing required information");
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === "") {
+      setPhoneError("Phone number is required");
       return;
     }
 
-    setIsProcessing(true);
-    setPaymentInfo({
-      status: "processing",
-      message: "Creating appointment...",
-    });
-
-    try {
-      // Create appointment
-      const appointmentData = {
-        doctorId: state.doctorId?.toString(),
-        timeSlotId: state.timeSlotId?.toString(),
-        consultationType: state.consultationType,
-        notes: state.notes,
-        symptomIds: state.symptomIds,
-      };
-
-      const appointmentResponse = await appointmentsAPI.createAppointment(
-        appointmentData
-      );
-      const newAppointmentId = appointmentResponse.data.appointment.id;
-      setAppointmentId(newAppointmentId);
-
-      setPaymentInfo({
-        status: "processing",
-        message: "Initiating payment...",
-      });
-
-      // Initiate payment
-      const paymentData = {
-        appointmentId: newAppointmentId.toString(),
-        phoneNumber: user.phoneNumber || "",
-      };
-
-      const paymentResponse = await appointmentsAPI.initiatePayment(
-        paymentData
-      );
-
-      if (paymentResponse.success) {
-        setPaymentInfo({
-          status: "processing",
-          message:
-            "Payment initiated. Please check your phone for payment request.",
-        });
-
-        // Start tracking payment
-        trackPayment(paymentResponse.paymentReference);
-
-        toast.success(
-          "Payment request sent to your phone. Please complete the payment."
-        );
-      } else {
-        throw new Error(
-          paymentResponse.message || "Failed to initiate payment"
-        );
-      }
-    } catch (error: any) {
-      console.error("Error creating appointment:", error);
-      setPaymentInfo({
-        status: "failed",
-        message: error.message || "Failed to create appointment",
-      });
-      toast.error(error.message || "Failed to create appointment");
-    } finally {
-      setIsProcessing(false);
-    }
+    // Use the booking payment hook
+    await createAppointmentAndInitiatePayment(phoneNumber);
   };
 
-  // Handle payment status updates
-  useEffect(() => {
-    if (paymentStatus) {
-      switch (paymentStatus.status) {
-        case "success":
-          setPaymentInfo({
-            status: "success",
-            message: "Payment successful! Your appointment has been confirmed.",
-          });
-          stopTrackingPayment();
-
-          // Mark step as completed
-          dispatch({
-            type: "SET_STEP_COMPLETED",
-            payload: { stepIndex: 4, completed: true },
-          });
-
-          // Redirect to success page after a delay
-          setTimeout(() => {
-            router.push(`/appointments/${appointmentId}`);
-          }, 2000);
-          break;
-
-        case "failed":
-          setPaymentInfo({
-            status: "failed",
-            message: "Payment failed. Please try again.",
-          });
-          stopTrackingPayment();
-          break;
-
-        case "pending":
-          setPaymentInfo({
-            status: "processing",
-            message: "Waiting for payment confirmation...",
-          });
-          break;
-      }
-    }
-  }, [paymentStatus, appointmentId, router, dispatch, stopTrackingPayment]);
+  // Handle payment status updates - this will be handled by the payment tracker hook
+  // The payment tracker will show toast notifications for status updates
 
   const formatTime = (time: string) => {
     return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
@@ -173,7 +74,7 @@ const PaymentForm: React.FC = () => {
   };
 
   const getStatusIcon = () => {
-    switch (paymentInfo.status) {
+    switch (paymentStatus) {
       case "success":
         return <CheckCircle className="w-6 h-6 text-green-500" />;
       case "failed":
@@ -186,7 +87,7 @@ const PaymentForm: React.FC = () => {
   };
 
   const getStatusColor = () => {
-    switch (paymentInfo.status) {
+    switch (paymentStatus) {
       case "success":
         return "text-green-600 dark:text-green-400";
       case "failed":
@@ -260,7 +161,7 @@ const PaymentForm: React.FC = () => {
             Consultation Fee:
           </span>
           <span className="font-medium text-blue-900 dark:text-blue-100">
-            ${totalAmount.toFixed(2)}
+            FCFA {totalAmount.toFixed(2)}
           </span>
         </div>
 
@@ -270,25 +171,41 @@ const PaymentForm: React.FC = () => {
               Total Amount:
             </span>
             <span className="font-bold text-lg text-blue-900 dark:text-blue-100">
-              ${totalAmount.toFixed(2)}
+              FCFA {totalAmount.toFixed(2)}
             </span>
           </div>
         </div>
       </div>
 
       {/* Payment Status */}
-      {paymentInfo.status !== "pending" && (
+      {paymentStatus !== "pending" && (
         <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="flex items-center gap-3">
             {getStatusIcon()}
             <div>
               <p className={`font-medium ${getStatusColor()}`}>
-                {paymentInfo.message}
+                {paymentMessage}
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Phone Number Input */}
+      <div className="mb-6">
+        <PhoneInput
+          label="Phone Number"
+          name="phoneNumber"
+          value={phoneNumber}
+          onChangeHandler={(e) => {
+            setPhoneNumber(e.target.value);
+            if (phoneError) setPhoneError("");
+          }}
+          placeholder="Enter your phone number for payment"
+          required={true}
+          error={phoneError}
+        />
+      </div>
 
       {/* Security Notice */}
       <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -308,42 +225,45 @@ const PaymentForm: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="space-y-3">
-        {paymentInfo.status === "pending" && (
-          <button
-            onClick={handleCreateAppointment}
-            disabled={isProcessing}
-            className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
-          >
-            {isProcessing ? (
-              <>
-                <Loader className="w-5 h-5" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="w-5 h-5" />
-                Pay ${totalAmount.toFixed(2)}
-              </>
-            )}
-          </button>
-        )}
-
-        {paymentInfo.status === "processing" && (
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Please complete the payment on your phone. You'll receive a
-              notification once payment is confirmed.
-            </p>
-            <button
-              onClick={() => stopTrackingPayment()}
-              className="px-4 py-2 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        {paymentStatus === "pending" && (
+          <div className="w-full flex justify-end">
+            <Button
+              onClickHandler={handleCreateAppointment}
+              isDisabled={
+                isLoading || !phoneNumber || phoneNumber.trim() === ""
+              }
+              additionalClasses="secondarybtn"
             >
-              Cancel Payment
-            </button>
+              {isLoading ? (
+                <>
+                  <Loader className="w-5 h-5" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-5 h-5" />
+                  Pay FCFA {totalAmount.toFixed(2)}
+                </>
+              )}
+            </Button>
           </div>
         )}
 
-        {paymentInfo.status === "success" && (
+        {paymentStatus === "processing" && (
+          <div className="text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              Please complete the payment on your phone. You&apos;ll receive a
+              notification once payment is confirmed.
+            </p>
+            <Button
+              onClickHandler={cancelPayment}
+              additionalClasses="outlinebtn"
+              text="Cancel Payment"
+            />
+          </div>
+        )}
+
+        {paymentStatus === "success" && (
           <div className="text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
             <p className="text-green-600 dark:text-green-400 font-medium">
@@ -352,18 +272,17 @@ const PaymentForm: React.FC = () => {
           </div>
         )}
 
-        {paymentInfo.status === "failed" && (
-          <div className="text-center">
+        {paymentStatus === "failed" && (
+          <div className="flex items-center w-full flex-col">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
             <p className="text-red-600 dark:text-red-400 mb-3">
               Payment failed. Please try again.
             </p>
-            <button
-              onClick={handleCreateAppointment}
-              className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Try Again
-            </button>
+            <Button
+              onClickHandler={handleCreateAppointment}
+              additionalClasses="secondarybtn"
+              text="Try Again"
+            />
           </div>
         )}
       </div>

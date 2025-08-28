@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { UnauthorizedError, NotFoundError } = require("../utils/errors");
-const { User, Patient, Doctor } = require("../db/models");
+const { User, Patient, Doctor, Pharmacy } = require("../db/models");
 
 // Authentication middleware
 const authenticate = async (req, res, next) => {
@@ -22,6 +22,10 @@ const authenticate = async (req, res, next) => {
         {
           model: Doctor,
           as: "doctor",
+        },
+        {
+          model: Pharmacy,
+          as: "pharmacy",
         },
       ],
     });

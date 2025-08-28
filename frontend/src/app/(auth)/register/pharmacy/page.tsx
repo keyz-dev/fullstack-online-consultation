@@ -9,14 +9,8 @@ const PharmacyRegistrationPage = () => {
   return (
     <PharmacyApplicationProvider>
       <RouteProtection
-        allowedRoles={["patient", "incomplete_pharmacy"]}
-        restrictedRoles={[
-          "pending_pharmacy",
-          "pharmacy",
-          "admin",
-          "doctor",
-          "pending_doctor",
-        ]}
+        allowedRoles={["patient", "incomplete_pharmacy", "pending_pharmacy"]}
+        restrictedRoles={["pharmacy", "admin", "doctor", "pending_doctor"]}
         redirectTo="/pharmacy/application-status"
       >
         <PharmacyApplicationFlow />

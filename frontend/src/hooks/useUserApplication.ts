@@ -5,6 +5,7 @@ import {
 } from "@/api/userApplications";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useUserApplication = () => {
   const [application, setApplication] = useState<UserApplicationData | null>(
@@ -33,6 +34,7 @@ export const useUserApplication = () => {
   } | null>(null);
 
   const router = useRouter();
+  const { updateUser } = useAuth();
 
   // Fetch user's application
   const fetchApplication = useCallback(async () => {
@@ -103,7 +105,18 @@ export const useUserApplication = () => {
       const response = await userApplicationsAPI.activateAccount();
 
       if (response.success && response.data) {
-        toast.success("Account activated successfully! Redirecting...");
+        // Update the user's role in the frontend state
+        if (updateUser && response.data?.role) {
+          // Get current user from localStorage
+          const currentUser = localStorage.getItem("userData");
+          if (currentUser) {
+            const userData = JSON.parse(currentUser);
+            updateUser({
+              ...userData,
+              role: response.data.role,
+            });
+          }
+        }
 
         // Redirect to the appropriate dashboard based on the new role
         setTimeout(() => {
@@ -125,7 +138,7 @@ export const useUserApplication = () => {
     } finally {
       setActivating(false);
     }
-  }, [router]);
+  }, [router, updateUser]);
 
   // Reapply for application (when rejected)
   const reapplyApplication = useCallback(async () => {

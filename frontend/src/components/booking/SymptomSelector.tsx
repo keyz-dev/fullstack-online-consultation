@@ -6,7 +6,7 @@ import { useSymptom } from "@/contexts/SymptomContext";
 import { useBaseSpecialty } from "@/contexts/BaseSpecialtyContext";
 import { Symptom } from "@/api/symptoms";
 import { Search, X, Check } from "lucide-react";
-import Loader from "@/components/ui/Loader";
+import { Loader, Select } from "@/components/ui";
 
 const SymptomSelector: React.FC = () => {
   const { state, dispatch } = useBooking();
@@ -48,11 +48,31 @@ const SymptomSelector: React.FC = () => {
 
     // Update booking state
     dispatch({ type: "SET_SYMPTOM_IDS", payload: newSelectedIds });
+
+    // Mark step as completed (this step is optional)
+    dispatch({
+      type: "SET_STEP_COMPLETED",
+      payload: { stepIndex: 0, completed: true },
+    });
   };
 
   // Handle specialty filter change
-  const handleSpecialtyFilterChange = (specialtyId: string) => {
-    setFilters({ specialtyId });
+  const handleSpecialtyFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const specialtyId = e.target.value;
+    setFilters("specialtyId", specialtyId);
+
+    // Update booking state with specialty
+    if (specialtyId !== "all") {
+      dispatch({ type: "SET_SPECIALTY_ID", payload: parseInt(specialtyId) });
+
+      // Mark step as completed (this step is optional)
+      dispatch({
+        type: "SET_STEP_COMPLETED",
+        payload: { stepIndex: 0, completed: true },
+      });
+    }
   };
 
   // Clear search
@@ -76,7 +96,7 @@ const SymptomSelector: React.FC = () => {
           Select Your Symptoms
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          Choose the symptoms you're experiencing to help us find the right
+          Choose the symptoms you&apos;re experiencing to help us find the right
           doctor for you.
         </p>
       </div>
@@ -91,7 +111,7 @@ const SymptomSelector: React.FC = () => {
             placeholder="Search symptoms..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-xs outline-none bg-white dark:bg-gray-700 text-primary dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           {searchTerm && (
             <button
@@ -104,23 +124,18 @@ const SymptomSelector: React.FC = () => {
         </div>
 
         {/* Specialty Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Filter by Specialty
-          </label>
-          <select
-            value={filters.specialtyId}
-            onChange={(e) => handleSpecialtyFilterChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="all">All Specialties</option>
-            {specialties.map((specialty) => (
-              <option key={specialty.id} value={specialty.id}>
-                {specialty.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          options={[
+            { label: "All Specialties", value: "all" },
+            ...specialties.map((specialty) => ({
+              label: specialty.name,
+              value: specialty.id,
+            })),
+          ]}
+          value={filters.specialtyId}
+          onChange={handleSpecialtyFilterChange}
+          label="Filter by Specialty"
+        />
       </div>
 
       {/* Selected Symptoms Summary */}

@@ -470,6 +470,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     actions,
     fetchSymptoms,
+    setFilters: actions.setFilter,
     getSymptom,
     createSymptom,
     updateSymptom,

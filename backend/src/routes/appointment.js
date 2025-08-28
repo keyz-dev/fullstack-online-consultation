@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const appointmentController = require("../controllers/appointment");
+const appointmentController = require("../controllers/appointment/index");
 const { verifyCamPayWebhook } = require("../middleware/verifyCampayWebhook");
 const { authenticate, authorizeRoles } = require("../middleware/auth");
+const paymentController = require("../controllers/payment");
 const {
   upload,
   handleCloudinaryUpload,
@@ -25,14 +26,14 @@ router.post(
 router.post(
   "/initiate-payment",
   authenticate,
-  appointmentController.initiatePayment
+  paymentController.initiateAppointmentPayment
 );
 
 // Campay webhook (no auth needed, but verified by Campay signature)
 router.post(
   "/webhook",
   verifyCamPayWebhook,
-  appointmentController.handlePaymentWebhook
+  paymentController.handleAppointmentPaymentWebhook
 );
 
 // Patient-specific appointment routes (must come before /:id)
@@ -62,9 +63,6 @@ router.get(
   authorizeRoles(["doctor"]),
   appointmentController.getDoctorAppointmentStats
 );
-
-// Get user's appointments (requires authentication)
-router.get("/", authenticate, appointmentController.getUserAppointments);
 
 // Get appointment by ID (requires authentication)
 router.get("/:id", authenticate, appointmentController.getAppointmentById);

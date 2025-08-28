@@ -15,12 +15,14 @@ import SymptomSelector from "@/components/booking/SymptomSelector";
 import DoctorSelector from "@/components/booking/DoctorSelector";
 import TimeSlotSelector from "@/components/booking/TimeSlotSelector";
 import DetailsEntry from "@/components/booking/DetailsEntry";
+import ConsultationTypeSelector from "@/components/booking/ConsultationTypeSelector";
 import PaymentForm from "@/components/booking/PaymentForm";
 import Loader from "@/components/ui/Loader";
+import { Button } from "@/components/ui";
 
 // Main booking page component
 const BookingPageContent: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { state, dispatch, nextStep, prevStep, canProceedToNextStep } =
     useBooking();
   const { getBookingIntent, clearBookingIntent } = useBookingIntent();
@@ -29,6 +31,9 @@ const BookingPageContent: React.FC = () => {
 
   // Check authentication
   useEffect(() => {
+    // Wait for auth loading to complete
+    if (authLoading) return;
+
     if (!user) {
       toast.error("Please log in to book an appointment");
       router.push("/login");
@@ -40,7 +45,7 @@ const BookingPageContent: React.FC = () => {
       router.push("/");
       return;
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   // Initialize from URL parameters or booking intent
   useEffect(() => {
@@ -60,7 +65,7 @@ const BookingPageContent: React.FC = () => {
     const notes = searchParams.get("notes") || "";
 
     // Initialize booking state from intent or URL params
-    const initialData: any = {};
+    const initialData: Record<string, unknown> = {};
 
     if (intent) {
       // Use booking intent data
@@ -84,11 +89,24 @@ const BookingPageContent: React.FC = () => {
     }
 
     if (Object.keys(initialData).length > 0) {
-      dispatch({ type: "INITIALIZE_FROM_INTENT", payload: initialData });
-      // Clear the booking intent after using it
-      clearBookingIntent();
+      // Only initialize if we don't have any existing data or if we're starting fresh
+      const hasExistingData =
+        state.doctorId || state.specialtyId || state.symptomIds.length > 0;
+
+      if (!hasExistingData) {
+        dispatch({ type: "INITIALIZE_FROM_INTENT", payload: initialData });
+        // Clear the booking intent after using it
+        clearBookingIntent();
+      }
     }
-  }, [user, searchParams, getBookingIntent, clearBookingIntent, dispatch]);
+  }, [
+    user,
+    searchParams,
+    getBookingIntent,
+    clearBookingIntent,
+    dispatch,
+    state,
+  ]);
 
   // Handle step navigation
   const handleNext = () => {
@@ -120,11 +138,21 @@ const BookingPageContent: React.FC = () => {
       case 3:
         return <DetailsEntry />;
       case 4:
+        return <ConsultationTypeSelector />;
+      case 5:
         return <PaymentForm />;
       default:
         return <div>Invalid step</div>;
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader />
+      </div>
+    );
+  }
 
   if (!user || user?.role !== "patient") {
     return (
@@ -159,22 +187,22 @@ const BookingPageContent: React.FC = () => {
 
         {/* Navigation Buttons */}
         <div className="mt-8 flex justify-between">
-          <button
-            onClick={handlePrevious}
-            disabled={state.currentStep === 0}
-            className="px-6 py-2 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          <Button
+            onClickHandler={handlePrevious}
+            isDisabled={state.currentStep === 0}
+            additionalClasses="outlinebtn"
           >
             Previous
-          </button>
+          </Button>
 
           {state.currentStep < state.steps.length - 1 && (
-            <button
-              onClick={handleNext}
-              disabled={!canProceedToNextStep()}
-              className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            <Button
+              onClickHandler={handleNext}
+              isDisabled={!canProceedToNextStep()}
+              additionalClasses="secondarybtn"
             >
               Next
-            </button>
+            </Button>
           )}
         </div>
 

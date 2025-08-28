@@ -18,6 +18,9 @@ class TimeSlotService {
       });
 
       if (availabilities.length === 0) {
+        console.error(
+          `No availability schedules found for doctor ID: ${doctorId}`
+        );
         throw new Error("No availability schedules found for this doctor");
       }
 
@@ -101,6 +104,10 @@ class TimeSlotService {
    */
   async generateWeeklySlots(doctorId, weeks = 4) {
     try {
+      console.log(
+        `Generating weekly slots for doctor ID: ${doctorId}, weeks: ${weeks}`
+      );
+
       const startDate = new Date();
       startDate.setHours(0, 0, 0, 0);
 
@@ -108,7 +115,14 @@ class TimeSlotService {
       endDate.setDate(endDate.getDate() + weeks * 7);
 
       const slots = await this.generateTimeSlots(doctorId, startDate, endDate);
+      console.log(
+        `Generated ${slots.length} time slots for doctor ID: ${doctorId}`
+      );
+
       const createdSlots = await this.createTimeSlots(slots);
+      console.log(
+        `Created ${createdSlots.length} time slots in database for doctor ID: ${doctorId}`
+      );
 
       return createdSlots;
     } catch (error) {

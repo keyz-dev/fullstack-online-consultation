@@ -100,6 +100,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    // Set loading to false after initial setup
+    setLoading(false);
   }, []);
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== "undefined") {

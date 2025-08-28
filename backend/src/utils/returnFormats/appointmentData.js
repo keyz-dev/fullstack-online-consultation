@@ -83,7 +83,6 @@ const formatAppointmentData = async (appointment, options = {}) => {
       currentMedications: appointment.patient.currentMedications,
       emergencyContact: appointment.patient.emergencyContact,
       insuranceInfo: appointment.patient.insuranceInfo,
-      medicalDocuments: appointment.patient.medicalDocuments,
     };
 
     if (appointment.patient.user) {
@@ -98,6 +97,26 @@ const formatAppointmentData = async (appointment, options = {}) => {
           ? formatImageUrl(appointment.patient.user.avatar)
           : null,
       };
+    }
+    if (appointment.patient.documents) {
+      formattedAppointment.patient.documents =
+        appointment.patient.documents.map((doc) => ({
+          id: doc.id,
+          documentType: doc.documentType,
+          fileName: doc.fileName,
+          fileUrl: formatImageUrl(doc.fileUrl),
+          fileSize: doc.fileSize,
+          mimeType: doc.mimeType,
+        }));
+      formattedAppointment.patient.documents =
+        appointment.patient.documents.map((doc) => ({
+          id: doc.id,
+          documentType: doc.documentType,
+          fileName: doc.fileName,
+          fileUrl: formatImageUrl(doc.fileUrl),
+          fileSize: doc.fileSize,
+          mimeType: doc.mimeType,
+        }));
     }
   }
 

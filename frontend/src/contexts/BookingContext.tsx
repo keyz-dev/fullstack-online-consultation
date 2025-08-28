@@ -17,6 +17,23 @@ export interface TimeSlot {
   consultationFee: number;
 }
 
+export interface BookingIntent {
+  type: "global" | "doctor" | "specialty" | "direct";
+  doctorId?: number;
+  specialtyId?: number;
+  symptomIds?: number[];
+  currentStep: number;
+  timestamp: number;
+}
+
+export interface StepConfig {
+  index: number;
+  required: boolean;
+  skippable: boolean;
+  title: string;
+  description: string;
+}
+
 export interface BookingStep {
   id: string;
   title: string;
@@ -54,6 +71,9 @@ export interface BookingState {
   // Payment tracking
   paymentReference: string | null;
   appointmentId: number | null;
+  phoneNumber: string;
+  paymentStatus: "pending" | "processing" | "success" | "failed";
+  paymentMessage: string;
 }
 
 // Actions
@@ -63,26 +83,36 @@ export type BookingAction =
       type: "SET_STEP_COMPLETED";
       payload: { stepIndex: number; completed: boolean };
     }
-  | { type: "UPDATE_STEP_DATA"; payload: { stepIndex: number; data: any } }
+  | {
+      type: "UPDATE_STEP_DATA";
+      payload: { stepIndex: number; data: Record<string, unknown> };
+    }
   | { type: "SET_SYMPTOM_IDS"; payload: number[] }
   | { type: "SET_SPECIALTY_ID"; payload: number | null }
   | { type: "SET_DOCTOR_ID"; payload: number | null }
   | { type: "SET_DOCTOR"; payload: Doctor | null }
   | { type: "SET_TIME_SLOT_ID"; payload: number | null }
   | { type: "SET_TIME_SLOT"; payload: TimeSlot | null }
-  | { type: "SET_CONSULTATION_TYPE"; payload: "online" | "physical" | null }
+  | { type: "SET_CONSULTATION_TYPE"; payload: "online" | "physical" }
   | { type: "SET_APPOINTMENT_DATE"; payload: string | null }
   | { type: "SET_APPOINTMENT_TIME"; payload: string | null }
   | { type: "SET_NOTES"; payload: string }
   | { type: "SET_MEDICAL_DOCUMENTS"; payload: any[] }
+  | { type: "ADD_MEDICAL_DOCUMENTS"; payload: any[] }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_CREATING_APPOINTMENT"; payload: boolean }
   | { type: "SET_INITIATING_PAYMENT"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_PAYMENT_REFERENCE"; payload: string | null }
   | { type: "SET_APPOINTMENT_ID"; payload: number | null }
+  | { type: "SET_PHONE_NUMBER"; payload: string }
+  | {
+      type: "SET_PAYMENT_STATUS";
+      payload: "pending" | "processing" | "success" | "failed";
+    }
+  | { type: "SET_PAYMENT_MESSAGE"; payload: string }
   | { type: "RESET_BOOKING" }
-  | { type: "INITIALIZE_FROM_INTENT"; payload: any };
+  | { type: "INITIALIZE_FROM_INTENT"; payload: Record<string, unknown> };
 
 // Initial state
 const initialSteps: BookingStep[] = [
@@ -115,6 +145,13 @@ const initialSteps: BookingStep[] = [
     isActive: false,
   },
   {
+    id: "consultation",
+    title: "Consultation Type",
+    description: "Choose your preferred consultation type",
+    isCompleted: false,
+    isActive: false,
+  },
+  {
     id: "payment",
     title: "Payment",
     description: "Complete payment to confirm your appointment",
@@ -143,6 +180,9 @@ const initialState: BookingState = {
   error: null,
   paymentReference: null,
   appointmentId: null,
+  phoneNumber: "",
+  paymentStatus: "pending",
+  paymentMessage: "Ready to process payment",
 };
 
 // Reducer
@@ -243,6 +283,15 @@ function bookingReducer(
         medicalDocuments: action.payload,
       };
 
+    case "ADD_MEDICAL_DOCUMENTS":
+      return {
+        ...state,
+        medicalDocuments: [
+          ...(state.medicalDocuments || []),
+          ...action.payload,
+        ],
+      };
+
     case "SET_LOADING":
       return {
         ...state,
@@ -279,45 +328,93 @@ function bookingReducer(
         appointmentId: action.payload,
       };
 
+    case "SET_PHONE_NUMBER":
+      return {
+        ...state,
+        phoneNumber: action.payload,
+      };
+
+    case "SET_PAYMENT_STATUS":
+      return {
+        ...state,
+        paymentStatus: action.payload,
+      };
+
+    case "SET_PAYMENT_MESSAGE":
+      return {
+        ...state,
+        paymentMessage: action.payload,
+      };
+
     case "RESET_BOOKING":
       return initialState;
 
     case "INITIALIZE_FROM_INTENT":
-      const intent = action.payload;
-      let newState = { ...initialState };
+      const intent = action.payload as Record<string, unknown>;
+      const newState = { ...initialState };
+
+      // Preserve existing medical documents to avoid losing blob URLs
+      if (state.medicalDocuments && state.medicalDocuments.length > 0) {
+        newState.medicalDocuments = state.medicalDocuments;
+      }
 
       // Set data based on intent
-      if (intent.specialtyId) {
+      if (intent.specialtyId && typeof intent.specialtyId === "number") {
         newState.specialtyId = intent.specialtyId;
       }
-      if (intent.symptomId) {
+      if (intent.symptomId && typeof intent.symptomId === "number") {
         newState.symptomIds = [intent.symptomId];
       }
-      if (intent.symptomIds?.length) {
-        newState.symptomIds = intent.symptomIds;
+      if (
+        intent.symptomIds &&
+        Array.isArray(intent.symptomIds) &&
+        intent.symptomIds.length
+      ) {
+        newState.symptomIds = intent.symptomIds as number[];
       }
-      if (intent.doctorId) {
+      if (intent.doctorId && typeof intent.doctorId === "number") {
         newState.doctorId = intent.doctorId;
-        newState.doctor = intent.doctor;
       }
-      if (intent.timeSlotId) {
+      if (intent.doctor) {
+        newState.doctor = intent.doctor as Doctor;
+      }
+      if (intent.timeSlotId && typeof intent.timeSlotId === "number") {
         newState.timeSlotId = intent.timeSlotId;
-        newState.timeSlot = intent.timeSlot;
       }
-      if (intent.consultationType) {
+      if (intent.timeSlot) {
+        newState.timeSlot = intent.timeSlot as TimeSlot;
+      }
+      if (
+        intent.consultationType &&
+        (intent.consultationType === "online" ||
+          intent.consultationType === "physical")
+      ) {
         newState.consultationType = intent.consultationType;
       }
-      if (intent.appointmentDate) {
+      if (
+        intent.appointmentDate &&
+        typeof intent.appointmentDate === "string"
+      ) {
         newState.appointmentDate = intent.appointmentDate;
       }
-      if (intent.appointmentTime) {
+      if (
+        intent.appointmentTime &&
+        typeof intent.appointmentTime === "string"
+      ) {
         newState.appointmentTime = intent.appointmentTime;
       }
-      if (intent.notes) {
+      if (intent.notes && typeof intent.notes === "string") {
         newState.notes = intent.notes;
       }
-      if (intent.medicalDocuments?.length) {
-        newState.medicalDocuments = intent.medicalDocuments;
+      if (
+        intent.medicalDocuments &&
+        Array.isArray(intent.medicalDocuments) &&
+        intent.medicalDocuments.length
+      ) {
+        newState.medicalDocuments = intent.medicalDocuments as Record<
+          string,
+          unknown
+        >[];
       }
 
       // Determine starting step based on what's already selected
@@ -328,7 +425,9 @@ function bookingReducer(
       } else if (
         intent.specialtyId ||
         intent.symptomId ||
-        intent.symptomIds?.length
+        (intent.symptomIds &&
+          Array.isArray(intent.symptomIds) &&
+          intent.symptomIds.length)
       ) {
         newState.currentStep = 1; // Doctor selection step
       } else {
@@ -358,7 +457,9 @@ const BookingContext = createContext<{
   goToStep: (step: number) => void;
   canProceedToNextStep: () => boolean;
   isStepCompleted: (stepIndex: number) => boolean;
-  getCurrentStepData: () => any;
+  getCurrentStepData: () => Record<string, unknown>;
+  createAppointmentAndInitiatePayment: (phoneNumber: string) => Promise<void>;
+  updatePhoneNumber: (phoneNumber: string) => void;
 } | null>(null);
 
 // Provider
@@ -386,9 +487,23 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const canProceedToNextStep = () => {
-    // Check if current step is completed
-    const currentStep = state.steps[state.currentStep];
-    return currentStep.isCompleted;
+    // Check if current step is completed based on step-specific validation
+    switch (state.currentStep) {
+      case 0: // Symptoms - optional, can proceed with or without symptoms
+        return true;
+      case 1: // Doctor - required
+        return !!state.doctorId;
+      case 2: // Time Slot - required
+        return !!state.timeSlotId;
+      case 3: // Details - optional, can proceed with or without details
+        return true;
+      case 4: // Consultation Type - required
+        return !!state.consultationType;
+      case 5: // Payment - handled by PaymentForm component
+        return true;
+      default:
+        return false;
+    }
   };
 
   const isStepCompleted = (stepIndex: number) => {
@@ -420,7 +535,11 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({
           notes: state.notes,
           medicalDocuments: state.medicalDocuments,
         };
-      case 4: // Payment
+      case 4: // Consultation Type
+        return {
+          consultationType: state.consultationType,
+        };
+      case 5: // Payment
         return {
           paymentReference: state.paymentReference,
           appointmentId: state.appointmentId,
@@ -428,6 +547,18 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({
       default:
         return {};
     }
+  };
+
+  const updatePhoneNumber = (phoneNumber: string) => {
+    dispatch({ type: "SET_PHONE_NUMBER", payload: phoneNumber });
+  };
+
+  const createAppointmentAndInitiatePayment = async (phoneNumber: string) => {
+    // This will be implemented in the useBookingPayment hook
+    console.log(
+      "Creating appointment and initiating payment for:",
+      phoneNumber
+    );
   };
 
   return (
@@ -441,6 +572,8 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({
         canProceedToNextStep,
         isStepCompleted,
         getCurrentStepData,
+        createAppointmentAndInitiatePayment,
+        updatePhoneNumber,
       }}
     >
       {children}

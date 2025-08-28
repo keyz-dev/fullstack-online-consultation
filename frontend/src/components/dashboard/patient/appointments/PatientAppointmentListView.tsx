@@ -131,7 +131,9 @@ const PatientAppointmentListView: React.FC<PatientAppointmentListViewProps> = ({
                 Dr. {row.doctor.user.name}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {row.doctor.specialty.name}
+                {row.doctor.specialties && row.doctor.specialties.length > 0
+                  ? row.doctor.specialties[0].name
+                  : "General Medicine"}
               </p>
             </div>
           </div>

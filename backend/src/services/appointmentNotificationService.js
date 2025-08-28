@@ -135,8 +135,8 @@ class AppointmentNotificationService {
       default:
         title = "Payment Update";
         message = "Your payment status has been updated.";
-        notificationType = "payment_update";
-        priority = "medium";
+        notificationType = "general";
+        priority = "low";
     }
 
     await this.createNotification(

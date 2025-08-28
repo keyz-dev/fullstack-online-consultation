@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useBooking } from "@/contexts/BookingContext";
-import { Calendar, Clock, MapPin, Video, User } from "lucide-react";
+import { Calendar, Clock, Video, User } from "lucide-react";
 import Loader from "@/components/ui/Loader";
 import { toast } from "react-toastify";
+import api from "@/api";
 
 interface TimeSlot {
   id: number;
@@ -37,16 +38,15 @@ const TimeSlotSelector: React.FC = () => {
     const fetchTimeSlots = async () => {
       setLoading(true);
       try {
-        const response = await fetch(
-          `/api/timeSlot/doctors/${state.doctorId}/time-slots`
+        const response = await api.get(
+          `/timeSlot/doctors/${state.doctorId}/time-slots`
         );
-        if (!response.ok) throw new Error("Failed to fetch time slots");
-
-        const data = await response.json();
-        setTimeSlots(data.timeSlots || []);
-      } catch (error) {
+        setTimeSlots(response.data.timeSlots || []);
+      } catch (error: any) {
         console.error("Error fetching time slots:", error);
-        toast.error("Failed to load available time slots");
+        toast.error(
+          error.response?.data?.message || "Failed to load available time slots"
+        );
       } finally {
         setLoading(false);
       }
@@ -54,6 +54,21 @@ const TimeSlotSelector: React.FC = () => {
 
     fetchTimeSlots();
   }, [state.doctorId]);
+
+  // Initialize selected time slot and consultation type from booking context
+  useEffect(() => {
+    if (state.timeSlot && state.timeSlotId) {
+      setSelectedTimeSlot(state.timeSlot);
+      setSelectedDate(state.timeSlot.date);
+
+      // Set consultation type if it's not "both"
+      if (state.timeSlot.consultationType !== "both") {
+        setSelectedConsultationType(state.timeSlot.consultationType);
+      } else if (state.consultationType) {
+        setSelectedConsultationType(state.consultationType);
+      }
+    }
+  }, [state.timeSlot, state.timeSlotId, state.consultationType]);
 
   // Group time slots by date
   const groupedTimeSlots = timeSlots.reduce((acc, slot) => {
@@ -88,45 +103,59 @@ const TimeSlotSelector: React.FC = () => {
     } else {
       setSelectedConsultationType(null); // Let user choose for "both"
     }
-  };
 
-  const handleConsultationTypeSelect = (type: "online" | "physical") => {
-    setSelectedConsultationType(type);
-  };
-
-  const handleContinue = () => {
-    if (!selectedTimeSlot) {
-      toast.error("Please select a time slot");
-      return;
-    }
-
-    if (
-      selectedTimeSlot.consultationType === "both" &&
-      !selectedConsultationType
-    ) {
-      toast.error("Please select consultation type");
-      return;
-    }
-
+    // Update booking state
     dispatch({
       type: "UPDATE_STEP_DATA",
       payload: {
         stepIndex: 2,
         data: {
-          timeSlotId: selectedTimeSlot.id,
-          timeSlot: selectedTimeSlot,
+          timeSlotId: timeSlot.id,
+          timeSlot: timeSlot,
           consultationType:
-            selectedConsultationType || selectedTimeSlot.consultationType,
-          appointmentDate: selectedTimeSlot.date,
-          appointmentTime: selectedTimeSlot.startTime,
+            timeSlot.consultationType === "both"
+              ? null
+              : timeSlot.consultationType,
+          appointmentDate: timeSlot.date,
+          appointmentTime: timeSlot.startTime,
         },
       },
     });
 
-    dispatch({
-      type: "SET_STEP_COMPLETED",
-      payload: { stepIndex: 2, completed: true },
-    });
+    // Mark step as completed if consultation type is auto-selected
+    if (timeSlot.consultationType !== "both") {
+      dispatch({
+        type: "SET_STEP_COMPLETED",
+        payload: { stepIndex: 2, completed: true },
+      });
+    }
+  };
+
+  const handleConsultationTypeSelect = (type: "online" | "physical") => {
+    setSelectedConsultationType(type);
+
+    // Update booking state with consultation type
+    if (selectedTimeSlot) {
+      dispatch({
+        type: "UPDATE_STEP_DATA",
+        payload: {
+          stepIndex: 2,
+          data: {
+            timeSlotId: selectedTimeSlot.id,
+            timeSlot: selectedTimeSlot,
+            consultationType: type,
+            appointmentDate: selectedTimeSlot.date,
+            appointmentTime: selectedTimeSlot.startTime,
+          },
+        },
+      });
+
+      // Mark step as completed
+      dispatch({
+        type: "SET_STEP_COMPLETED",
+        payload: { stepIndex: 2, completed: true },
+      });
+    }
   };
 
   const formatTime = (time: string) => {
@@ -306,26 +335,10 @@ const TimeSlotSelector: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="font-medium">
-                Fee: ${selectedTimeSlot.consultationFee}
+                Fee: {selectedTimeSlot.consultationFee} XAF
               </span>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Continue Button */}
-      {selectedTimeSlot && (
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={handleContinue}
-            disabled={
-              selectedTimeSlot.consultationType === "both" &&
-              !selectedConsultationType
-            }
-            className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            Continue to Details
-          </button>
         </div>
       )}
     </div>

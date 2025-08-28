@@ -11,10 +11,10 @@ export interface PatientAppointment {
       email: string;
       avatar?: string;
     };
-    specialty: {
+    specialties: {
       id: number;
       name: string;
-    };
+    }[];
   };
   timeSlot: {
     id: number;
@@ -159,6 +159,8 @@ export interface CreateAppointmentData {
   consultationType: "online" | "physical";
   symptomIds?: number[];
   notes?: string;
+  documents?: File[] | any[];
+  documentNames?: string[];
 }
 
 export interface InitiatePaymentData {
@@ -329,7 +331,42 @@ export const appointmentsAPI = {
   createAppointment: async (
     data: CreateAppointmentData
   ): Promise<AppointmentResponse> => {
-    const response = await api.post("/appointment/create", data);
+    const formData = new FormData();
+
+    // Basic fields
+    if (data.doctorId) {
+      formData.append("doctorId", data.doctorId);
+    }
+    formData.append("timeSlotId", data.timeSlotId);
+    formData.append("consultationType", data.consultationType);
+
+    // Optional fields
+    if (data.symptomIds && data.symptomIds.length > 0) {
+      data.symptomIds.forEach((id) => {
+        formData.append("symptomIds", id.toString());
+      });
+    }
+    if (data.notes) {
+      formData.append("notes", data.notes);
+    }
+
+    // Documents
+    if (data.documents && data.documents.length > 0) {
+      data.documents.forEach((doc) => {
+        formData.append("patientDocument", doc);
+      });
+    }
+    if (data.documentNames && data.documentNames.length > 0) {
+      data.documentNames.forEach((name) => {
+        formData.append("documentNames", name);
+      });
+    }
+
+    const response = await api.post("/appointment/create", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 

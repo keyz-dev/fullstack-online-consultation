@@ -124,16 +124,16 @@ const createAvailabilities = async (req, res, next) => {
         createdAvailabilities.push(availability);
       }
 
-      // Generate time slots for all availabilities
-      try {
-        await timeSlotService.generateWeeklySlots(doctor.id, 4);
-      } catch (slotError) {
-        console.error("Error generating time slots:", slotError);
-        // Don't fail the transaction if slot generation fails
-      }
-
       return createdAvailabilities;
     });
+
+    // Generate time slots for all availabilities AFTER transaction is committed
+    try {
+      await timeSlotService.generateWeeklySlots(doctor.id, 4);
+    } catch (slotError) {
+      console.error("Error generating time slots:", slotError);
+      // Log the error but don't fail the response since availabilities were created successfully
+    }
 
     res.status(201).json({
       status: "success",

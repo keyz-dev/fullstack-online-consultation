@@ -14,7 +14,7 @@ class PaymentTrackingService {
     const startTime = Date.now();
 
     // Start polling after 2 minutes (from reference project)
-    const pollDelay = 120000;
+    const pollDelay = 10000;
 
     const poll = async () => {
       try {
@@ -127,21 +127,27 @@ class PaymentTrackingService {
         paymentStatus: appointmentPaymentStatus,
       });
 
-      // Send notifications
-      await appointmentNotificationService.notifyPaymentStatusUpdate(
-        payment.appointment,
-        payment.appointment.patient,
-        payment,
-        status
-      );
-
-      // Send notification to doctor if payment successful
-      if (status === "SUCCESSFUL") {
-        await appointmentNotificationService.notifyDoctorNewAppointment(
+      // Send notifications only for major status changes
+      if (
+        status === "SUCCESSFUL" ||
+        status === "FAILED" ||
+        status === "CANCELLED"
+      ) {
+        await appointmentNotificationService.notifyPaymentStatusUpdate(
           payment.appointment,
-          payment.appointment.timeSlot.availability.doctor,
-          payment.appointment.patient
+          payment.appointment.patient,
+          payment,
+          status
         );
+
+        // Send notification to doctor if payment successful
+        if (status === "SUCCESSFUL") {
+          await appointmentNotificationService.notifyDoctorNewAppointment(
+            payment.appointment,
+            payment.appointment.timeSlot.availability.doctor,
+            payment.appointment.patient
+          );
+        }
       }
 
       logger.info(`Payment ${paymentReference} status updated to ${status}`);

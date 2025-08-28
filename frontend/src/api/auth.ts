@@ -131,6 +131,7 @@ export interface PatientRegisterRequest extends BaseUserData {
     relationship: string;
   };
   contactInfo?: ContactInfo[];
+  documents?: any[];
 }
 
 export interface DoctorRegisterRequest extends BaseUserData {
@@ -367,6 +368,14 @@ class AuthAPI {
     // Avatar
     if (userData.avatar) {
       formData.append("avatar", userData.avatar);
+    }
+
+    // Documents
+    if (userData.documents && userData.documents.length > 0) {
+      userData.documents.forEach((doc) => {
+        formData.append("patientDocument", doc);
+        formData.append("documentNames", doc.documentName);
+      });
     }
 
     const response = await api.post("/auth/register/patient", formData, {
