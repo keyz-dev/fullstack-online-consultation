@@ -15,6 +15,21 @@ export interface PatientAppointment {
       id: number;
       name: string;
     }[];
+    licenseNumber?: string;
+    experience?: number;
+    bio?: string;
+    education?: string;
+    languages?: string[];
+    clinicAddress?: string;
+    operationalHospital?: string;
+    contactInfo?: string;
+    consultationFee?: number;
+    consultationDuration?: number;
+    paymentMethods?: string[];
+    isVerified?: boolean;
+    isActive?: boolean;
+    averageRating?: number;
+    totalReviews?: number;
   };
   timeSlot: {
     id: number;
@@ -31,9 +46,52 @@ export interface PatientAppointment {
     | "completed"
     | "cancelled"
     | "no_show";
+  paymentStatus?: string;
+  consultationFee?: number;
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  patient?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      phoneNumber?: string;
+      gender?: string;
+      dob?: string;
+      avatar?: string;
+    };
+    medicalHistory?: string;
+    allergies?: string[];
+    currentMedications?: string[];
+    emergencyContact?: string;
+    insuranceInfo?: string;
+    medicalDocuments?: string[];
+  };
+  payment?: {
+    id: number;
+    type: string;
+    amount: number;
+    currency: string;
+    status: string;
+    paymentMethod: string;
+    transactionId?: string;
+    gatewayResponse?: any;
+    description?: string;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
+  };
+  documents?: Array<{
+    id: number;
+    documentType: string;
+    fileName: string;
+    fileUrl: string;
+    fileSize?: number;
+    mimeType?: string;
+    createdAt: string;
+  }>;
 }
 
 export interface PatientAppointmentStats {
@@ -415,6 +473,14 @@ export const appointmentsAPI = {
     data: InitiatePaymentData
   ): Promise<PaymentInitiationResponse> => {
     const response = await api.post("/appointment/initiate-payment", data);
+    return response.data;
+  },
+
+  // Retry payment for failed transactions
+  retryPayment: async (
+    data: InitiatePaymentData
+  ): Promise<PaymentInitiationResponse> => {
+    const response = await api.post("/appointment/retry-payment", data);
     return response.data;
   },
 

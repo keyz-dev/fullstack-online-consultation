@@ -71,7 +71,7 @@ export default function Pagination({
   };
 
   return (
-    <div className="flex justify-between items-center mt-6">
+    <div className="flex justify-between items-center mt-6 w-full">
       {/* Information text */}
       <div className="text-sm text-gray-600 dark:text-gray-400">
         Showing {startItem} - {endItem} from a total of {total} items

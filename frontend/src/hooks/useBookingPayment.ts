@@ -24,12 +24,6 @@ export const useBookingPayment = () => {
         return;
       }
 
-      // Validate phone number
-      if (!phoneNumber || phoneNumber.trim() === "") {
-        toast.error("Phone number is required");
-        return;
-      }
-
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "SET_PAYMENT_STATUS", payload: "processing" });
       dispatch({
@@ -39,8 +33,8 @@ export const useBookingPayment = () => {
 
       // Set a timeout to reset loading state if something goes wrong
       const loadingTimeout = setTimeout(() => {
-        dispatch({ type: "SET_LOADING", payload: false });
         console.warn("Payment loading timeout - resetting loading state");
+        dispatch({ type: "SET_LOADING", payload: false });
       }, 30000); // 30 seconds timeout
 
       try {
@@ -60,7 +54,6 @@ export const useBookingPayment = () => {
               ?.map((doc: DocumentFile) => doc.documentName || doc.name)
               .filter((name): name is string => name !== undefined) || [],
         };
-        console.log("Appointment data:", appointmentData);
 
         const appointmentResponse = await appointmentsAPI.createAppointment(
           appointmentData
@@ -85,7 +78,7 @@ export const useBookingPayment = () => {
 
         if (paymentResponse.success) {
           console.log(
-            "💳 Payment initiated successfully:",
+            "💳 Payment initiated successfully: This is the message from the form hook",
             paymentResponse.paymentReference
           );
           dispatch({
@@ -253,12 +246,80 @@ export const useBookingPayment = () => {
     dispatch({ type: "SET_LOADING", payload: false });
   }, [dispatch, state.paymentReference, stopTrackingPayment]);
 
+  // New function to retry payment for failed transactions
+  const retryPayment = useCallback(
+    async (phoneNumber: string) => {
+      if (!user || !state.appointmentId) {
+        toast.error("Missing appointment information for retry");
+        return;
+      }
+
+      dispatch({ type: "SET_LOADING", payload: true });
+      dispatch({ type: "SET_PAYMENT_STATUS", payload: "processing" });
+      dispatch({
+        type: "SET_PAYMENT_MESSAGE",
+        payload: "Retrying payment...",
+      });
+
+      try {
+        // Retry payment for existing appointment
+        const paymentData = {
+          appointmentId: state.appointmentId.toString(),
+          phoneNumber: phoneNumber,
+        };
+
+        const paymentResponse = await appointmentsAPI.retryPayment(paymentData);
+
+        if (paymentResponse.success) {
+          console.log(
+            "💳 Payment retry initiated successfully:",
+            paymentResponse.paymentReference
+          );
+          dispatch({
+            type: "SET_PAYMENT_REFERENCE",
+            payload: paymentResponse.paymentReference,
+          });
+          dispatch({
+            type: "SET_PAYMENT_MESSAGE",
+            payload:
+              "Payment retry initiated. Please check your phone for payment request.",
+          });
+
+          // Start tracking payment
+          trackPayment(
+            paymentResponse.paymentReference,
+            state.appointmentId.toString()
+          );
+
+          toast.success("Payment retry initiated successfully");
+        } else {
+          throw new Error(paymentResponse.message || "Failed to retry payment");
+        }
+      } catch (error: unknown) {
+        console.error("Error retrying payment:", error);
+        const errorMessage = extractErrorMessage(error as Error);
+
+        dispatch({ type: "SET_PAYMENT_STATUS", payload: "failed" });
+        dispatch({ type: "SET_PAYMENT_MESSAGE", payload: errorMessage });
+        dispatch({ type: "SET_ERROR", payload: errorMessage });
+
+        toast.error(errorMessage);
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
+    },
+    [user, state, dispatch, trackPayment]
+  );
+
   // Monitor payment status changes from the payment tracker
   useEffect(() => {
     if (state.paymentReference) {
       const paymentStatus = getPaymentStatus(state.paymentReference);
       if (paymentStatus) {
-        console.log("💳 Payment tracker status update:", paymentStatus);
+        console.log(
+          "💳 Payment tracker status update: this is equally a message from the form hook",
+          paymentStatus
+        );
         if (paymentStatus.status === "SUCCESSFUL") {
           console.log("💳 Payment tracker: SUCCESSFUL status detected");
           handlePaymentSuccess();
@@ -351,6 +412,7 @@ export const useBookingPayment = () => {
 
   return {
     createAppointmentAndInitiatePayment,
+    retryPayment,
     handlePaymentSuccess,
     handlePaymentFailure,
     cancelPayment,

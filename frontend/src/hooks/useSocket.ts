@@ -2,7 +2,6 @@ import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationContext } from "@/contexts/NotificationContext";
-import { toast } from "react-toastify";
 import { API_BASE_URL } from "@/api";
 
 interface NotificationData {

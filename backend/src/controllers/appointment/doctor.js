@@ -1,24 +1,6 @@
-const {
-  Appointment,
-  Payment,
-  Patient,
-  TimeSlot,
-  DoctorAvailability,
-  Doctor,
-  User,
-  PatientDocument,
-  sequelize,
-  Symptom,
-  Specialty,
-} = require("../../db/models");
-const appointmentNotificationService = require("../../services/appointmentNotificationService");
-const { BadRequestError, NotFoundError } = require("../../utils/errors");
-const {
-  formatAppointmentData,
-} = require("../../utils/returnFormats/appointmentData");
+const { Appointment, TimeSlot } = require("../../db/models");
+
 const logger = require("../../utils/logger");
-const { handleFileUploads } = require("../../utils/documentUtil");
-const { cleanUpFileImages } = require("../../utils/imageCleanup");
 const { getAppointmentIncludes } = require("./base");
 const {
   formatAppointmentsData,
@@ -82,7 +64,21 @@ exports.getDoctorAppointments = async (req, res, next) => {
       orderClause = [["status", "ASC"]];
     }
 
-    const appointments = await Appointment.findAndCountAll({
+    // First, get the total count without includes to avoid join issues
+    const totalCount = await Appointment.count({
+      where: {
+        doctorId: doctorId,
+        status: ["paid", "confirmed", "in_progress", "completed"],
+        paymentStatus: "paid",
+        // Only apply basic filters for count
+        ...(status && status !== "all" && { status }),
+        ...(consultationType &&
+          consultationType !== "all" && { consultationType }),
+      },
+    });
+
+    // Then get paginated results with includes
+    const appointments = await Appointment.findAll({
       where: whereClause,
       include: getAppointmentIncludes(true, true, false), // Don't include doctor since we're filtering by doctor
       order: orderClause,
@@ -90,14 +86,11 @@ exports.getDoctorAppointments = async (req, res, next) => {
       offset: parseInt(offset),
     });
 
-    const formattedAppointments = await formatAppointmentsData(
-      appointments.rows,
-      {
-        includePayment: true,
-        includeDoctor: false, // Don't include doctor since we're filtering by doctor
-        includePatient: true,
-      }
-    );
+    const formattedAppointments = await formatAppointmentsData(appointments, {
+      includePayment: true,
+      includeDoctor: false, // Don't include doctor since we're filtering by doctor
+      includePatient: true,
+    });
 
     res.json({
       success: true,
@@ -106,8 +99,8 @@ exports.getDoctorAppointments = async (req, res, next) => {
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total: appointments.count,
-          totalPages: Math.ceil(appointments.count / limit),
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
         },
       },
     });

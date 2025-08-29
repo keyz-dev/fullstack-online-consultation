@@ -9,7 +9,6 @@ interface SocketContextType {
   connect: () => void;
   disconnect: () => void;
 }
-
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 export const useSocketContext = () => {

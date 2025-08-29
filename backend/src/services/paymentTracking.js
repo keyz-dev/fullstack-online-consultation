@@ -1,7 +1,16 @@
 const campayService = require("./campay");
-const { Payment, Appointment, Patient, User } = require("../db/models");
+const {
+  Payment,
+  Appointment,
+  Patient,
+  User,
+  TimeSlot,
+  DoctorAvailability,
+  Doctor,
+} = require("../db/models");
 const appointmentNotificationService = require("./appointmentNotificationService");
 const logger = require("../utils/logger");
+const { sequelize } = require("../db/models");
 
 class PaymentTrackingService {
   constructor() {
@@ -63,6 +72,8 @@ class PaymentTrackingService {
   }
 
   async updatePaymentStatus(paymentReference, status) {
+    const transaction = await sequelize.transaction();
+
     try {
       const payment = await Payment.findOne({
         where: { transactionId: paymentReference },
@@ -71,6 +82,29 @@ class PaymentTrackingService {
             model: Appointment,
             as: "appointment",
             include: [
+              {
+                model: TimeSlot,
+                as: "timeSlot",
+                include: [
+                  {
+                    model: DoctorAvailability,
+                    as: "availability",
+                    include: [
+                      {
+                        model: Doctor,
+                        as: "doctor",
+                        include: [
+                          {
+                            model: User,
+                            as: "user",
+                            attributes: ["id", "name", "email"],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
               {
                 model: Patient,
                 as: "patient",
@@ -92,6 +126,9 @@ class PaymentTrackingService {
         return;
       }
 
+      const appointment = payment.appointment;
+      const timeSlot = appointment.timeSlot;
+
       let paymentStatus = "pending";
       let appointmentStatus = "pending_payment";
       let appointmentPaymentStatus = "pending";
@@ -101,31 +138,61 @@ class PaymentTrackingService {
           paymentStatus = "completed";
           appointmentStatus = "paid";
           appointmentPaymentStatus = "paid";
+
+          // Book the time slot only when payment is successful
+          await timeSlot.update({ isBooked: true }, { transaction });
+          logger.info(
+            `Time slot ${timeSlot.id} booked for successful payment ${paymentReference} (polling)`
+          );
           break;
+
         case "FAILED":
         case "CANCELLED":
           paymentStatus = "failed";
           appointmentStatus = "cancelled";
           appointmentPaymentStatus = "failed";
+
+          // Keep slot available for failed payments (allows retry)
+          // Slot remains unbooked so user can retry payment
+          logger.info(
+            `Payment ${paymentReference} failed - slot ${timeSlot.id} remains available for retry (polling)`
+          );
           break;
+
         case "PENDING":
           paymentStatus = "processing";
           appointmentStatus = "pending_payment";
           appointmentPaymentStatus = "pending";
+          // Slot remains unbooked during processing
           break;
       }
 
-      await payment.update({
-        status: paymentStatus,
-        metadata: {
-          processedAt: status === "SUCCESSFUL" ? new Date() : null,
+      await payment.update(
+        {
+          status: paymentStatus,
+          metadata: {
+            ...payment.metadata,
+            processedAt: status === "SUCCESSFUL" ? new Date() : null,
+            lastPollingStatus: status,
+            lastPollingAt: new Date(),
+          },
         },
-      });
+        { transaction }
+      );
 
-      await payment.appointment.update({
-        status: appointmentStatus,
-        paymentStatus: appointmentPaymentStatus,
-      });
+      await appointment.update(
+        {
+          status: appointmentStatus,
+          paymentStatus: appointmentPaymentStatus,
+        },
+        { transaction }
+      );
+
+      // Commit transaction
+      await transaction.commit();
+      logger.info(
+        `Payment polling transaction committed for ${paymentReference}`
+      );
 
       // Send notifications only for major status changes
       if (
@@ -134,15 +201,59 @@ class PaymentTrackingService {
         status === "CANCELLED"
       ) {
         await appointmentNotificationService.notifyPaymentStatusUpdate(
-          payment.appointment,
-          payment.appointment.patient,
+          appointment,
+          { userId: appointment.patient.user.id, ...appointment.patient },
           payment,
           status
         );
+
+        // Send notification to doctor if payment successful
+        if (status === "SUCCESSFUL") {
+          await appointmentNotificationService.notifyDoctorNewAppointment(
+            appointment,
+            timeSlot.availability.doctor,
+            { userId: appointment.patient.user.id, ...appointment.patient }
+          );
+        }
       }
 
-      logger.info(`Payment ${paymentReference} status updated to ${status}`);
+      // Emit socket event for real-time frontend updates
+      if (global.io) {
+        global.io
+          .to(`payment-${paymentReference}`)
+          .emit("payment-status-update", {
+            reference: paymentReference,
+            status: status,
+            appointmentId: appointment.id,
+            message:
+              status === "SUCCESSFUL"
+                ? "Payment completed successfully! Your appointment is confirmed."
+                : status === "FAILED"
+                  ? "Payment failed. You can retry the payment."
+                  : status === "CANCELLED"
+                    ? "Payment was cancelled. You can retry the payment."
+                    : "Payment status updated.",
+            timestamp: new Date(),
+          });
+      }
+
+      logger.info(
+        `Payment ${paymentReference} status updated to ${status} (polling)`
+      );
     } catch (error) {
+      // Rollback transaction on error
+      if (transaction && !transaction.finished) {
+        try {
+          await transaction.rollback();
+          logger.error("Payment polling transaction rolled back due to error");
+        } catch (rollbackError) {
+          logger.error(
+            "Error rolling back payment polling transaction:",
+            rollbackError
+          );
+        }
+      }
+
       logger.error(
         `Error updating payment status for ${paymentReference}:`,
         error

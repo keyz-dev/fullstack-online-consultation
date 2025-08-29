@@ -29,6 +29,13 @@ router.post(
   paymentController.initiateAppointmentPayment
 );
 
+// Retry payment for failed transactions (requires authentication)
+router.post(
+  "/retry-payment",
+  authenticate,
+  paymentController.retryAppointmentPayment
+);
+
 // Campay webhook (no auth needed, but verified by Campay signature)
 router.post(
   "/webhook",

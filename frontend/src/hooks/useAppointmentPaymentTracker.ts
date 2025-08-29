@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
-import { API_BASE_URL } from "@/api";
+import { useSocketContext } from "../contexts/SocketProvider";
 
 interface PaymentStatus {
   reference: string;
@@ -23,7 +23,7 @@ interface AppointmentPaymentTracker {
 
 export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
   const { user } = useAuth();
-  const socketRef = useRef<Socket | null>(null);
+  const { socket } = useSocketContext();
   const [isConnected, setIsConnected] = useState(false);
   const [paymentStatuses, setPaymentStatuses] = useState<
     Record<string, PaymentStatus>
@@ -32,59 +32,67 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
     new Set()
   );
 
-  // Initialize socket connection
+  // Update connection status when socket changes
   useEffect(() => {
-    if (!user || trackedPayments.size === 0) return;
+    if (socket) {
+      setIsConnected(socket.connected);
 
-    const token = localStorage.getItem("token");
-    if (!token) return;
+      // Listen for connection events
+      const handleConnect = () => {
+        console.log("🔌 Connected to appointment payment socket");
+        setIsConnected(true);
+      };
 
-    // Connect to Socket.IO server
-    socketRef.current = io(API_BASE_URL.replace("/api", ""), {
-      auth: { token },
-      transports: ["websocket", "polling"],
-    });
+      const handleDisconnect = () => {
+        console.log("🔌 Disconnected from appointment payment socket");
+        setIsConnected(false);
+      };
 
-    // Connection event handlers
-    socketRef.current.on("connect", () => {
-      console.log("🔌 Connected to appointment payment socket");
-      setIsConnected(true);
-    });
+      socket.on("connect", handleConnect);
+      socket.on("disconnect", handleDisconnect);
 
-    socketRef.current.on("disconnect", () => {
-      console.log("🔌 Disconnected from appointment payment socket");
+      // Set initial connection status
+      setIsConnected(socket.connected);
+
+      return () => {
+        socket.off("connect", handleConnect);
+        socket.off("disconnect", handleDisconnect);
+      };
+    } else {
       setIsConnected(false);
-    });
+    }
+  }, [socket]);
+
+  // Payment status update events
+  useEffect(() => {
+    if (!socket) return;
 
     // Payment status update events
-    socketRef.current.on(
-      "payment-initiated",
-      (data: {
-        reference: string;
-        appointmentId: string;
-        message?: string;
-        timestamp: string;
-      }) => {
-        console.log("💳 Payment initiated:", data);
-        updatePaymentStatus(data.reference, {
-          reference: data.reference,
-          status: "PENDING",
-          appointmentId: data.appointmentId,
-          message:
-            data.message || "Payment request sent. Please check your phone.",
-          timestamp: new Date(data.timestamp),
-        });
+    const handlePaymentInitiated = (data: {
+      reference: string;
+      appointmentId: string;
+      message?: string;
+      timestamp: string;
+    }) => {
+      console.log("💳 Payment initiated:", data);
+      updatePaymentStatus(data.reference, {
+        reference: data.reference,
+        status: "PENDING",
+        appointmentId: data.appointmentId,
+        message:
+          data.message || "Payment request sent. Please check your phone.",
+        timestamp: new Date(data.timestamp),
+      });
 
-        toast.info(
-          "Payment initiated. Please check your phone for the payment prompt.",
-          {
-            autoClose: 5000,
-          }
-        );
-      }
-    );
+      toast.info(
+        "Payment initiated. Please check your phone for the payment prompt.",
+        {
+          autoClose: 5000,
+        }
+      );
+    };
 
-    socketRef.current.on("payment-status-update", (data: PaymentStatus) => {
+    const handlePaymentStatusUpdate = (data: PaymentStatus) => {
       console.log("💳 Payment status updated:", data);
       updatePaymentStatus(data.reference, data);
 
@@ -106,24 +114,17 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
             autoClose: 5000,
           }
         );
-      } else if (data.status === "FAILED") {
-        toast.error("Payment failed. Please try again.", {
-          autoClose: 5000,
-        });
-      } else if (data.status === "CANCELLED") {
-        toast.warning("Payment was cancelled.", {
-          autoClose: 5000,
-        });
-      }
-    });
-
-    // Cleanup on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
       }
     };
-  }, [user, trackedPayments.size]);
+
+    socket.on("payment-initiated", handlePaymentInitiated);
+    socket.on("payment-status-update", handlePaymentStatusUpdate);
+
+    return () => {
+      socket.off("payment-initiated", handlePaymentInitiated);
+      socket.off("payment-status-update", handlePaymentStatusUpdate);
+    };
+  }, [socket]);
 
   // Update payment status helper
   const updatePaymentStatus = useCallback(
@@ -158,16 +159,23 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         timestamp: new Date(),
       });
 
+      console.log("Socket ref", socket);
+      console.log("Is connected", isConnected);
+
       // Join payment room via socket
-      if (socketRef.current && isConnected) {
-        socketRef.current.emit("track-payment", {
+      if (socket && isConnected) {
+        socket.emit("track-payment", {
           paymentReference,
           userId: user?.id,
         });
         console.log(`🔌 Socket tracking enabled for ${paymentReference}`);
+      } else {
+        console.warn(
+          "Socket not available or not connected for payment tracking"
+        );
       }
     },
-    [isConnected, user?.id, trackedPayments, updatePaymentStatus]
+    [isConnected, user?.id, trackedPayments, updatePaymentStatus, socket]
   );
 
   // Stop tracking a payment
@@ -176,8 +184,8 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       console.log(`🛑 Stopping tracking for payment: ${paymentReference}`);
 
       // Leave payment room via socket
-      if (socketRef.current && isConnected) {
-        socketRef.current.emit("stop-tracking-payment", {
+      if (socket && isConnected) {
+        socket.emit("stop-tracking-payment", {
           paymentReference,
         });
       }
@@ -196,7 +204,7 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         return newStatus;
       });
     },
-    [isConnected]
+    [isConnected, socket]
   );
 
   // Get status for a specific payment

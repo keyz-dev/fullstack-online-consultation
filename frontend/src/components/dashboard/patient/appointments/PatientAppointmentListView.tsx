@@ -11,6 +11,7 @@ import {
   MessageSquare,
   MapPin,
   Edit,
+  RefreshCw,
 } from "lucide-react";
 
 interface PatientAppointmentListViewProps {
@@ -19,6 +20,7 @@ interface PatientAppointmentListViewProps {
   onView: (appointment: PatientAppointment) => void;
   onCancel: (appointment: PatientAppointment) => void;
   onReschedule: (appointment: PatientAppointment) => void;
+  onRetryPayment?: (appointment: PatientAppointment) => void;
 }
 
 const PatientAppointmentListView: React.FC<PatientAppointmentListViewProps> = ({
@@ -27,6 +29,7 @@ const PatientAppointmentListView: React.FC<PatientAppointmentListViewProps> = ({
   onView,
   onCancel,
   onReschedule,
+  onRetryPayment,
 }) => {
   // Helper functions
   const formatTime = (timeString: string) => {
@@ -104,6 +107,25 @@ const PatientAppointmentListView: React.FC<PatientAppointmentListViewProps> = ({
     }
   };
 
+  // Check if payment retry is eligible for an appointment
+  const isRetryEligible = (appointment: PatientAppointment) => {
+    if (!appointment.payment) return false;
+
+    const isFailedPayment =
+      appointment.payment.status === "failed" ||
+      appointment.payment.status === "cancelled";
+
+    const appointmentDate = new Date(appointment.timeSlot.date);
+    const now = new Date();
+    const isDateValid = appointmentDate > now;
+
+    const isStatusValid =
+      appointment.status === "cancelled" ||
+      appointment.status === "pending_payment";
+
+    return isFailedPayment && isDateValid && isStatusValid;
+  };
+
   const columns = React.useMemo(
     () => [
       {
@@ -170,10 +192,19 @@ const PatientAppointmentListView: React.FC<PatientAppointmentListViewProps> = ({
         Header: "Status",
         accessor: "status",
         Cell: ({ row }: { row: PatientAppointment }) => (
-          <StatusPill
-            status={getStatusLabel(row.status)}
-            color={getStatusColor(row.status)}
-          />
+          <div className="flex items-center gap-2">
+            <StatusPill
+              status={getStatusLabel(row.status)}
+              color={getStatusColor(row.status)}
+            />
+            {isRetryEligible(row) && (
+              <RefreshCw
+                size={14}
+                className="text-yellow-600 dark:text-yellow-400"
+                title="Payment retry available"
+              />
+            )}
+          </div>
         ),
       },
       {
@@ -210,12 +241,22 @@ const PatientAppointmentListView: React.FC<PatientAppointmentListViewProps> = ({
                   },
                 ]
               : []),
+            // Add retry payment option if eligible
+            ...(isRetryEligible(row) && onRetryPayment
+              ? [
+                  {
+                    label: "Retry Payment",
+                    icon: <RefreshCw size={16} />,
+                    onClick: () => onRetryPayment(row),
+                  },
+                ]
+              : []),
           ];
           return <DropdownMenu items={menuItems} />;
         },
       },
     ],
-    [onView, onCancel, onReschedule]
+    [onView, onCancel, onReschedule, onRetryPayment]
   );
 
   return (

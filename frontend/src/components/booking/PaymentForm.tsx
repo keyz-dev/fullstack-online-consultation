@@ -1,20 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useBooking } from "@/contexts/BookingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBookingPayment } from "@/hooks/useBookingPayment";
-import { Button, DocumentFile, PhoneInput } from "@/components/ui";
+import { Button, PhoneInput } from "@/components/ui";
 import {
   Calendar,
   Clock,
   User,
   Video,
-  DollarSign,
   CreditCard,
   Shield,
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/ui/Loader";
 

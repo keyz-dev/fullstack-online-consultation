@@ -4,24 +4,23 @@ import {
   DocumentPreview,
   ModalWrapper,
 } from "@/components/ui";
-import { DoctorAppointment } from "@/api/appointments";
-import { X, Eye, User, FileText, DollarSign } from "lucide-react";
-import AppointmentOverviewTab from "./AppointmentOverviewTab";
-import AppointmentPatientTab from "./AppointmentPatientTab";
-import AppointmentDocumentsTab from "./AppointmentDocumentsTab";
-import AppointmentPaymentTab from "./AppointmentPaymentTab";
+import { PatientAppointment } from "@/api/appointments";
+import { X, Eye, User, FileText, DollarSign, RefreshCw } from "lucide-react";
+import PatientAppointmentOverviewTab from "./PatientAppointmentOverviewTab";
+import PatientAppointmentDoctorTab from "./PatientAppointmentDoctorTab";
+import PatientAppointmentDocumentsTab from "./PatientAppointmentDocumentsTab";
+import PatientAppointmentPaymentTab from "./PatientAppointmentPaymentTab";
 
-interface AppointmentDetailsModalProps {
-  appointment: DoctorAppointment | null;
+interface PatientAppointmentDetailsModalProps {
+  appointment: PatientAppointment | null;
   isOpen: boolean;
   onClose: () => void;
+  onRetryPayment?: (appointment: PatientAppointment) => void;
 }
 
-const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
-  appointment,
-  isOpen,
-  onClose,
-}) => {
+const PatientAppointmentDetailsModal: React.FC<
+  PatientAppointmentDetailsModalProps
+> = ({ appointment, isOpen, onClose, onRetryPayment }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [previewDocument, setPreviewDocument] = useState<{
     id: string;
@@ -36,7 +35,7 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
 
   const tabs = [
     { id: "overview", label: "Overview", icon: Eye },
-    { id: "patient", label: "Patient Info", icon: User },
+    { id: "doctor", label: "Doctor Info", icon: User },
     { id: "documents", label: "Documents", icon: FileText },
     { id: "payment", label: "Payment", icon: DollarSign },
   ];
@@ -56,7 +55,7 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
               </h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {appointment.patient?.user.name} •{" "}
+                  Dr. {appointment.doctor.user.name} •{" "}
                   {appointment.consultationType}
                 </span>
               </div>
@@ -101,19 +100,19 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
             <div className="min-h-full">
               {activeTab === "overview" && (
                 <FadeInContainer delay={200} duration={600}>
-                  <AppointmentOverviewTab appointment={appointment} />
+                  <PatientAppointmentOverviewTab appointment={appointment} />
                 </FadeInContainer>
               )}
 
-              {activeTab === "patient" && (
+              {activeTab === "doctor" && (
                 <FadeInContainer delay={200} duration={600}>
-                  <AppointmentPatientTab appointment={appointment} />
+                  <PatientAppointmentDoctorTab appointment={appointment} />
                 </FadeInContainer>
               )}
 
               {activeTab === "documents" && (
                 <FadeInContainer delay={200} duration={600}>
-                  <AppointmentDocumentsTab
+                  <PatientAppointmentDocumentsTab
                     appointment={appointment}
                     onPreviewDocument={setPreviewDocument}
                   />
@@ -122,7 +121,10 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
 
               {activeTab === "payment" && (
                 <FadeInContainer delay={200} duration={600}>
-                  <AppointmentPaymentTab appointment={appointment} />
+                  <PatientAppointmentPaymentTab
+                    appointment={appointment}
+                    onRetryPayment={onRetryPayment}
+                  />
                 </FadeInContainer>
               )}
             </div>
@@ -142,4 +144,4 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
   );
 };
 
-export default AppointmentDetailsModal;
+export default PatientAppointmentDetailsModal;

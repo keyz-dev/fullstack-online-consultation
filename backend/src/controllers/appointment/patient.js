@@ -87,7 +87,7 @@ exports.createAppointment = async (req, res, next) => {
       throw new BadRequestError("Time slot is already booked");
     }
 
-    // Create appointment with pending_payment status
+    // Create appointment with pending_payment status (slot not booked yet)
     const appointment = await Appointment.create(
       {
         timeSlotId,
@@ -101,9 +101,6 @@ exports.createAppointment = async (req, res, next) => {
       },
       { transaction }
     );
-
-    // Mark time slot as booked
-    await timeSlot.update({ isBooked: true }, { transaction });
 
     // Create patient documents if any
     if (uploadedFiles.documents && uploadedFiles.documents.length > 0) {
@@ -169,7 +166,8 @@ exports.createAppointment = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Appointment created. Please complete payment.",
+      message:
+        "Appointment created. Please complete payment to confirm your slot.",
       data: {
         appointment: formattedAppointment,
         payment: {
@@ -258,7 +256,17 @@ exports.getPatientAppointments = async (req, res, next) => {
       orderClause = [["status", "ASC"]];
     }
 
-    const appointments = await Appointment.findAndCountAll({
+    // First, get the total count without includes to avoid join issues
+    const totalCount = await Appointment.count({
+      where: { patientId: req.authUser.patient.id },
+      // Only apply basic filters for count
+      ...(status && status !== "all" && { status }),
+      ...(consultationType &&
+        consultationType !== "all" && { consultationType }),
+    });
+
+    // Then get paginated results with includes
+    const appointments = await Appointment.findAll({
       where: whereClause,
       include: getAppointmentIncludes(),
       order: orderClause,
@@ -266,14 +274,11 @@ exports.getPatientAppointments = async (req, res, next) => {
       offset: parseInt(offset),
     });
 
-    const formattedAppointments = await formatAppointmentsData(
-      appointments.rows,
-      {
-        includePayment: true,
-        includeDoctor: true,
-        includePatient: true,
-      }
-    );
+    const formattedAppointments = await formatAppointmentsData(appointments, {
+      includePayment: true,
+      includeDoctor: true,
+      includePatient: true,
+    });
 
     res.json({
       success: true,
@@ -282,8 +287,8 @@ exports.getPatientAppointments = async (req, res, next) => {
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total: appointments.count,
-          totalPages: Math.ceil(appointments.count / limit),
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
         },
       },
     });

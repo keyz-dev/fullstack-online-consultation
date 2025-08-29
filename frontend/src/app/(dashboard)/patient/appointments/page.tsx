@@ -7,6 +7,7 @@ import {
   PatientAppointmentStatSection,
   PatientAppointmentListView,
 } from "@/components/dashboard/patient/appointments";
+import PatientAppointmentDetailsModal from "@/components/dashboard/patient/appointments/PatientAppointmentDetailsModal";
 import {
   Button,
   AdvancedFilters,
@@ -17,21 +18,26 @@ import {
 } from "@/components/ui";
 import { PatientAppointment } from "@/api/appointments";
 import { Plus, Video, Phone, MessageSquare, MapPin } from "lucide-react";
+import { useBookingPayment } from "@/hooks/useBookingPayment";
+import { toast } from "react-toastify";
 
 const PatientAppointmentsPage: React.FC = () => {
   const router = useRouter();
   const [selectedAppointment, setSelectedAppointment] =
     useState<PatientAppointment | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
 
   const { appointments, loading, error, stats, filters, pagination, actions } =
     usePatientAppointments();
 
+  const { retryPayment } = useBookingPayment();
+
   // Handle appointment actions
   const handleViewAppointment = (appointment: PatientAppointment) => {
-    // TODO: Navigate to appointment details page
-    console.log("View appointment:", appointment.id);
+    setSelectedAppointment(appointment);
+    setShowDetailsModal(true);
   };
 
   const handleCancelAppointment = (appointment: PatientAppointment) => {
@@ -63,6 +69,34 @@ const PatientAppointmentsPage: React.FC = () => {
 
   const handleBookAppointment = () => {
     router.push("/booking");
+  };
+
+  // Handle payment retry
+  const handleRetryPayment = async (appointment: PatientAppointment) => {
+    try {
+      // Get patient's phone number from the appointment or user context
+      const phoneNumber = appointment.patient?.user?.phoneNumber || "";
+
+      if (!phoneNumber) {
+        toast.error(
+          "Phone number is required for payment retry. Please update your profile."
+        );
+        return;
+      }
+
+      await retryPayment(phoneNumber);
+      toast.success("Payment retry initiated successfully!");
+
+      // Refresh appointments to get updated status
+      await actions.refreshAppointments();
+
+      // Close the details modal
+      setShowDetailsModal(false);
+      setSelectedAppointment(null);
+    } catch (error) {
+      console.error("Failed to retry payment:", error);
+      toast.error("Failed to retry payment. Please try again.");
+    }
   };
 
   // Filter configurations
@@ -200,6 +234,7 @@ const PatientAppointmentsPage: React.FC = () => {
           onView={handleViewAppointment}
           onCancel={handleCancelAppointment}
           onReschedule={handleRescheduleAppointment}
+          onRetryPayment={handleRetryPayment}
         />
       </FadeInContainer>
 
@@ -230,6 +265,17 @@ const PatientAppointmentsPage: React.FC = () => {
         message={`Are you sure you want to cancel your appointment with Dr. ${selectedAppointment?.doctor.user.name} on ${selectedAppointment?.timeSlot.date}?`}
         confirmText="Cancel Appointment"
         loading={cancelLoading}
+      />
+
+      {/* Appointment Details Modal */}
+      <PatientAppointmentDetailsModal
+        appointment={selectedAppointment}
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedAppointment(null);
+        }}
+        onRetryPayment={handleRetryPayment}
       />
     </div>
   );
