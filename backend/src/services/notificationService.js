@@ -14,7 +14,21 @@ class NotificationService {
       const notification = await Notification.create(data);
       return notification;
     } catch (error) {
-      console.error("Error creating notification:", error);
+      console.error("Error creating notification:", error.message || error);
+      
+      // Log validation errors in detail
+      if (error.name === 'SequelizeValidationError') {
+        console.error("Validation errors:", {
+          errors: error.errors?.map(e => ({
+            field: e.path,
+            value: e.value,
+            message: e.message,
+            type: e.type
+          })),
+          data
+        });
+      }
+      
       throw error;
     }
   }
