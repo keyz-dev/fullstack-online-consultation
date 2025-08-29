@@ -76,31 +76,62 @@ export const useSocket = () => {
 
     // Connection events
     socketRef.current.on("connect", () => {
-      console.log("Socket connected");
+      console.log(
+        `🔌 Socket connected for user ${user.id} (${user.name}) - Role: ${user.role}`
+      );
+
+      // Explicitly join user notification room
+      if (socketRef.current) {
+        socketRef.current.emit("join-user-room", { userId: user.id });
+        console.log(`📢 Requested to join user-${user.id} notification room`);
+      }
     });
 
     socketRef.current.on("disconnect", () => {
-      console.log("Socket disconnected");
+      console.log(`🔌 Socket disconnected for user ${user.id}`);
     });
 
     socketRef.current.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
+      console.error("🚨 Socket connection error:", error);
+    });
+
+    // Handle room joining confirmation
+    socketRef.current.on("room-joined", (data) => {
+      console.log(
+        `✅ Successfully joined room: ${data.room} - ${data.message}`
+      );
     });
 
     // Notification events - Now integrated with NotificationContext
     socketRef.current.on(
       "notification:new",
       (data: { notification: NotificationData }) => {
-        console.log("New notification received:", data.notification);
+        console.log(`🔔 New notification received for user ${user.id}:`, {
+          id: data.notification.id,
+          type: data.notification.type,
+          title: data.notification.title,
+          message: data.notification.message,
+          priority: data.notification.priority,
+        });
 
         // Add notification to context (this will also show toast)
         if (addNotification) {
           addNotification(data.notification);
+          console.log(`✅ Notification added to context and toast shown`);
+        } else {
+          console.warn(
+            `⚠️ addNotification function not available - notification context may not be ready`
+          );
         }
 
         // Update unread count
         if (getUnreadCount) {
           getUnreadCount();
+          console.log(`✅ Unread count updated`);
+        } else {
+          console.warn(
+            `⚠️ getUnreadCount function not available - notification context may not be ready`
+          );
         }
       }
     );

@@ -43,6 +43,7 @@ interface NotificationContextType {
   unreadCount: number;
   loading: boolean;
   isConnected: boolean;
+  socketConnected: boolean;
   allowedTypes: string[];
   categories: string[];
   markAsRead: (notificationId: number) => Promise<void>;
@@ -79,6 +80,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   // Get token from localStorage safely
   const getToken = useCallback(() => {
@@ -100,6 +102,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     "prescription_ready",
     "payment_successful",
     "payment_failed",
+    "payment_initiated",
+    "appointment_created",
+    "appointment_confirmed",
+    "payment_update",
     "general",
   ];
 
@@ -272,6 +278,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     unreadCount,
     loading,
     isConnected,
+    socketConnected,
     allowedTypes,
     categories,
     markAsRead,

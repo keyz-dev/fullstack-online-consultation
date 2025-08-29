@@ -51,7 +51,7 @@ class AppointmentNotificationService {
 
       // Emit real-time notification
       if (global.io) {
-        global.io.to(`user-${userId}`).emit("notification:new", {
+        const notificationPayload = {
           notification: {
             id: notification.id,
             type: notification.type,
@@ -62,7 +62,27 @@ class AppointmentNotificationService {
             createdAt: notification.createdAt,
             data: notification.data,
           },
+        };
+
+        global.io
+          .to(`user-${userId}`)
+          .emit("notification:new", notificationPayload);
+
+        logger.info(`Real-time notification emitted to user-${userId}`, {
+          notificationId: notification.id,
+          type: notification.type,
+          title: notification.title,
+          socketRoom: `user-${userId}`,
         });
+      } else {
+        logger.warn(
+          `Socket.io not available - notification not sent in real-time`,
+          {
+            userId,
+            notificationId: notification.id,
+            type: notification.type,
+          }
+        );
       }
 
       logger.info(`Notification created for user ${userId}: ${type}`);
@@ -253,23 +273,60 @@ class AppointmentNotificationService {
    * Notify doctor about new appointment
    */
   async notifyDoctorNewAppointment(appointment, doctor, patient) {
+    // Enhanced logging for debugging
+    logger.info("Attempting to notify doctor about new appointment", {
+      appointmentId: appointment?.id,
+      doctorData: doctor
+        ? {
+            id: doctor.id,
+            userId: doctor.userId,
+            hasUser: !!doctor.user,
+            userFromUser: doctor.user?.id,
+          }
+        : null,
+      patientData: patient
+        ? {
+            id: patient.id,
+            userId: patient.userId,
+            name: patient.user?.name || patient.name,
+          }
+        : null,
+    });
+
+    // Try to get userId from doctor.userId or doctor.user.id
+    const doctorUserId = doctor?.userId || doctor?.user?.id;
+
     // Validate that we have the required doctor data
-    if (!doctor || !doctor.userId) {
+    if (!doctor || !doctorUserId) {
       logger.error(
-        "Cannot create doctor notification: Missing doctor or doctor.userId",
+        "Cannot create doctor notification: Missing doctor or doctor userId",
         {
-          doctor: doctor ? { id: doctor.id, hasUserId: !!doctor.userId } : null,
+          doctor: doctor
+            ? {
+                id: doctor.id,
+                hasUserId: !!doctor.userId,
+                hasUser: !!doctor.user,
+                userFromUser: doctor.user?.id,
+              }
+            : null,
           appointmentId: appointment?.id,
         }
       );
       return;
     }
 
+    const patientName = patient?.user?.name || patient?.name || "a patient";
     const title = "New Appointment Confirmed";
-    const message = `You have a new confirmed appointment with ${patient?.user?.name || "a patient"} on ${appointment.timeSlot.date} at ${appointment.timeSlot.startTime}.`;
+    const message = `You have a new confirmed appointment with ${patientName} on ${appointment.timeSlot.date} at ${appointment.timeSlot.startTime}.`;
 
-    await this.createNotification(
-      doctor.userId,
+    logger.info(`Creating notification for doctor userId: ${doctorUserId}`, {
+      title,
+      message,
+      appointmentId: appointment.id,
+    });
+
+    const notification = await this.createNotification(
+      doctorUserId,
       "appointment_confirmed",
       title,
       message,
@@ -277,11 +334,27 @@ class AppointmentNotificationService {
       {
         appointmentId: appointment.id,
         patientId: patient?.id,
+        patientName: patientName,
         appointmentDate: appointment.timeSlot.date,
         appointmentTime: appointment.timeSlot.startTime,
         consultationType: appointment.consultationType,
       }
     );
+
+    if (notification) {
+      logger.info(`Doctor notification created successfully`, {
+        notificationId: notification.id,
+        doctorUserId,
+        appointmentId: appointment.id,
+      });
+    } else {
+      logger.error(`Failed to create doctor notification`, {
+        doctorUserId,
+        appointmentId: appointment.id,
+      });
+    }
+
+    return notification;
   }
 }
 

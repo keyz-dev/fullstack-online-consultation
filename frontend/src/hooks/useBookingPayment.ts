@@ -77,10 +77,6 @@ export const useBookingPayment = () => {
         );
 
         if (paymentResponse.success) {
-          console.log(
-            "💳 Payment initiated successfully: This is the message from the form hook",
-            paymentResponse.paymentReference
-          );
           dispatch({
             type: "SET_PAYMENT_REFERENCE",
             payload: paymentResponse.paymentReference,
@@ -124,7 +120,6 @@ export const useBookingPayment = () => {
   );
 
   const handlePaymentSuccess = useCallback(() => {
-    console.log("💳 Setting payment status to success");
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "success" });
     dispatch({
       type: "SET_PAYMENT_MESSAGE",
@@ -185,7 +180,6 @@ export const useBookingPayment = () => {
   ]);
 
   const handlePaymentFailure = useCallback(() => {
-    console.log("💳 Setting payment status to failed");
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "failed" });
     dispatch({
       type: "SET_PAYMENT_MESSAGE",
@@ -271,10 +265,6 @@ export const useBookingPayment = () => {
         const paymentResponse = await appointmentsAPI.retryPayment(paymentData);
 
         if (paymentResponse.success) {
-          console.log(
-            "💳 Payment retry initiated successfully:",
-            paymentResponse.paymentReference
-          );
           dispatch({
             type: "SET_PAYMENT_REFERENCE",
             payload: paymentResponse.paymentReference,
@@ -316,18 +306,12 @@ export const useBookingPayment = () => {
     if (state.paymentReference) {
       const paymentStatus = getPaymentStatus(state.paymentReference);
       if (paymentStatus) {
-        console.log(
-          "💳 Payment tracker status update: this is equally a message from the form hook",
-          paymentStatus
-        );
         if (paymentStatus.status === "SUCCESSFUL") {
-          console.log("💳 Payment tracker: SUCCESSFUL status detected");
           handlePaymentSuccess();
         } else if (
           paymentStatus.status === "FAILED" ||
           paymentStatus.status === "CANCELLED"
         ) {
-          console.log("💳 Payment tracker: FAILED/CANCELLED status detected");
           handlePaymentFailure();
         }
       }
@@ -370,20 +354,11 @@ export const useBookingPayment = () => {
       }>;
       const { status, reference } = customEvent.detail;
 
-      console.log("💳 Received payment status update event:", {
-        status,
-        reference,
-        currentReference: state.paymentReference,
-        mappedStatus: mapBackendStatusToFrontend(status),
-      });
-
       // Only handle events for the current payment reference
       if (reference === state.paymentReference) {
         if (status === "SUCCESSFUL") {
-          console.log("💳 Triggering payment success handler");
           handlePaymentSuccess();
         } else if (status === "FAILED" || status === "CANCELLED") {
-          console.log("💳 Triggering payment failure handler");
           handlePaymentFailure();
         }
       }

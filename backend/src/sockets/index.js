@@ -42,29 +42,61 @@ const initializeSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log(`User ${socket.userId} connected`);
+    console.log(
+      `🔌 User ${socket.userId} (${socket.user.name}) connected - Role: ${socket.user.role}`
+    );
 
-    // Join user-specific room
+    // Join user-specific room (main notification room)
     socket.join(`user-${socket.userId}`);
+    console.log(`✅ User ${socket.userId} joined room: user-${socket.userId}`);
 
     // Join admin room if user is admin
     if (socket.user.role === "admin") {
       socket.join("admin-room");
+      console.log(`✅ Admin ${socket.userId} joined admin-room`);
     }
 
     // Join doctor room if user is a doctor
     if (socket.user.role === "doctor" && socket.user.doctor) {
       socket.join(`doctor-${socket.user.doctor.id}`);
+      console.log(
+        `✅ Doctor ${socket.userId} joined doctor-${socket.user.doctor.id}`
+      );
     }
 
     // Join patient room if user is a patient
     if (socket.user.role === "patient" && socket.user.patient) {
       socket.join(`patient-${socket.user.patient.id}`);
+      console.log(
+        `✅ Patient ${socket.userId} joined patient-${socket.user.patient.id}`
+      );
     }
+
+    // Log all rooms this socket has joined
+    console.log(`🏠 Socket ${socket.userId} rooms:`, Array.from(socket.rooms));
+
+    // Handle explicit room joining request from frontend
+    socket.on("join-user-room", (data) => {
+      const { userId } = data;
+      if (userId === socket.userId) {
+        socket.join(`user-${userId}`);
+        console.log(`🔄 User ${socket.userId} re-joined room: user-${userId}`);
+
+        // Confirm room joining
+        socket.emit("room-joined", {
+          room: `user-${userId}`,
+          message: "Successfully joined notification room",
+        });
+      } else {
+        console.warn(
+          `⚠️ User ${socket.userId} tried to join room for user ${userId}`
+        );
+      }
+    });
 
     // Handle disconnection
     socket.on("disconnect", () => {
-      console.log(`User ${socket.userId} disconnected`);
+      console.log(`🔌 User ${socket.userId} disconnected`);
     });
 
     // Handle notification read

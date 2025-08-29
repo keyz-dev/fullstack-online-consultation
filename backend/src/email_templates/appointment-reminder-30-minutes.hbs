@@ -1,0 +1,146 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Your Appointment Starts in 30 Minutes</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .urgent-header {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .countdown {
+        font-size: 36px;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+      .appointment-card {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .quick-actions {
+        text-align: center;
+        margin: 30px 0;
+      }
+      .action-button {
+        display: inline-block;
+        background: #28a745;
+        color: white;
+        padding: 15px 30px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        margin: 10px;
+        font-size: 16px;
+      }
+      .secondary-button {
+        background: #6c757d;
+      }
+      .emergency-contact {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="urgent-header">
+        <h2 style="margin: 0;">⏰ Appointment Starting Soon!</h2>
+        <div class="countdown">30 Minutes</div>
+        <p style="margin: 0; font-size: 18px;">Your appointment is about to
+          begin</p>
+      </div>
+
+      <p>Hello <strong>{{recipientName}}</strong>,</p>
+
+      <p><strong>Your appointment starts in 30 minutes!</strong>
+        Please prepare to
+        {{#if joinUrl}}join your online consultation{{else}}arrive at the clinic{{/if}}.</p>
+
+      <div class="appointment-card">
+        <h3 style="margin-top: 0; color: #856404;">Appointment Details</h3>
+        <p><strong>{{#if doctorName}}Doctor{{else}}Patient{{/if}}:</strong>
+          {{#if doctorName}}Dr. {{doctorName}}{{else}}{{patientName}}{{/if}}</p>
+        <p><strong>Time:</strong> {{appointmentTime}} ({{appointmentDate}})</p>
+        <p><strong>Type:</strong> {{consultationType}}</p>
+      </div>
+
+      {{#if joinUrl}}
+        <!-- Online Consultation -->
+        <div
+          style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 4px; margin: 20px 0;"
+        >
+          <h4 style="color: #0c5460; margin-top: 0;">Online Consultation
+            Instructions:</h4>
+          <ul style="color: #0c5460;">
+            <li>Ensure you have a stable internet connection</li>
+            <li>Test your camera and microphone</li>
+            <li>Find a quiet, well-lit location</li>
+            <li>Have your ID and any relevant documents ready</li>
+          </ul>
+        </div>
+
+        <div class="quick-actions">
+          <a href="{{joinUrl}}" class="action-button">🎥 Join Consultation</a>
+          <a href="{{dashboardUrl}}" class="action-button secondary-button">📋
+            View Details</a>
+        </div>
+      {{else}}
+        <!-- In-Person Appointment -->
+        <div
+          style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 4px; margin: 20px 0;"
+        >
+          <h4 style="color: #155724; margin-top: 0;">In-Person Visit
+            Instructions:</h4>
+          <ul style="color: #155724;">
+            <li>Please arrive 10 minutes early for check-in</li>
+            <li>Bring a valid ID and insurance card (if applicable)</li>
+            <li>Bring any relevant medical documents or test results</li>
+            <li>Wear a mask if required by the clinic</li>
+          </ul>
+        </div>
+
+        <div class="quick-actions">
+          <a href="{{dashboardUrl}}" class="action-button">📋 View Appointment</a>
+        </div>
+      {{/if}}
+
+      {{#if doctorName}}
+        <div class="emergency-contact">
+          <strong>Need to cancel or reschedule?</strong><br />
+          Please contact us immediately at
+          <strong>support@drogcine.com</strong>
+          or call our emergency line.
+        </div>
+      {{/if}}
+
+      <div style="text-align: center; margin: 30px 0; color: #666;">
+        <p><strong>Thank you for choosing DrogCine!</strong></p>
+        <p>We're here to provide you with the best healthcare experience.</p>
+      </div>
+    </div>
+  </body>
+</html>

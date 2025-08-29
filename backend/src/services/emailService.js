@@ -159,6 +159,80 @@ class EmailService {
     });
   }
 
+  // Appointment reminder emails
+  async sendAppointmentReminder(
+    email,
+    appointmentData,
+    template = "appointment-reminder"
+  ) {
+    const {
+      recipientName,
+      doctorName,
+      patientName,
+      appointmentDate,
+      appointmentTime,
+      consultationType,
+      reminderType,
+    } = appointmentData;
+
+    let subject = "";
+    let templateData = {
+      recipientName,
+      doctorName,
+      patientName,
+      appointmentDate: new Date(appointmentDate).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      appointmentTime: new Date(
+        `2000-01-01T${appointmentTime}`
+      ).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      consultationType:
+        consultationType === "online"
+          ? "Online Consultation"
+          : "In-Person Visit",
+      dashboardUrl: `${process.env.FRONTEND_URL}/dashboard`,
+      joinUrl:
+        consultationType === "online"
+          ? `${process.env.FRONTEND_URL}/consultation/join`
+          : null,
+    };
+
+    switch (reminderType) {
+      case "day_before":
+        subject = `Appointment Reminder - Tomorrow at ${templateData.appointmentTime}`;
+        break;
+      case "2_hours":
+        subject = `Appointment in 2 Hours - ${templateData.appointmentTime}`;
+        break;
+      case "30_minutes":
+        subject = `Your appointment starts in 30 minutes`;
+        break;
+      case "now":
+        subject = `Your appointment is starting now`;
+        break;
+      default:
+        subject = `Appointment Reminder - ${templateData.appointmentDate}`;
+    }
+
+    return this.sendEmail({
+      to: email,
+      subject: subject + " - DrogCine",
+      template,
+      data: {
+        ...templateData,
+        reminderType,
+        isUrgent: reminderType === "30_minutes" || reminderType === "now",
+      },
+    });
+  }
+
   // Application rejection notification email
   async sendApplicationRejectedEmail(
     application,

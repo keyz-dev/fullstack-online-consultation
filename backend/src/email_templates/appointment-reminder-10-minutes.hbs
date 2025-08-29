@@ -1,0 +1,133 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Final Preparation - 10 Minutes</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .urgent-header {
+        background: linear-gradient(135deg, #fd7e14, #e17055);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 25px;
+      }
+      .countdown {
+        font-size: 32px;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+      .appointment-card {
+        background: #fff3cd;
+        border-left: 4px solid #fd7e14;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .action-button {
+        display: inline-block;
+        background: #fd7e14;
+        color: white;
+        padding: 15px 30px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        margin: 10px;
+        font-size: 16px;
+      }
+      .primary-button {
+        background: #28a745;
+        font-size: 18px;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="urgent-header">
+        <h2 style="margin: 0;">📋 Final Preparation</h2>
+        <div class="countdown">10 Minutes</div>
+        <p style="margin: 0;">Last chance to get ready!</p>
+      </div>
+
+      <p>Hello <strong>{{recipientName}}</strong>,</p>
+
+      <p><strong>Final reminder:</strong>
+        Your appointment
+        {{#if doctorName}}with <strong>Dr. {{doctorName}}</strong>{{else}}with
+          <strong>{{patientName}}</strong>{{/if}}
+        starts in
+        <strong>10 minutes</strong>!</p>
+
+      <div class="appointment-card">
+        <h3 style="margin-top: 0; color: #856404;">⏰ Appointment Details</h3>
+        <p><strong>{{#if doctorName}}Doctor{{else}}Patient{{/if}}:</strong>
+          {{#if doctorName}}Dr. {{doctorName}}{{else}}{{patientName}}{{/if}}</p>
+        <p><strong>Time:</strong> {{appointmentTime}} ({{appointmentDate}})</p>
+        <p><strong>Type:</strong> {{consultationType}}</p>
+      </div>
+
+      {{#if joinUrl}}
+        <!-- Online Consultation -->
+        <div
+          style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0;"
+        >
+          <h4 style="color: #856404; margin-top: 0;">💻 Final Check:</h4>
+          <ul style="color: #856404;">
+            <li><strong>Internet connection stable?</strong></li>
+            <li><strong>Camera and microphone working?</strong></li>
+            <li><strong>Quiet location secured?</strong></li>
+            <li><strong>Documents at hand?</strong></li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="{{joinUrl}}" class="action-button primary-button">🎥 Join Now</a>
+        </div>
+      {{else}}
+        <!-- In-Person -->
+        <div
+          style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0;"
+        >
+          <h4 style="color: #856404; margin-top: 0;">🚗 Final Check:</h4>
+          <ul style="color: #856404;">
+            <li><strong>On your way to the clinic?</strong></li>
+            <li><strong>ID and documents with you?</strong></li>
+            <li><strong>Parking situation handled?</strong></li>
+          </ul>
+        </div>
+      {{/if}}
+
+      <div
+        style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0;"
+      >
+        <strong>⚠️ Running late?</strong><br />
+        Please contact us immediately to avoid cancellation.
+      </div>
+
+      <div class="footer">
+        <p>Best regards,<br />The DrogCine Team</p>
+        <p>Emergency contact: <strong>support@drogcine.com</strong></p>
+      </div>
+    </div>
+  </body>
+</html>

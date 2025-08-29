@@ -1,0 +1,174 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Appointment Starting in 30 Minutes</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .urgent-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 25px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .countdown {
+        font-size: 32px;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+      .patient-card {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .quick-info {
+        display: flex;
+        justify-content: space-around;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 15px 0;
+      }
+      .info-item {
+        text-align: center;
+        flex: 1;
+      }
+      .info-label {
+        font-size: 12px;
+        color: #666;
+        font-weight: bold;
+      }
+      .info-value {
+        font-size: 16px;
+        color: #333;
+        font-weight: bold;
+        margin-top: 5px;
+      }
+      .action-button {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 15px 25px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        margin: 10px;
+        font-size: 16px;
+      }
+      .start-button {
+        background: #28a745;
+        font-size: 18px;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="urgent-header">
+        <h2 style="margin: 0;">🩺 Next Patient Ready</h2>
+        <div class="countdown">30 Minutes</div>
+        <p style="margin: 0;">Your next appointment begins soon</p>
+      </div>
+
+      <p>Hello <strong>Dr. {{recipientName}}</strong>,</p>
+
+      <p>Your next patient appointment begins in
+        <strong>30 minutes</strong>. Please prepare your consultation
+        {{#if
+          (eq consultationType "Online Consultation")
+        }}platform{{else}}room{{/if}}.</p>
+
+      <div class="patient-card">
+        <h4 style="margin-top: 0; color: #856404;">👤 Patient Information</h4>
+
+        <div class="quick-info">
+          <div class="info-item">
+            <div class="info-label">Patient</div>
+            <div class="info-value">{{patientName}}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Time</div>
+            <div class="info-value">{{appointmentTime}}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Type</div>
+            <div class="info-value">{{#if
+                (eq consultationType "Online Consultation")
+              }}Online{{else}}In-Person{{/if}}</div>
+          </div>
+        </div>
+      </div>
+
+      {{#if (eq consultationType "Online Consultation")}}
+        <!-- Online Consultation Setup -->
+        <div
+          style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 20px; border-radius: 4px; margin: 20px 0;"
+        >
+          <h4 style="color: #0c5460; margin-top: 0;">💻 Online Consultation
+            Setup</h4>
+          <ul style="color: #0c5460;">
+            <li>Ensure your video platform is ready</li>
+            <li>Test camera, microphone, and internet connection</li>
+            <li>Have patient's file and notes accessible</li>
+            <li>Prepare digital prescription pad if needed</li>
+          </ul>
+        </div>
+      {{else}}
+        <!-- In-Person Consultation Setup -->
+        <div
+          style="background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 4px; margin: 20px 0;"
+        >
+          <h4 style="color: #155724; margin-top: 0;">🏥 Consultation Room Setup</h4>
+          <ul style="color: #155724;">
+            <li>Prepare examination room and equipment</li>
+            <li>Review patient's file and previous notes</li>
+            <li>Ensure all necessary medical tools are ready</li>
+            <li>Check appointment schedule for the day</li>
+          </ul>
+        </div>
+      {{/if}}
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboardUrl}}" class="action-button start-button">🚀 Start
+          Consultation</a>
+        <a href="{{dashboardUrl}}" class="action-button">📋 Review Patient File</a>
+      </div>
+
+      <div
+        style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0;"
+      >
+        <strong>⏰ Running Late?</strong><br />
+        Please notify the patient through the platform messaging system if
+        you're delayed.
+      </div>
+
+      <div class="footer">
+        <p>Professional regards,<br />The DrogCine Team</p>
+        <p>Doctor support: <strong>doctor-support@drogcine.com</strong></p>
+        <p>This is an automated reminder for your professional schedule.</p>
+      </div>
+    </div>
+  </body>
+</html>

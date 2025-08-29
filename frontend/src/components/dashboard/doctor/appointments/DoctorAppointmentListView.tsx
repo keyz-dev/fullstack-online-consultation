@@ -33,18 +33,12 @@ interface DoctorAppointmentListViewProps {
 const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
   appointments,
   onViewAppointment,
-  onStartConsultation,
   onRescheduleAppointment,
   onCancelAppointment,
   onStartVideoCall,
   onStartChat,
   onInvalidateAppointment,
 }) => {
-  console.log("🔍 DoctorAppointmentListView - appointments:", appointments);
-  console.log(
-    "🔍 DoctorAppointmentListView - appointments length:",
-    appointments.length
-  );
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM dd, yyyy");
   };
@@ -53,21 +47,113 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
     return format(new Date(`2000-01-01T${timeString}`), "hh:mm a");
   };
 
-  const getStatusLabel = (status: string) => {
+  const getSmartStatusLabel = (appointment: DoctorAppointment) => {
+    const { status, timeSlot } = appointment;
+    const now = new Date();
+    const appointmentDate = new Date(timeSlot.date);
+    const appointmentDateTime = new Date(
+      `${timeSlot.date}T${timeSlot.startTime}`
+    );
+    const endDateTime = new Date(`${timeSlot.date}T${timeSlot.endTime}`);
+
+    // Check if appointment is today
+    const isToday = appointmentDate.toDateString() === now.toDateString();
+
+    // Calculate time difference
+    const minutesToStart = Math.floor(
+      (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60)
+    );
+    const minutesSinceStart = Math.floor(
+      (now.getTime() - appointmentDateTime.getTime()) / (1000 * 60)
+    );
+    const isPast = now > appointmentDateTime;
+    const isCurrentlyHappening =
+      now >= appointmentDateTime && now <= endDateTime;
+
+    // Handle different statuses with time context
     switch (status) {
       case "confirmed":
       case "paid":
-        return "Confirmed";
+        if (isCurrentlyHappening) {
+          return "Ready to Start";
+        } else if (isToday && minutesToStart > 0 && minutesToStart <= 60) {
+          return `Starting in ${minutesToStart} min${
+            minutesToStart !== 1 ? "s" : ""
+          }`;
+        } else if (isToday && minutesToStart <= 0 && minutesSinceStart <= 30) {
+          return "Should Start Now";
+        } else if (isPast) {
+          return "Overdue";
+        } else if (isToday) {
+          return "Today";
+        } else {
+          return "Upcoming";
+        }
+
       case "in_progress":
         return "In Progress";
+
       case "completed":
         return "Completed";
+
       case "cancelled":
         return "Cancelled";
+
       case "no_show":
-        return "No Show";
+        return "Missed";
+
+      case "pending_payment":
+        return "Payment Pending";
+
       default:
         return status;
+    }
+  };
+
+  const getStatusColor = (appointment: DoctorAppointment) => {
+    const { status, timeSlot } = appointment;
+    const now = new Date();
+    const appointmentDateTime = new Date(
+      `${timeSlot.date}T${timeSlot.startTime}`
+    );
+    const endDateTime = new Date(`${timeSlot.date}T${timeSlot.endTime}`);
+    const isCurrentlyHappening =
+      now >= appointmentDateTime && now <= endDateTime;
+    const isPast = now > appointmentDateTime;
+    const minutesToStart = Math.floor(
+      (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60)
+    );
+
+    switch (status) {
+      case "confirmed":
+      case "paid":
+        if (isCurrentlyHappening) {
+          return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+        } else if (minutesToStart > 0 && minutesToStart <= 15) {
+          return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+        } else if (isPast) {
+          return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+        } else {
+          return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+        }
+
+      case "in_progress":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+
+      case "completed":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+
+      case "no_show":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+
+      case "pending_payment":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
@@ -91,6 +177,37 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
       default:
         return type;
     }
+  };
+
+  const getPriorityIndicator = (appointment: DoctorAppointment) => {
+    const { status, timeSlot } = appointment;
+    const now = new Date();
+    const appointmentDateTime = new Date(
+      `${timeSlot.date}T${timeSlot.startTime}`
+    );
+    const isCurrentlyHappening =
+      now >= appointmentDateTime &&
+      now <= new Date(`${timeSlot.date}T${timeSlot.endTime}`);
+    const minutesToStart = Math.floor(
+      (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60)
+    );
+    const isPast = now > appointmentDateTime;
+
+    if ((status === "confirmed" || status === "paid") && isCurrentlyHappening) {
+      return { level: "urgent", icon: "🔴", text: "Start Now" };
+    } else if (
+      (status === "confirmed" || status === "paid") &&
+      minutesToStart > 0 &&
+      minutesToStart <= 15
+    ) {
+      return { level: "high", icon: "🟠", text: `${minutesToStart}m` };
+    } else if ((status === "confirmed" || status === "paid") && isPast) {
+      return { level: "overdue", icon: "⚠️", text: "Overdue" };
+    } else if (status === "in_progress") {
+      return { level: "active", icon: "🟢", text: "Active" };
+    }
+
+    return null;
   };
 
   const columns = [
@@ -122,6 +239,37 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
           </div>
         </div>
       ),
+    },
+    {
+      Header: "Priority",
+      accessor: "priority",
+      Cell: ({ row }: { row: DoctorAppointment }) => {
+        const priority = getPriorityIndicator(row);
+        if (!priority) {
+          return <span className="text-gray-400 dark:text-gray-500">—</span>;
+        }
+
+        return (
+          <div className="flex items-center space-x-1">
+            <span className="text-sm">{priority.icon}</span>
+            <span
+              className={`text-xs font-medium ${
+                priority.level === "urgent"
+                  ? "text-red-600 dark:text-red-400"
+                  : priority.level === "high"
+                  ? "text-orange-600 dark:text-orange-400"
+                  : priority.level === "overdue"
+                  ? "text-red-600 dark:text-red-400"
+                  : priority.level === "active"
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-gray-600 dark:text-gray-400"
+              }`}
+            >
+              {priority.text}
+            </span>
+          </div>
+        );
+      },
     },
     {
       Header: "Date & Time",
@@ -157,7 +305,13 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
       Header: "Status",
       accessor: "status",
       Cell: ({ row }: { row: DoctorAppointment }) => (
-        <StatusPill status={getStatusLabel(row.status)} />
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+            row
+          )}`}
+        >
+          {getSmartStatusLabel(row)}
+        </span>
       ),
     },
     {

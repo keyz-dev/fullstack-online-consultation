@@ -58,6 +58,14 @@ const NotificationBell: React.FC = () => {
         return "💰";
       case "payment_failed":
         return "⚠️";
+      case "payment_initiated":
+        return "💳";
+      case "appointment_created":
+        return "📝";
+      case "appointment_confirmed":
+        return "✅";
+      case "payment_update":
+        return "💰";
       case "general":
         return "🔔";
       default:

@@ -93,7 +93,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
     };
 
     const handlePaymentStatusUpdate = (data: PaymentStatus) => {
-      console.log("💳 Payment status updated:", data);
       updatePaymentStatus(data.reference, data);
 
       // Dispatch custom event for the booking payment hook to listen to
@@ -141,11 +140,8 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
   const trackPayment = useCallback(
     (paymentReference: string, appointmentId: string) => {
       if (trackedPayments.has(paymentReference)) {
-        console.log(`Already tracking payment ${paymentReference}`);
         return;
       }
-
-      console.log(`👤 Starting to track payment: ${paymentReference}`);
 
       // Add to tracked payments
       setTrackedPayments((prev) => new Set([...prev, paymentReference]));
@@ -159,16 +155,12 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         timestamp: new Date(),
       });
 
-      console.log("Socket ref", socket);
-      console.log("Is connected", isConnected);
-
       // Join payment room via socket
       if (socket && isConnected) {
         socket.emit("track-payment", {
           paymentReference,
           userId: user?.id,
         });
-        console.log(`🔌 Socket tracking enabled for ${paymentReference}`);
       } else {
         console.warn(
           "Socket not available or not connected for payment tracking"
@@ -181,8 +173,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
   // Stop tracking a payment
   const stopTrackingPayment = useCallback(
     (paymentReference: string) => {
-      console.log(`🛑 Stopping tracking for payment: ${paymentReference}`);
-
       // Leave payment room via socket
       if (socket && isConnected) {
         socket.emit("stop-tracking-payment", {
