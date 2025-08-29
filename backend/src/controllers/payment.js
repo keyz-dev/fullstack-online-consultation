@@ -11,6 +11,7 @@ const paymentTrackingService = require("../services/paymentTracking");
 const appointmentNotificationService = require("../services/appointmentNotificationService");
 const { NotFoundError, BadRequestError } = require("../utils/errors");
 const logger = require("../utils/logger");
+const { v4: uuidv4 } = require("uuid");
 
 exports.initiateAppointmentPayment = async (req, res, next) => {
   try {
@@ -84,6 +85,9 @@ exports.initiateAppointmentPayment = async (req, res, next) => {
     };
 
     const campayResponse = await campayService.initiatePayment(paymentData);
+    // const campayResponse = {
+    //   reference: uuidv4(),
+    // };
 
     // Update payment record
     await payment.update({

@@ -275,56 +275,56 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     });
   }, []);
 
-  // Socket event listeners for real-time notifications
+  // Listen for custom notification events (since direct socket approach had issues)
   useEffect(() => {
-    if (!socket || !user) return;
+    if (!user) return;
 
-    console.log(`🔔 Setting up notification listeners for user ${user.id}`);
+    console.log(
+      `🔔 NotificationContext: Setting up custom event listener for user ${user.id}`
+    );
 
-    // Update socket connection status
-    setSocketConnected(socket.connected || false);
+    const handleNotificationReceived = (event: Event) => {
+      const customEvent = event as CustomEvent<APINotification>;
+      const notification = customEvent.detail;
 
-    const handleNewNotification = (data: { notification: APINotification }) => {
-      console.log(`🔔 NotificationContext: Received new notification:`, {
-        id: data.notification.id,
-        type: data.notification.type,
-        title: data.notification.title,
-        message: data.notification.message,
-      });
-
-      // Add notification to state immediately
-      addNotification(data.notification);
       console.log(
-        `✅ NotificationContext: Notification added to state and toast shown`
+        `🔔 NotificationContext: Received custom notification event:`,
+        {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+        }
+      );
+
+      // Add notification to state (but don't show toast since useSocket already did)
+      setNotifications((prev) => [notification, ...prev]);
+
+      // Update unread count if notification is unread
+      if (!notification.isRead) {
+        setUnreadCount((prev) => prev + 1);
+      }
+
+      console.log(
+        `✅ NotificationContext: Notification added to state (bell should update)`
       );
     };
 
-    const handleSocketConnect = () => {
-      console.log(
-        `🔌 NotificationContext: Socket connected for user ${user.id}`
-      );
-      setSocketConnected(true);
-    };
+    window.addEventListener(
+      "notification:received",
+      handleNotificationReceived
+    );
 
-    const handleSocketDisconnect = () => {
-      console.log(
-        `🔌 NotificationContext: Socket disconnected for user ${user.id}`
-      );
-      setSocketConnected(false);
-    };
-
-    // Add event listeners
-    socket.on("notification:new", handleNewNotification);
-    socket.on("connect", handleSocketConnect);
-    socket.on("disconnect", handleSocketDisconnect);
-
-    // Cleanup
     return () => {
-      socket.off("notification:new", handleNewNotification);
-      socket.off("connect", handleSocketConnect);
-      socket.off("disconnect", handleSocketDisconnect);
+      console.log(
+        `🧹 NotificationContext: Removing custom event listener for user ${user.id}`
+      );
+      window.removeEventListener(
+        "notification:received",
+        handleNotificationReceived
+      );
     };
-  }, [socket, user, addNotification]);
+  }, [user]);
 
   // Load initial notifications when user is authenticated
   useEffect(() => {

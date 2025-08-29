@@ -154,7 +154,14 @@ const initializeSocket = (server) => {
     socket.on("track-payment", (data) => {
       const { paymentReference, userId, sessionId } = data;
       socket.join(`payment-${paymentReference}`);
-      console.log(`User ${socket.userId} tracking payment ${paymentReference}`);
+      console.log(
+        `💰 User ${socket.userId} joined payment room: payment-${paymentReference}`,
+        {
+          paymentReference,
+          userId: socket.userId,
+          rooms: Array.from(socket.rooms),
+        }
+      );
     });
 
     socket.on("stop-tracking-payment", (data) => {

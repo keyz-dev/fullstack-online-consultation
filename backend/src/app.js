@@ -66,24 +66,24 @@ const server = app.listen(port, () => {
 initializeSocket(server);
 
 // Initialize appointment reminder service
-const appointmentReminderService = require("./services/appointmentReminderService");
-appointmentReminderService.start();
+// const appointmentReminderService = require("./services/appointmentReminderService");
+// appointmentReminderService.start();
 
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received, shutting down gracefully");
-  appointmentReminderService.stop();
-  server.close(() => {
-    console.log("Server closed");
-    process.exit(0);
-  });
-});
+// // Graceful shutdown
+// process.on("SIGTERM", () => {
+//   console.log("SIGTERM received, shutting down gracefully");
+//   appointmentReminderService.stop();
+//   server.close(() => {
+//     console.log("Server closed");
+//     process.exit(0);
+//   });
+// });
 
-process.on("SIGINT", () => {
-  console.log("SIGINT received, shutting down gracefully");
-  appointmentReminderService.stop();
-  server.close(() => {
-    console.log("Server closed");
-    process.exit(0);
-  });
-});
+// process.on("SIGINT", () => {
+//   console.log("SIGINT received, shutting down gracefully");
+//   appointmentReminderService.stop();
+//   server.close(() => {
+//     console.log("Server closed");
+//     process.exit(0);
+//   });
+// });

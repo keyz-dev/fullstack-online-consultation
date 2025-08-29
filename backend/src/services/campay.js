@@ -79,13 +79,28 @@ class CampayService {
           },
         }
       );
+
       return response.data;
     } catch (error) {
-      logger.error(
-        "Error checking payment status:",
-        error.response?.data || error.message
+      logger.error(`Error checking payment status for ${reference}:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+      });
+
+      // For demo/test environment, don't throw error immediately
+      // Return a pending status to continue polling
+      if (error.response?.status === 404) {
+        logger.warn(
+          `Payment ${reference} not found in Campay - might still be processing`
+        );
+        return { status: "PENDING", reference };
+      }
+
+      throw new Error(
+        `Failed to check payment status: ${error.response?.data?.message || error.message}`
       );
-      throw new Error("Failed to check payment status");
     }
   }
 }

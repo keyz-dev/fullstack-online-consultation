@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationContext } from "@/contexts/NotificationContext";
+import { toast } from "react-toastify";
 import { API_BASE_URL } from "@/api";
 
 interface NotificationData {
@@ -65,34 +66,41 @@ export const useSocket = () => {
 
     // Connection events
     socketRef.current.on("connect", () => {
-      console.log(
-        `🔌 Socket connected for user ${user.id} (${user.name}) - Role: ${user.role}`
-      );
+
 
       // Explicitly join user notification room
       if (socketRef.current) {
         socketRef.current.emit("join-user-room", { userId: user.id });
-        console.log(`📢 Requested to join user-${user.id} notification room`);
       }
     });
 
-    socketRef.current.on("disconnect", () => {
-      console.log(`🔌 Socket disconnected for user ${user.id}`);
-    });
+    // Handle notification events directly (NotificationContext approach had issues)
+    socketRef.current.on(
+      "notification:new",
+      (data: { notification: NotificationData }) => {
+        // Show toast immediately
+        toast.info(data.notification.message, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
 
-    socketRef.current.on("connect_error", (error) => {
-      console.error("🚨 Socket connection error:", error);
-    });
+        // Dispatch custom event for other components to listen to
+        const event = new CustomEvent("notification:received", {
+          detail: data.notification,
+        });
+        window.dispatchEvent(event);
 
-    // Handle room joining confirmation
-    socketRef.current.on("room-joined", (data) => {
-      console.log(
-        `✅ Successfully joined room: ${data.room} - ${data.message}`
-      );
-    });
+      }
+    );
 
-    // Note: Notification events are now handled directly in NotificationContext
-    // This avoids stale closure issues and ensures real-time updates
+    // Handle payment status updates (backup channel)
+    socketRef.current.on("payment-status-update", (data) => {
+      console.log(`💰 useSocket: Received payment-status-update event`, data);
+    });
 
     // Chat events
     socketRef.current.on("chat:message", (data: ChatMessage) => {

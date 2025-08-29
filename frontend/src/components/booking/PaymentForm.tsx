@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useBooking } from "@/contexts/BookingContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { useBookingPayment } from "@/hooks/useBookingPayment";
 import { Button, PhoneInput } from "@/components/ui";
 import {
@@ -16,14 +15,8 @@ import {
 import { useRouter } from "next/navigation";
 import Loader from "@/components/ui/Loader";
 
-interface PaymentStatus {
-  status: "pending" | "processing" | "success" | "failed";
-  message: string;
-}
-
 const PaymentForm: React.FC = () => {
   const { state } = useBooking();
-  const { user } = useAuth();
   const router = useRouter();
   const {
     createAppointmentAndInitiatePayment,
@@ -33,7 +26,7 @@ const PaymentForm: React.FC = () => {
     isLoading,
   } = useBookingPayment();
 
-  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
   // Calculate total amount - ensure it's a number

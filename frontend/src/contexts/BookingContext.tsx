@@ -579,10 +579,6 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({
 
   const createAppointmentAndInitiatePayment = async (phoneNumber: string) => {
     // This will be implemented in the useBookingPayment hook
-    console.log(
-      "Creating appointment and initiating payment for:",
-      phoneNumber
-    );
   };
 
   return (

@@ -65,7 +65,15 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
 
   // Payment status update events
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log(`⚠️ PaymentTracker: Socket not available for payment events`);
+      return;
+    }
+
+    console.log(`💰 PaymentTracker: Setting up payment event listeners`, {
+      socketConnected: socket.connected,
+      socketId: socket.id,
+    });
 
     // Payment status update events
     const handlePaymentInitiated = (data: {
@@ -93,6 +101,14 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
     };
 
     const handlePaymentStatusUpdate = (data: PaymentStatus) => {
+      console.log(`💰 Payment status update received:`, {
+        reference: data.reference,
+        status: data.status,
+        appointmentId: data.appointmentId,
+        message: data.message,
+        timestamp: data.timestamp,
+      });
+
       updatePaymentStatus(data.reference, data);
 
       // Dispatch custom event for the booking payment hook to listen to
@@ -106,7 +122,12 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       });
       window.dispatchEvent(event);
 
+      console.log(
+        `📢 Dispatched payment-status-updated event for ${data.reference}`
+      );
+
       if (data.status === "SUCCESSFUL") {
+        console.log(`✅ Payment successful - showing success toast`);
         toast.success(
           "Payment completed successfully! Your appointment is confirmed.",
           {
@@ -116,10 +137,14 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       }
     };
 
+    console.log(
+      `📡 PaymentTracker: Adding socket event listeners for payment events`
+    );
     socket.on("payment-initiated", handlePaymentInitiated);
     socket.on("payment-status-update", handlePaymentStatusUpdate);
 
     return () => {
+      console.log(`🧹 PaymentTracker: Removing payment event listeners`);
       socket.off("payment-initiated", handlePaymentInitiated);
       socket.off("payment-status-update", handlePaymentStatusUpdate);
     };
@@ -155,15 +180,42 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         timestamp: new Date(),
       });
 
-      // Join payment room via socket
-      if (socket && isConnected) {
-        socket.emit("track-payment", {
-          paymentReference,
-          userId: user?.id,
-        });
+      if (socket) {
+        // Force join payment room regardless of connection status
+        // The socket might be connected but our state is stale
+        const attemptJoin = () => {
+          socket.emit("track-payment", {
+            paymentReference,
+            userId: user?.id,
+          });
+          setIsConnected(true); // Update connection status
+        };
+
+        if (socket.connected) {
+          attemptJoin();
+        } else {
+          console.warn(
+            `⚠️ PaymentTracker: Socket not connected, will join when ready`,
+            {
+              socketConnected: socket.connected,
+              socketId: socket.id,
+            }
+          );
+
+          // Try to join immediately anyway (socket might be connecting)
+          attemptJoin();
+
+          // Also set up listener for when socket connects
+          const handleConnect = () => {
+            attemptJoin();
+            socket.off("connect", handleConnect);
+          };
+
+          socket.on("connect", handleConnect);
+        }
       } else {
         console.warn(
-          "Socket not available or not connected for payment tracking"
+          `⚠️ PaymentTracker: No socket available for payment tracking`
         );
       }
     },
