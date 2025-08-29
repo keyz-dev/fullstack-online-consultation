@@ -56,6 +56,7 @@ module.exports = (sequelize, DataTypes) => {
       user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        field: "user_id", // Explicitly map to database field
         references: {
           model: "Users",
           key: "id",
@@ -98,10 +99,12 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+        field: "isRead", // Explicitly map to database field
       },
       readAt: {
         type: DataTypes.DATE,
         allowNull: true,
+        field: "readAt", // Explicitly map to database field
       },
       data: {
         type: DataTypes.JSONB,
@@ -119,14 +122,17 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull: true,
         comment: "When to send the notification",
+        field: "scheduledAt", // Explicitly map to database field
       },
       sentAt: {
         type: DataTypes.DATE,
         allowNull: true,
+        field: "sentAt", // Explicitly map to database field
       },
       expiresAt: {
         type: DataTypes.DATE,
         allowNull: true,
+        field: "expiresAt", // Explicitly map to database field
       },
     },
     {
