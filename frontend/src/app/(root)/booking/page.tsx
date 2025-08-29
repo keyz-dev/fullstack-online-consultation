@@ -105,7 +105,9 @@ const BookingPageContent: React.FC = () => {
     getBookingIntent,
     clearBookingIntent,
     dispatch,
-    state,
+    state.doctorId,
+    state.specialtyId,
+    state.symptomIds.length,
   ]);
 
   // Handle step navigation

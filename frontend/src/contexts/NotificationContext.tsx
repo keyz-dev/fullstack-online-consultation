@@ -12,6 +12,7 @@ import {
   Notification as APINotification,
 } from "../api/notifications";
 import { useAuth } from "./AuthContext";
+import { useSocketContext } from "./SocketProvider";
 import { toast } from "react-toastify";
 
 // Frontend notification interface (compatible with API)
@@ -76,6 +77,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
 }) => {
   const { user } = useAuth();
+
+  // Get socket context safely
+  let socket = null;
+  try {
+    const socketContext = useSocketContext();
+    socket = socketContext?.socket;
+  } catch (error) {
+    console.log(
+      "SocketContext not available yet, notifications will work without real-time updates"
+    );
+  }
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -261,6 +274,57 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       draggable: true,
     });
   }, []);
+
+  // Socket event listeners for real-time notifications
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    console.log(`🔔 Setting up notification listeners for user ${user.id}`);
+
+    // Update socket connection status
+    setSocketConnected(socket.connected || false);
+
+    const handleNewNotification = (data: { notification: APINotification }) => {
+      console.log(`🔔 NotificationContext: Received new notification:`, {
+        id: data.notification.id,
+        type: data.notification.type,
+        title: data.notification.title,
+        message: data.notification.message,
+      });
+
+      // Add notification to state immediately
+      addNotification(data.notification);
+      console.log(
+        `✅ NotificationContext: Notification added to state and toast shown`
+      );
+    };
+
+    const handleSocketConnect = () => {
+      console.log(
+        `🔌 NotificationContext: Socket connected for user ${user.id}`
+      );
+      setSocketConnected(true);
+    };
+
+    const handleSocketDisconnect = () => {
+      console.log(
+        `🔌 NotificationContext: Socket disconnected for user ${user.id}`
+      );
+      setSocketConnected(false);
+    };
+
+    // Add event listeners
+    socket.on("notification:new", handleNewNotification);
+    socket.on("connect", handleSocketConnect);
+    socket.on("disconnect", handleSocketDisconnect);
+
+    // Cleanup
+    return () => {
+      socket.off("notification:new", handleNewNotification);
+      socket.off("connect", handleSocketConnect);
+      socket.off("disconnect", handleSocketDisconnect);
+    };
+  }, [socket, user, addNotification]);
 
   // Load initial notifications when user is authenticated
   useEffect(() => {

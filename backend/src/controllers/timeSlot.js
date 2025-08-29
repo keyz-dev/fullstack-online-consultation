@@ -30,11 +30,16 @@ const getDoctorTimeSlots = async (req, res) => {
       const nextWeek = new Date(today);
       nextWeek.setDate(today.getDate() + 7);
 
+      // Fix: Use local date formatting to avoid timezone issues
+      const formatLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
       whereClause.date = {
-        [Op.between]: [
-          today.toISOString().split("T")[0],
-          nextWeek.toISOString().split("T")[0],
-        ],
+        [Op.between]: [formatLocalDate(today), formatLocalDate(nextWeek)],
       };
     }
 
@@ -86,7 +91,12 @@ const getDoctorTimeSlots = async (req, res) => {
     // Get current time for filtering past slots
     const now = new Date();
     const currentTime = now.toTimeString().slice(0, 5);
-    const today = now.toISOString().split("T")[0];
+
+    // Fix: Use local date formatting for today
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const today = `${year}-${month}-${day}`;
 
     // Filter and format time slots
     const formattedTimeSlots = timeSlots

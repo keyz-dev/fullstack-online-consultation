@@ -9,6 +9,7 @@ export interface User {
   gender?: string;
   dob?: string;
   address?: any;
+  phoneNumber?: string;
   avatar?: string;
   isActive: boolean;
   emailVerified: boolean;

@@ -359,11 +359,23 @@ function bookingReducer(
       }
 
       // Set data based on intent
-      if (intent.specialtyId && typeof intent.specialtyId === "number") {
-        newState.specialtyId = intent.specialtyId;
+      if (intent.specialtyId) {
+        const specialtyId =
+          typeof intent.specialtyId === "string"
+            ? parseInt(intent.specialtyId, 10)
+            : (intent.specialtyId as number);
+        if (typeof specialtyId === "number" && !isNaN(specialtyId)) {
+          newState.specialtyId = specialtyId;
+        }
       }
-      if (intent.symptomId && typeof intent.symptomId === "number") {
-        newState.symptomIds = [intent.symptomId];
+      if (intent.symptomId) {
+        const symptomId =
+          typeof intent.symptomId === "string"
+            ? parseInt(intent.symptomId, 10)
+            : (intent.symptomId as number);
+        if (typeof symptomId === "number" && !isNaN(symptomId)) {
+          newState.symptomIds = [symptomId];
+        }
       }
       if (
         intent.symptomIds &&
@@ -372,14 +384,26 @@ function bookingReducer(
       ) {
         newState.symptomIds = intent.symptomIds as number[];
       }
-      if (intent.doctorId && typeof intent.doctorId === "number") {
-        newState.doctorId = intent.doctorId;
+      if (intent.doctorId) {
+        const doctorId =
+          typeof intent.doctorId === "string"
+            ? parseInt(intent.doctorId, 10)
+            : (intent.doctorId as number);
+        if (typeof doctorId === "number" && !isNaN(doctorId)) {
+          newState.doctorId = doctorId;
+        }
       }
       if (intent.doctor) {
         newState.doctor = intent.doctor as Doctor;
       }
-      if (intent.timeSlotId && typeof intent.timeSlotId === "number") {
-        newState.timeSlotId = intent.timeSlotId;
+      if (intent.timeSlotId) {
+        const timeSlotId =
+          typeof intent.timeSlotId === "string"
+            ? parseInt(intent.timeSlotId, 10)
+            : (intent.timeSlotId as number);
+        if (typeof timeSlotId === "number" && !isNaN(timeSlotId)) {
+          newState.timeSlotId = timeSlotId;
+        }
       }
       if (intent.timeSlot) {
         newState.timeSlot = intent.timeSlot as TimeSlot;

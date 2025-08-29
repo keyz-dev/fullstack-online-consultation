@@ -5,6 +5,15 @@ const handlebars = require("handlebars");
 const fs = require("fs").promises;
 const path = require("path");
 
+// Register Handlebars helpers
+handlebars.registerHelper("eq", function (a, b) {
+  return a === b;
+});
+
+handlebars.registerHelper("ne", function (a, b) {
+  return a !== b;
+});
+
 class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({

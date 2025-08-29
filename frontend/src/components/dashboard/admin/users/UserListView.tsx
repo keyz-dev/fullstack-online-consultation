@@ -38,8 +38,6 @@ const UserListView: React.FC<UserListViewProps> = ({
     }
   };
 
-  console.log("Users", users);
-
   const getContactInfo = (user: User) => {
     // Check if contactInfo exists in any of the user types
     if (user.patient && "contactInfo" in user.patient)
@@ -52,6 +50,7 @@ const UserListView: React.FC<UserListViewProps> = ({
   };
 
   const getPhoneNumber = (user: User) => {
+    if (user.phoneNumber) return user.phoneNumber;
     const contactInfo = getContactInfo(user);
     if (contactInfo?.phone) return contactInfo.phone;
     if (user.patient?.phoneNumber) return user.patient.phoneNumber;

@@ -36,6 +36,7 @@ exports.initiateAppointmentPayment = async (req, res, next) => {
                 {
                   model: Doctor,
                   as: "doctor",
+                  attributes: ["id", "userId", "licenseNumber", "experience"],
                   include: [
                     {
                       model: User,
@@ -329,6 +330,7 @@ exports.retryAppointmentPayment = async (req, res, next) => {
                 {
                   model: Doctor,
                   as: "doctor",
+                  attributes: ["id", "userId", "licenseNumber", "experience"],
                   include: [
                     {
                       model: User,

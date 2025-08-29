@@ -41,14 +41,14 @@ export default function RootLayout({
           <ThemeProvider>
             <LanguageProvider>
               <AuthProvider>
-                <NotificationProvider>
-                  <SocketProvider>
+                <SocketProvider>
+                  <NotificationProvider>
                     <BookingProvider>
                       <ToastContainer />
                       {children}
                     </BookingProvider>
-                  </SocketProvider>
-                </NotificationProvider>
+                  </NotificationProvider>
+                </SocketProvider>
               </AuthProvider>
             </LanguageProvider>
           </ThemeProvider>

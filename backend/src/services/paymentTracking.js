@@ -93,6 +93,12 @@ class PaymentTrackingService {
                       {
                         model: Doctor,
                         as: "doctor",
+                        attributes: [
+                          "id",
+                          "userId",
+                          "licenseNumber",
+                          "experience",
+                        ],
                         include: [
                           {
                             model: User,

@@ -30,7 +30,12 @@ class TimeSlotService {
 
       while (currentDate <= endDateTime) {
         const dayOfWeek = currentDate.getDay();
-        const dateString = currentDate.toISOString().split("T")[0];
+
+        // Fix: Use local date formatting instead of toISOString() to avoid timezone issues
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+        const day = String(currentDate.getDate()).padStart(2, "0");
+        const dateString = `${year}-${month}-${day}`;
 
         // Find availability for this day of week
         const availability = availabilities.find(
@@ -104,10 +109,6 @@ class TimeSlotService {
    */
   async generateWeeklySlots(doctorId, weeks = 4) {
     try {
-      console.log(
-        `Generating weekly slots for doctor ID: ${doctorId}, weeks: ${weeks}`
-      );
-
       const startDate = new Date();
       startDate.setHours(0, 0, 0, 0);
 
@@ -115,14 +116,8 @@ class TimeSlotService {
       endDate.setDate(endDate.getDate() + weeks * 7);
 
       const slots = await this.generateTimeSlots(doctorId, startDate, endDate);
-      console.log(
-        `Generated ${slots.length} time slots for doctor ID: ${doctorId}`
-      );
 
       const createdSlots = await this.createTimeSlots(slots);
-      console.log(
-        `Created ${createdSlots.length} time slots in database for doctor ID: ${doctorId}`
-      );
 
       return createdSlots;
     } catch (error) {

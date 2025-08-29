@@ -88,7 +88,28 @@ class AppointmentNotificationService {
       logger.info(`Notification created for user ${userId}: ${type}`);
       return notification;
     } catch (error) {
-      logger.error("Error creating notification:", error);
+      logger.error("Error creating notification:", error.message || error);
+
+      // Log validation errors in detail
+      if (error.name === "SequelizeValidationError") {
+        logger.error("Validation errors:", {
+          errors: error.errors?.map((e) => ({
+            field: e.path,
+            value: e.value,
+            message: e.message,
+            type: e.type,
+          })),
+          data: {
+            user_id: userId,
+            type,
+            title,
+            message,
+            priority,
+            data,
+          },
+        });
+      }
+
       return null;
     }
   }

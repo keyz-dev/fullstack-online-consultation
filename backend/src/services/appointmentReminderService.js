@@ -167,6 +167,7 @@ class AppointmentReminderService {
         {
           model: Doctor,
           as: "doctor",
+          attributes: ["id", "userId", "licenseNumber", "experience"],
           include: [
             {
               model: User,
@@ -535,6 +536,7 @@ class AppointmentReminderService {
         {
           model: Doctor,
           as: "doctor",
+          attributes: ["id", "userId", "licenseNumber", "experience"],
           include: [
             {
               model: User,

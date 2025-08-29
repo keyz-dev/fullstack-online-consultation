@@ -224,7 +224,13 @@ const getById = async (req, res, next) => {
           as: "timeSlots",
           where: {
             date: {
-              [Op.gte]: new Date().toISOString().split("T")[0],
+              [Op.gte]: (() => {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, "0");
+                const day = String(today.getDate()).padStart(2, "0");
+                return `${year}-${month}-${day}`;
+              })(),
             },
           },
           required: false,
@@ -312,10 +318,18 @@ const updateAvailability = async (req, res, next) => {
           const endDate = new Date();
           endDate.setDate(endDate.getDate() + 28); // 4 weeks
 
+          // Fix: Use local date formatting to avoid timezone issues
+          const formatLocalDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+          };
+
           await timeSlotService.regenerateSlotsForAvailability(
             availability.id,
-            startDate.toISOString().split("T")[0],
-            endDate.toISOString().split("T")[0]
+            formatLocalDate(startDate),
+            formatLocalDate(endDate)
           );
         } catch (slotError) {
           console.error("Error regenerating time slots:", slotError);

@@ -13,7 +13,7 @@ interface DoctorCardProps {
 
 const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, className = "" }) => {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user , loading: userLoading} = useAuth();
   const { setBookingIntent } = useBookingIntent();
 
   const handleViewProfile = () => {
@@ -21,11 +21,11 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, className = "" }) => {
   };
 
   const handleBookAppointment = () => {
-    if (!isAuthenticated) {
+    if (!userLoading && !user) {
       // Set booking intent with doctor data and redirect to login
       setBookingIntent({
         type: "doctor",
-        doctorId: doctor.id,
+        doctorId: doctor.id.toString(),
       });
       router.push("/login");
       return;

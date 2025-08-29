@@ -40,18 +40,7 @@ export const useSocket = () => {
   const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
-  // Get notification context safely
-  let addNotification: ((notification: any) => void) | undefined;
-  let getUnreadCount: (() => Promise<void>) | undefined;
-
-  try {
-    const notificationContext = useNotificationContext();
-    addNotification = notificationContext?.addNotification;
-    getUnreadCount = notificationContext?.getUnreadCount;
-  } catch (error) {
-    // Context not available yet, that's okay
-    console.log("NotificationContext not available yet");
-  }
+  // Notification events are now handled directly in NotificationContext
 
   const connect = useCallback(() => {
     if (!user) return;
@@ -102,39 +91,8 @@ export const useSocket = () => {
       );
     });
 
-    // Notification events - Now integrated with NotificationContext
-    socketRef.current.on(
-      "notification:new",
-      (data: { notification: NotificationData }) => {
-        console.log(`🔔 New notification received for user ${user.id}:`, {
-          id: data.notification.id,
-          type: data.notification.type,
-          title: data.notification.title,
-          message: data.notification.message,
-          priority: data.notification.priority,
-        });
-
-        // Add notification to context (this will also show toast)
-        if (addNotification) {
-          addNotification(data.notification);
-          console.log(`✅ Notification added to context and toast shown`);
-        } else {
-          console.warn(
-            `⚠️ addNotification function not available - notification context may not be ready`
-          );
-        }
-
-        // Update unread count
-        if (getUnreadCount) {
-          getUnreadCount();
-          console.log(`✅ Unread count updated`);
-        } else {
-          console.warn(
-            `⚠️ getUnreadCount function not available - notification context may not be ready`
-          );
-        }
-      }
-    );
+    // Note: Notification events are now handled directly in NotificationContext
+    // This avoids stale closure issues and ensures real-time updates
 
     // Chat events
     socketRef.current.on("chat:message", (data: ChatMessage) => {
@@ -170,7 +128,7 @@ export const useSocket = () => {
       console.log("Video call ended:", data);
       // Handle call end
     });
-  }, [user, addNotification, getUnreadCount]);
+  }, [user]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
