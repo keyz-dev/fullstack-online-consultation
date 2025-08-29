@@ -28,6 +28,8 @@ const formatSpecialtyData = (specialty, options = {}) => {
       doctorCount,
       symptomCount,
     };
+    // Also add doctorCount as a direct property for frontend compatibility
+    formattedSpecialty.doctorCount = doctorCount;
   }
 
   // Include related data if available

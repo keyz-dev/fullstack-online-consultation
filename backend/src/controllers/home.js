@@ -26,19 +26,30 @@ class HomeController {
       // Get doctor count for each specialty using proper relationship queries
       const specialtiesWithCount = await Promise.all(
         specialties.map(async (specialty) => {
-          // Use the relationship method to get doctors for this specialty
-          const doctors = await specialty.getDoctors({
-            where: {
-              isActive: true,
-              // Temporarily remove isVerified filter since doctors don't have this set
-              // isVerified: true,
-            },
-          });
+          try {
+            // Use the relationship method to get doctors for this specialty
+            const doctors = await specialty.getDoctors({
+              where: {
+                isActive: true,
+                // Temporarily remove isVerified filter since doctors don't have this set
+                // isVerified: true,
+              },
+            });
 
-          return formatSpecialtyData(specialty, {
-            includeStats: true,
-            doctorCount: doctors.length,
-          });
+            return formatSpecialtyData(specialty, {
+              includeStats: true,
+              doctorCount: doctors.length,
+            });
+          } catch (error) {
+            console.error(
+              `Error getting doctors for specialty ${specialty.name}:`,
+              error
+            );
+            return formatSpecialtyData(specialty, {
+              includeStats: true,
+              doctorCount: 0,
+            });
+          }
         })
       );
 
