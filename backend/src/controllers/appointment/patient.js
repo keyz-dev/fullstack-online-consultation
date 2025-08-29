@@ -258,7 +258,16 @@ exports.getPatientAppointments = async (req, res, next) => {
       orderClause = [["status", "ASC"]];
     }
 
-    const appointments = await Appointment.findAndCountAll({
+    // First, get the total count without includes to avoid join issues
+    const totalCount = await Appointment.count({
+      where: { patientId: req.authUser.patient.id },
+      // Only apply basic filters for count
+      ...(status && status !== "all" && { status }),
+      ...(consultationType && consultationType !== "all" && { consultationType }),
+    });
+
+    // Then get paginated results with includes
+    const appointments = await Appointment.findAll({
       where: whereClause,
       include: getAppointmentIncludes(),
       order: orderClause,
@@ -267,7 +276,7 @@ exports.getPatientAppointments = async (req, res, next) => {
     });
 
     const formattedAppointments = await formatAppointmentsData(
-      appointments.rows,
+      appointments,
       {
         includePayment: true,
         includeDoctor: true,
@@ -282,8 +291,8 @@ exports.getPatientAppointments = async (req, res, next) => {
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total: appointments.count,
-          totalPages: Math.ceil(appointments.count / limit),
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
         },
       },
     });
