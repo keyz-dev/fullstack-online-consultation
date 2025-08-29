@@ -160,6 +160,16 @@ exports.handleAppointmentPaymentWebhook = async (req, res, next) => {
             },
           ],
         },
+        {
+          model: User,
+          as: "user",
+          include: [
+            {
+              model: require("../db/models").Patient,
+              as: "patient",
+            },
+          ],
+        },
       ],
     });
 
@@ -206,17 +216,33 @@ exports.handleAppointmentPaymentWebhook = async (req, res, next) => {
     // Send notifications
     await appointmentNotificationService.notifyPaymentStatusUpdate(
       appointment,
-      appointment.patient,
+      { userId: payment.user.id, ...payment.user.patient },
       payment,
       status
     );
+
+    // Emit socket event for real-time frontend updates
+    if (global.io) {
+      global.io.to(`payment-${reference}`).emit("payment-status-update", {
+        reference: reference,
+        status: status,
+        appointmentId: appointment.id,
+        message:
+          status === "SUCCESSFUL"
+            ? "Payment completed successfully! Your appointment is confirmed."
+            : status === "FAILED"
+              ? "Payment failed. Please try again."
+              : "Payment status updated.",
+        timestamp: new Date(),
+      });
+    }
 
     // Send notification to doctor if payment successful
     if (status === "SUCCESSFUL") {
       await appointmentNotificationService.notifyDoctorNewAppointment(
         appointment,
         appointment.timeSlot.availability.doctor,
-        appointment.patient
+        { userId: payment.user.id, ...payment.user.patient }
       );
     }
 

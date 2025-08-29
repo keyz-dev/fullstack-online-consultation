@@ -84,6 +84,10 @@ export const useBookingPayment = () => {
         );
 
         if (paymentResponse.success) {
+          console.log(
+            "💳 Payment initiated successfully:",
+            paymentResponse.paymentReference
+          );
           dispatch({
             type: "SET_PAYMENT_REFERENCE",
             payload: paymentResponse.paymentReference,
@@ -98,10 +102,6 @@ export const useBookingPayment = () => {
           trackPayment(
             paymentResponse.paymentReference,
             newAppointmentId.toString()
-          );
-
-          toast.success(
-            "Payment request sent to your phone. Please complete the payment."
           );
 
           // Clear the timeout since payment was initiated successfully
@@ -131,6 +131,7 @@ export const useBookingPayment = () => {
   );
 
   const handlePaymentSuccess = useCallback(() => {
+    console.log("💳 Setting payment status to success");
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "success" });
     dispatch({
       type: "SET_PAYMENT_MESSAGE",
@@ -191,6 +192,7 @@ export const useBookingPayment = () => {
   ]);
 
   const handlePaymentFailure = useCallback(() => {
+    console.log("💳 Setting payment status to failed");
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "failed" });
     dispatch({
       type: "SET_PAYMENT_MESSAGE",
@@ -256,9 +258,15 @@ export const useBookingPayment = () => {
     if (state.paymentReference) {
       const paymentStatus = getPaymentStatus(state.paymentReference);
       if (paymentStatus) {
+        console.log("💳 Payment tracker status update:", paymentStatus);
         if (paymentStatus.status === "SUCCESSFUL") {
+          console.log("💳 Payment tracker: SUCCESSFUL status detected");
           handlePaymentSuccess();
-        } else if (paymentStatus.status === "FAILED") {
+        } else if (
+          paymentStatus.status === "FAILED" ||
+          paymentStatus.status === "CANCELLED"
+        ) {
+          console.log("💳 Payment tracker: FAILED/CANCELLED status detected");
           handlePaymentFailure();
         }
       }
@@ -270,20 +278,51 @@ export const useBookingPayment = () => {
     handlePaymentFailure,
   ]);
 
+  // Helper function to map backend status to frontend status
+  const mapBackendStatusToFrontend = useCallback(
+    (
+      backendStatus: string
+    ): "pending" | "processing" | "success" | "failed" => {
+      switch (backendStatus) {
+        case "SUCCESSFUL":
+          return "success";
+        case "FAILED":
+        case "CANCELLED":
+          return "failed";
+        case "PENDING":
+          return "processing";
+        default:
+          return "pending";
+      }
+    },
+    []
+  );
+
   // Listen for payment status updates from socket events
   useEffect(() => {
     const handlePaymentStatusUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<{
         status: string;
         reference: string;
+        appointmentId: string;
+        message: string;
       }>;
       const { status, reference } = customEvent.detail;
+
+      console.log("💳 Received payment status update event:", {
+        status,
+        reference,
+        currentReference: state.paymentReference,
+        mappedStatus: mapBackendStatusToFrontend(status),
+      });
 
       // Only handle events for the current payment reference
       if (reference === state.paymentReference) {
         if (status === "SUCCESSFUL") {
+          console.log("💳 Triggering payment success handler");
           handlePaymentSuccess();
-        } else if (status === "FAILED") {
+        } else if (status === "FAILED" || status === "CANCELLED") {
+          console.log("💳 Triggering payment failure handler");
           handlePaymentFailure();
         }
       }

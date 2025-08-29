@@ -57,28 +57,47 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
     });
 
     // Payment status update events
-    socketRef.current.on("payment-initiated", (data: any) => {
-      console.log("💳 Payment initiated:", data);
-      updatePaymentStatus(data.reference, {
-        reference: data.reference,
-        status: "PENDING",
-        appointmentId: data.appointmentId,
-        message:
-          data.message || "Payment request sent. Please check your phone.",
-        timestamp: new Date(data.timestamp),
-      });
+    socketRef.current.on(
+      "payment-initiated",
+      (data: {
+        reference: string;
+        appointmentId: string;
+        message?: string;
+        timestamp: string;
+      }) => {
+        console.log("💳 Payment initiated:", data);
+        updatePaymentStatus(data.reference, {
+          reference: data.reference,
+          status: "PENDING",
+          appointmentId: data.appointmentId,
+          message:
+            data.message || "Payment request sent. Please check your phone.",
+          timestamp: new Date(data.timestamp),
+        });
 
-      toast.info(
-        "Payment initiated. Please check your phone for the payment prompt.",
-        {
-          autoClose: 5000,
-        }
-      );
-    });
+        toast.info(
+          "Payment initiated. Please check your phone for the payment prompt.",
+          {
+            autoClose: 5000,
+          }
+        );
+      }
+    );
 
     socketRef.current.on("payment-status-update", (data: PaymentStatus) => {
       console.log("💳 Payment status updated:", data);
       updatePaymentStatus(data.reference, data);
+
+      // Dispatch custom event for the booking payment hook to listen to
+      const event = new CustomEvent("payment-status-updated", {
+        detail: {
+          status: data.status,
+          reference: data.reference,
+          appointmentId: data.appointmentId,
+          message: data.message,
+        },
+      });
+      window.dispatchEvent(event);
 
       if (data.status === "SUCCESSFUL") {
         toast.success(

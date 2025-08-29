@@ -13,6 +13,29 @@ class AppointmentNotificationService {
     priority = "medium",
     data = {}
   ) {
+    // Validate required parameters
+    if (!userId) {
+      logger.error("Cannot create notification: userId is required", {
+        type,
+        title,
+        message,
+      });
+      return null;
+    }
+
+    if (!type || !title || !message) {
+      logger.error(
+        "Cannot create notification: type, title, and message are required",
+        {
+          userId,
+          type,
+          title,
+          message,
+        }
+      );
+      return null;
+    }
+
     try {
       const notification = await Notification.create({
         user_id: userId,
@@ -54,6 +77,20 @@ class AppointmentNotificationService {
    * Notify patient about appointment creation
    */
   async notifyAppointmentCreated(appointment, patient) {
+    // Validate that we have the required patient data
+    if (!patient || !patient.userId) {
+      logger.error(
+        "Cannot create notification: Missing patient or patient.userId",
+        {
+          patient: patient
+            ? { id: patient.id, hasUserId: !!patient.userId }
+            : null,
+          appointmentId: appointment?.id,
+        }
+      );
+      return;
+    }
+
     const title = "Appointment Created";
     const message =
       "Your appointment has been created successfully. Please complete payment to confirm your booking.";
@@ -76,6 +113,20 @@ class AppointmentNotificationService {
    * Notify patient about payment initiation
    */
   async notifyPaymentInitiated(appointment, patient, paymentReference) {
+    // Validate that we have the required patient data
+    if (!patient || !patient.userId) {
+      logger.error(
+        "Cannot create payment notification: Missing patient or patient.userId",
+        {
+          patient: patient
+            ? { id: patient.id, hasUserId: !!patient.userId }
+            : null,
+          appointmentId: appointment?.id,
+        }
+      );
+      return;
+    }
+
     const title = "Payment Initiated";
     const message =
       "Payment has been initiated for your appointment. Please check your phone and complete the payment.";
@@ -109,6 +160,20 @@ class AppointmentNotificationService {
    * Notify about payment status update
    */
   async notifyPaymentStatusUpdate(appointment, patient, payment, status) {
+    // Validate that we have the required patient data
+    if (!patient || !patient.userId) {
+      logger.error(
+        "Cannot create payment status notification: Missing patient or patient.userId",
+        {
+          patient: patient
+            ? { id: patient.id, hasUserId: !!patient.userId }
+            : null,
+          appointmentId: appointment?.id,
+        }
+      );
+      return;
+    }
+
     let title, message, notificationType, priority;
 
     switch (status) {
@@ -182,6 +247,41 @@ class AppointmentNotificationService {
           });
       }
     }
+  }
+
+  /**
+   * Notify doctor about new appointment
+   */
+  async notifyDoctorNewAppointment(appointment, doctor, patient) {
+    // Validate that we have the required doctor data
+    if (!doctor || !doctor.userId) {
+      logger.error(
+        "Cannot create doctor notification: Missing doctor or doctor.userId",
+        {
+          doctor: doctor ? { id: doctor.id, hasUserId: !!doctor.userId } : null,
+          appointmentId: appointment?.id,
+        }
+      );
+      return;
+    }
+
+    const title = "New Appointment Confirmed";
+    const message = `You have a new confirmed appointment with ${patient?.user?.name || "a patient"} on ${appointment.timeSlot.date} at ${appointment.timeSlot.startTime}.`;
+
+    await this.createNotification(
+      doctor.userId,
+      "appointment_confirmed",
+      title,
+      message,
+      "high",
+      {
+        appointmentId: appointment.id,
+        patientId: patient?.id,
+        appointmentDate: appointment.timeSlot.date,
+        appointmentTime: appointment.timeSlot.startTime,
+        consultationType: appointment.consultationType,
+      }
+    );
   }
 }
 

@@ -308,14 +308,6 @@ module.exports = (sequelize, DataTypes) => {
             appointment.cancelledAt = new Date();
           }
         },
-        afterCreate: async (appointment) => {
-          // Mark the time slot as booked
-          const { TimeSlot } = sequelize.models;
-          await TimeSlot.update(
-            { isBooked: true },
-            { where: { id: appointment.timeSlotId } }
-          );
-        },
         afterUpdate: async (appointment) => {
           // If appointment is cancelled, mark the time slot as available again
           if (

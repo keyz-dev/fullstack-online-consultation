@@ -68,6 +68,13 @@ exports.createAppointment = async (req, res, next) => {
         {
           model: DoctorAvailability,
           as: "availability",
+          include: [
+            {
+              model: Doctor,
+              as: "doctor",
+              include: [{ model: User, as: "user" }],
+            },
+          ],
         },
       ],
     });
@@ -79,8 +86,6 @@ exports.createAppointment = async (req, res, next) => {
     if (timeSlot.isBooked) {
       throw new BadRequestError("Time slot is already booked");
     }
-
-    console.log("timeSlot: ", timeSlot);
 
     // Create appointment with pending_payment status
     const appointment = await Appointment.create(
@@ -96,8 +101,6 @@ exports.createAppointment = async (req, res, next) => {
       },
       { transaction }
     );
-
-    console.log("\n\nappointment created: ", appointment);
 
     // Mark time slot as booked
     await timeSlot.update({ isBooked: true }, { transaction });
@@ -120,8 +123,6 @@ exports.createAppointment = async (req, res, next) => {
       await Promise.all(documentPromises);
     }
 
-    console.log("\n\npatient documents created: \n\n");
-
     // Create payment record
     const payment = await Payment.create(
       {
@@ -139,6 +140,9 @@ exports.createAppointment = async (req, res, next) => {
 
     // Commit transaction first
     await transaction.commit();
+    logger.info(
+      `Transaction committed successfully for appointment ${appointment.id}`
+    );
 
     // Fetch the appointment with all necessary associations for formatting
     const appointmentWithAssociations = await Appointment.findByPk(
@@ -160,7 +164,7 @@ exports.createAppointment = async (req, res, next) => {
     // Send notification to patient
     await appointmentNotificationService.notifyAppointmentCreated(
       appointmentWithAssociations,
-      req.authUser.patient
+      { userId: req.authUser.id, ...req.authUser.patient }
     );
 
     res.status(201).json({
@@ -190,7 +194,8 @@ exports.createAppointment = async (req, res, next) => {
     }
 
     cleanUpFileImages(req);
-    logger.error("Error creating appointment:", error);
+    logger.error("Error creating appointment:", error.message);
+    logger.error("Error stack:", error.stack);
     next(error);
   }
 };
