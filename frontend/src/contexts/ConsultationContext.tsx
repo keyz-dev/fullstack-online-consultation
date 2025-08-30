@@ -16,7 +16,7 @@ import { extractErrorMessage } from "@/utils/extractError";
 interface ConsultationState {
   loading: boolean;
   error: string | null;
-  currentConsultation: any | null;
+  currentConsultation: any;
   patientPresence: {
     isOnline: boolean;
     lastSeen?: string;
@@ -34,6 +34,7 @@ interface ConsultationContextType extends ConsultationState {
   initiateVideoCall: (
     consultationId: string
   ) => Promise<{ roomId: string; consultationId: string } | null>;
+  cancelVideoCall: (roomId: string, consultationId: string) => void;
   clearConsultationState: () => void;
 }
 
@@ -119,7 +120,7 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
         }
         return null;
       } catch (error) {
-        const errorMessage = extractErrorMessage(error);
+        const errorMessage = extractErrorMessage(error as Error);
         dispatch({
           type: CONSULTATION_ACTIONS.SET_ERROR,
           payload: errorMessage,
@@ -144,7 +145,12 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
         if (response.success) {
           dispatch({
             type: CONSULTATION_ACTIONS.SET_PATIENT_PRESENCE,
-            payload: response.data,
+            payload: {
+              isOnline: response.data.isOnline,
+              lastSeen: response.data.lastSeen,
+              userName: response.data.userId || 'Unknown',
+              userEmail: 'Unknown',
+            },
           });
         }
       } catch (error) {
@@ -180,7 +186,7 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
         }
         return null;
       } catch (error) {
-        const errorMessage = extractErrorMessage(error);
+        const errorMessage = extractErrorMessage(error as Error);
         dispatch({
           type: CONSULTATION_ACTIONS.SET_ERROR,
           payload: errorMessage,
@@ -194,6 +200,15 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
     []
   );
 
+  // Cancel video call
+  const cancelVideoCall = useCallback((roomId: string, consultationId: string) => {
+    if (socket) {
+      console.log('📞 Cancelling video call...', { roomId, consultationId });
+      socket.emit("call_cancelled", { roomId, consultationId });
+      toast.info("Video call cancelled");
+    }
+  }, [socket]);
+
   // Clear consultation state
   const clearConsultationState = useCallback(() => {
     dispatch({ type: CONSULTATION_ACTIONS.CLEAR_STATE });
@@ -204,6 +219,7 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
     getConsultationByAppointment,
     checkPatientPresence,
     initiateVideoCall,
+    cancelVideoCall,
     clearConsultationState,
   };
 

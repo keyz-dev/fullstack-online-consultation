@@ -34,4 +34,15 @@ router.post(
   consultationController.initiateCall
 );
 
+/**
+ * @desc    Reset a consultation (for stuck consultations)
+ * @route   POST /api/v1/consultations/:id/reset
+ * @access  Private (Doctor)
+ */
+router.post(
+  "/:id/reset",
+  authorizeRoles("doctor"),
+  consultationController.resetConsultation
+);
+
 module.exports = router;

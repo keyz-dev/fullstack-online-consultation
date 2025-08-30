@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotificationContext } from "@/contexts/NotificationContext";
 import { toast } from "react-toastify";
 import { API_BASE_URL } from "@/api";
 
@@ -66,8 +65,6 @@ export const useSocket = () => {
 
     // Connection events
     socketRef.current.on("connect", () => {
-
-
       // Explicitly join user notification room
       if (socketRef.current) {
         socketRef.current.emit("join-user-room", { userId: user.id });
@@ -93,14 +90,8 @@ export const useSocket = () => {
           detail: data.notification,
         });
         window.dispatchEvent(event);
-
       }
     );
-
-    // Handle payment status updates (backup channel)
-    socketRef.current.on("payment-status-update", (data) => {
-      console.log(`💰 useSocket: Received payment-status-update event`, data);
-    });
 
     // Chat events
     socketRef.current.on("chat:message", (data: ChatMessage) => {

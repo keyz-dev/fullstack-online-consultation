@@ -9,7 +9,11 @@ const {
 } = require("../db/models");
 const crypto = require("crypto");
 const { getIO } = require("../sockets");
-const { NotFoundError, ForbiddenError } = require("../utils/errors");
+const {
+  NotFoundError,
+  ForbiddenError,
+  BadRequestError,
+} = require("../utils/errors");
 
 class ConsultationController {
   /**
@@ -49,6 +53,11 @@ class ConsultationController {
                   },
                 ],
               },
+              {
+                model: require("../db/models").TimeSlot,
+                as: "timeSlot",
+                attributes: ["id", "date", "startTime", "endTime"],
+              },
             ],
           },
         ],
@@ -58,20 +67,16 @@ class ConsultationController {
         return next(new NotFoundError("Consultation not found"));
       }
 
-      if (consultation.appointment.doctor.user.id !== req.authUser.id) {
+      // Allow re-initiation for in_progress consultations (in case of disconnection)
+      if (consultation.status !== "not_started" && consultation.status !== "in_progress") {
         return next(
-          new ForbiddenError(
-            "You are not authorized to start this consultation."
+          new BadRequestError(
+            `Cannot initiate call for a consultation with status '${consultation.status}'.`
           )
         );
       }
 
-      if (consultation.status !== "not_started") {
-        return res.status(400).json({
-          success: false,
-          message: `Cannot initiate call for a consultation with status '${consultation.status}'.`,
-        });
-      }
+      console.log("\n\n About to initiate the call");
 
       const io = getIO();
       const patientSocket = Array.from(io.sockets.sockets.values()).find(
@@ -89,25 +94,53 @@ class ConsultationController {
         });
       }
 
+      // Generate room ID if not exists
       if (!consultation.roomId) {
         consultation.roomId = crypto.randomBytes(16).toString("hex");
       }
 
-      consultation.status = "in_progress";
-      consultation.startedAt = new Date();
-      await consultation.save();
+      // Only update status and startedAt if not already in progress
+      if (consultation.status === "not_started") {
+        consultation.status = "in_progress";
+        consultation.startedAt = new Date();
+        await consultation.save();
+      }
 
-      io.to(`user-${consultation.appointment.patient.user.id}`).emit(
-        "video:incoming-call",
-        {
-          roomId: consultation.roomId,
-          consultationId: consultation.id,
-          caller: {
-            name: consultation.appointment.doctor.user.name,
-            avatar: consultation.appointment.doctor.user.avatar,
-          },
-        }
+      console.log("\n\nThe new consultation");
+
+      const callData = {
+        consultationId: consultation.id,
+        roomId: consultation.roomId,
+        doctorName: consultation.appointment.doctor.user.name,
+        doctorSpecialty: "General Practice", // TODO: Get from doctor specialty
+        appointmentDate: consultation.appointment.timeSlot.date,
+        appointmentTime: `${consultation.appointment.timeSlot.startTime} - ${consultation.appointment.timeSlot.endTime}`,
+        patientName: consultation.appointment.patient.user.name,
+      };
+
+      const patientUserId = consultation.appointment.patient.user.id;
+      console.log(
+        `📞 Emitting video_call_initiated to user-${patientUserId}:`,
+        callData
       );
+
+      // Check if patient is connected
+      const allSockets = await io.fetchSockets();
+      const connectedPatientSocket = allSockets.find(
+        (s) => s.userId === patientUserId
+      );
+      console.log(
+        `🔍 Patient ${patientUserId} socket found:`,
+        !!connectedPatientSocket
+      );
+      if (connectedPatientSocket) {
+        console.log(
+          `🏠 Patient socket rooms:`,
+          Array.from(connectedPatientSocket.rooms)
+        );
+      }
+
+      io.to(`user-${patientUserId}`).emit("video_call_initiated", callData);
 
       return res.status(200).json({
         success: true,
@@ -116,6 +149,69 @@ class ConsultationController {
         data: {
           roomId: consultation.roomId,
           consultationId: consultation.id,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @desc    Reset/Cancel a consultation (for stuck consultations)
+   * @route   POST /api/v1/consultations/:id/reset
+   * @access  Private (Doctor)
+   */
+  async resetConsultation(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      const consultation = await Consultation.findByPk(id, {
+        include: [
+          {
+            model: Appointment,
+            as: "appointment",
+            include: [
+              {
+                model: Doctor,
+                as: "doctor",
+                include: [
+                  {
+                    model: User,
+                    as: "user",
+                    attributes: ["id", "name"],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!consultation) {
+        return next(new NotFoundError("Consultation not found"));
+      }
+
+      // Only allow doctor to reset their own consultations
+      if (consultation.appointment.doctor.user.id !== req.authUser.id) {
+        return next(
+          new ForbiddenError(
+            "You are not authorized to reset this consultation."
+          )
+        );
+      }
+
+      // Reset consultation to allow re-initiation
+      consultation.status = "not_started";
+      consultation.roomId = null;
+      consultation.startedAt = null;
+      await consultation.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Consultation has been reset and can be initiated again.",
+        data: {
+          consultationId: consultation.id,
+          status: consultation.status,
         },
       });
     } catch (error) {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ModalWrapper, Button } from "@/components/ui";
-import { useSocketContext } from "@/contexts";
+import { useSocket } from "@/hooks/useSocket";
 import { Video, Phone, PhoneOff, User, Clock, Calendar } from "lucide-react";
 import { format } from "date-fns";
 
@@ -31,7 +31,7 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
 }) => {
   const [isRinging, setIsRinging] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { socket } = useSocketContext();
+  const socket = useSocket();
 
   // Initialize ringtone audio
   useEffect(() => {
@@ -62,7 +62,7 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
     stopRingtone();
 
     // Emit socket event to accept call
-    if (socket) {
+    if (socket.socket) {
       socket.emit("video_call_accepted", {
         consultationId: callData.consultationId,
         roomId: callData.roomId,
@@ -78,7 +78,7 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
     stopRingtone();
 
     // Emit socket event to decline call
-    if (socket) {
+    if (socket.socket) {
       socket.emit("video_call_rejected", {
         consultationId: callData.consultationId,
         roomId: callData.roomId,
@@ -111,7 +111,17 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
     }
   }, [isVisible, callData, handleDecline, stopRingtone]);
 
-  if (!isVisible || !callData) return null;
+  // Debug logging
+  console.log("🔔 IncomingCallNotification render:", {
+    isVisible,
+    hasCallData: !!callData,
+    callData
+  });
+
+  if (!isVisible || !callData) {
+    console.log("🔔 Not showing notification - isVisible:", isVisible, "callData:", !!callData);
+    return null;
+  }
 
   return (
     <ModalWrapper>

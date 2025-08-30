@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useBooking } from "@/contexts/BookingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppointmentPaymentTracker } from "./useAppointmentPaymentTracker";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 import { appointmentsAPI } from "@/api/appointments";
 import { DocumentFile } from "@/components/ui";
 import { toast } from "react-toastify";
@@ -13,6 +14,7 @@ export const useBookingPayment = () => {
   const { user } = useAuth();
   const { trackPayment, stopTrackingPayment, getPaymentStatus } =
     useAppointmentPaymentTracker();
+  const { addNotification } = useNotificationContext();
   const router = useRouter();
 
   const createAppointmentAndInitiatePayment = useCallback(
@@ -75,6 +77,10 @@ export const useBookingPayment = () => {
         );
 
         if (paymentResponse.success) {
+          console.log(
+            "💳 Payment initiated successfully: This is the message from the form hook",
+            paymentResponse.paymentReference
+          );
           dispatch({
             type: "SET_PAYMENT_REFERENCE",
             payload: paymentResponse.paymentReference,
@@ -118,6 +124,7 @@ export const useBookingPayment = () => {
   );
 
   const handlePaymentSuccess = useCallback(() => {
+    console.log("💳 Setting payment status to success");
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "success" });
     dispatch({
       type: "SET_PAYMENT_MESSAGE",
@@ -138,13 +145,47 @@ export const useBookingPayment = () => {
       stopTrackingPayment(state.paymentReference);
     }
 
+    // Create success notification
+    if (user) {
+      addNotification({
+        id: Date.now(), // Temporary ID for frontend
+        title: "Payment Successful",
+        message: `Your payment of FCFA ${
+          state.timeSlot?.consultationFee || 0
+        } has been processed successfully. Your appointment with Dr. ${
+          state.doctor?.user.name
+        } is confirmed.`,
+        type: "payment_successful",
+        priority: "high",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        data: {
+          relatedId: state.appointmentId?.toString(),
+          relatedModel: "Appointment",
+          category: "payments",
+        },
+      });
+    }
+
     // Redirect to patient dashboard after a delay
     setTimeout(() => {
       router.push("/patient");
     }, 2000);
-  }, [dispatch, state.paymentReference, stopTrackingPayment, router]);
+  }, [
+    dispatch,
+    state.paymentReference,
+    state.appointmentId,
+    state.timeSlot,
+    state.doctor,
+    stopTrackingPayment,
+    router,
+    user,
+    addNotification,
+  ]);
 
   const handlePaymentFailure = useCallback(() => {
+    console.log("💳 Setting payment status to failed");
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "failed" });
     dispatch({
       type: "SET_PAYMENT_MESSAGE",
@@ -158,7 +199,36 @@ export const useBookingPayment = () => {
     if (state.paymentReference) {
       stopTrackingPayment(state.paymentReference);
     }
-  }, [dispatch, state.paymentReference, stopTrackingPayment]);
+
+    // Create failure notification
+    if (user) {
+      addNotification({
+        id: Date.now(), // Temporary ID for frontend
+        title: "Payment Failed",
+        message: `Your payment of FCFA ${
+          state.timeSlot?.consultationFee || 0
+        } has failed. Please try again or contact support if the issue persists.`,
+        type: "payment_failed",
+        priority: "high",
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        data: {
+          relatedId: state.appointmentId?.toString(),
+          relatedModel: "Appointment",
+          category: "payments",
+        },
+      });
+    }
+  }, [
+    dispatch,
+    state.paymentReference,
+    state.timeSlot,
+    stopTrackingPayment,
+    user,
+    addNotification,
+    state.appointmentId,
+  ]);
 
   const cancelPayment = useCallback(() => {
     if (state.paymentReference) {
@@ -201,6 +271,10 @@ export const useBookingPayment = () => {
         const paymentResponse = await appointmentsAPI.retryPayment(paymentData);
 
         if (paymentResponse.success) {
+          console.log(
+            "💳 Payment retry initiated successfully:",
+            paymentResponse.paymentReference
+          );
           dispatch({
             type: "SET_PAYMENT_REFERENCE",
             payload: paymentResponse.paymentReference,
@@ -242,12 +316,18 @@ export const useBookingPayment = () => {
     if (state.paymentReference) {
       const paymentStatus = getPaymentStatus(state.paymentReference);
       if (paymentStatus) {
+        console.log(
+          "💳 Payment tracker status update: this is equally a message from the form hook",
+          paymentStatus
+        );
         if (paymentStatus.status === "SUCCESSFUL") {
+          console.log("💳 Payment tracker: SUCCESSFUL status detected");
           handlePaymentSuccess();
         } else if (
           paymentStatus.status === "FAILED" ||
           paymentStatus.status === "CANCELLED"
         ) {
+          console.log("💳 Payment tracker: FAILED/CANCELLED status detected");
           handlePaymentFailure();
         }
       }
@@ -258,6 +338,26 @@ export const useBookingPayment = () => {
     handlePaymentSuccess,
     handlePaymentFailure,
   ]);
+
+  // Helper function to map backend status to frontend status
+  const mapBackendStatusToFrontend = useCallback(
+    (
+      backendStatus: string
+    ): "pending" | "processing" | "success" | "failed" => {
+      switch (backendStatus) {
+        case "SUCCESSFUL":
+          return "success";
+        case "FAILED":
+        case "CANCELLED":
+          return "failed";
+        case "PENDING":
+          return "processing";
+        default:
+          return "pending";
+      }
+    },
+    []
+  );
 
   // Listen for payment status updates from socket events
   useEffect(() => {
@@ -270,13 +370,21 @@ export const useBookingPayment = () => {
       }>;
       const { status, reference } = customEvent.detail;
 
+      console.log("💳 Received payment status update event:", {
+        status,
+        reference,
+        currentReference: state.paymentReference,
+        mappedStatus: mapBackendStatusToFrontend(status),
+      });
+
       // Only handle events for the current payment reference
       if (reference === state.paymentReference) {
         if (status === "SUCCESSFUL") {
+          console.log("💳 Triggering payment success handler");
           handlePaymentSuccess();
         } else if (status === "FAILED" || status === "CANCELLED") {
+          console.log("💳 Triggering payment failure handler");
           handlePaymentFailure();
-        } else {
         }
       }
     };

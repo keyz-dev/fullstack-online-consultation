@@ -30,21 +30,9 @@ module.exports = {
       console.log("✅ Payments deleted");
 
       // 4. Delete all appointment-related notifications
-      console.log("🗑️  Step 4: Deleting appointment notifications...");
-      await queryInterface.sequelize.query(
-        `DELETE FROM "Notifications" WHERE type IN (
-          'appointment_created', 
-          'appointment_confirmed', 
-          'consultation_reminder', 
-          'consultation_confirmation', 
-          'consultation_cancelled',
-          'payment_successful',
-          'payment_failed',
-          'payment_initiated'
-        )`,
-        { transaction }
-      );
-      console.log("✅ Appointment notifications deleted");
+      console.log("🗑️  Step 4: Deleting all notifications...");
+      await queryInterface.bulkDelete("Notifications", {}, { transaction });
+      console.log("✅ Notifications deleted");
 
       // 5. Delete all appointments (they reference timeslots)
       console.log("🗑️  Step 5: Deleting all appointments...");

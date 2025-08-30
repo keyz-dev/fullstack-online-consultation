@@ -344,17 +344,6 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
           (minutesSinceStart >= 0 && minutesSinceStart <= 30) || // During/after appointment
           isCurrentlyHappening; // Currently happening
 
-        console.log(`Appointment ${appointment.id}:`, {
-          date: appointment.timeSlot.date,
-          startTime: appointment.timeSlot.startTime,
-          endTime: appointment.timeSlot.endTime,
-          now: now.toISOString(),
-          appointmentDateTime: appointmentDateTime.toISOString(),
-          minutesToStart,
-          minutesSinceStart,
-          isCurrentlyHappening,
-          isWithinCallWindow,
-        });
         const canCancel = ["confirmed", "paid", "pending_payment"].includes(
           appointment.status
         );
@@ -366,6 +355,7 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
         const canStartChat =
           (appointment.status === "confirmed" ||
             appointment.status === "paid") &&
+          appointment.consultationType === "online" &&
           (isCurrentlyHappening || isWithinCallWindow);
 
         const menuItems = [

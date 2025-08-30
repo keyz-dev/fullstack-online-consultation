@@ -48,7 +48,7 @@ const initializeSocket = (server) => {
 
     // Join user-specific room (main notification room)
     socket.join(`user-${socket.userId}`);
-    console.log(`✅ User ${socket.userId} joined room: user-${socket.userId}`);
+    console.log(`✅ User ${socket.userId} (${socket.user.name}) joined room: user-${socket.userId}`);
 
     // Join admin room if user is admin
     if (socket.user.role === "admin") {
@@ -126,19 +126,33 @@ const initializeSocket = (server) => {
     // ====================================
 
     // Patient accepts the call and is ready to join
-    socket.on("video:accept-call", (data) => {
-      const { roomId, doctorId } = data;
-      console.log(`📞 Patient ${socket.userId} accepted call from doctor ${doctorId}`);
+    socket.on("video_call_accepted", (data) => {
+      const { roomId, consultationId } = data;
+      console.log(`📞 Patient ${socket.userId} accepted call for consultation ${consultationId}`);
       // Notify doctor that patient has accepted
-      io.to(`user-${doctorId}`).emit("video:call-accepted", { roomId, patientId: socket.userId });
+      socket.to(roomId).emit("video_call_accepted", { roomId, consultationId, patientId: socket.userId });
+    });
+
+    // Call ended
+    socket.on("call_ended", (data) => {
+      const { roomId, consultationId } = data;
+      console.log(`📞 Call ended by ${socket.userId} for consultation ${consultationId}`);
+      socket.to(roomId).emit("call_ended", { roomId, consultationId, endedBy: socket.userId });
+    });
+
+    // Call cancelled
+    socket.on("call_cancelled", (data) => {
+      const { roomId, consultationId } = data;
+      console.log(`📞 Call cancelled by ${socket.userId} for consultation ${consultationId}`);
+      socket.to(roomId).emit("call_cancelled", { roomId, consultationId, cancelledBy: socket.userId });
     });
 
     // Patient rejects the call
-    socket.on("video:reject-call", (data) => {
-      const { doctorId } = data;
-      console.log(`🚫 Patient ${socket.userId} rejected call from doctor ${doctorId}`);
+    socket.on("video_call_rejected", (data) => {
+      const { roomId, consultationId } = data;
+      console.log(`🚫 Patient ${socket.userId} rejected call for consultation ${consultationId}`);
       // Notify doctor that patient has rejected
-      io.to(`user-${doctorId}`).emit("video:call-rejected", { patientId: socket.userId });
+      socket.to(roomId).emit("video_call_rejected", { roomId, consultationId, patientId: socket.userId });
     });
 
     // User (doctor or patient) joins the video call room

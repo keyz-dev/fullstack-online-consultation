@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Socket } from "socket.io-client";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
-import { useSocketContext } from "../contexts/SocketProvider";
+import { useSocket } from "./useSocket";
 
 interface PaymentStatus {
   reference: string;
@@ -23,7 +22,7 @@ interface AppointmentPaymentTracker {
 
 export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
   const { user } = useAuth();
-  const { socket } = useSocketContext();
+  const socket = useSocket();
   const [isConnected, setIsConnected] = useState(false);
   const [paymentStatuses, setPaymentStatuses] = useState<
     Record<string, PaymentStatus>
@@ -34,8 +33,9 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
 
   // Update connection status when socket changes
   useEffect(() => {
-    if (socket) {
-      setIsConnected(socket.connected);
+    if (socket.socket) {
+      console.log("Initial Socket information: ", socket.socket);
+      setIsConnected(socket.socket.connected);
 
       // Listen for connection events
       const handleConnect = () => {
@@ -48,32 +48,37 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         setIsConnected(false);
       };
 
-      socket.on("connect", handleConnect);
-      socket.on("disconnect", handleDisconnect);
+      socket.socket.on("connect", handleConnect);
+      socket.socket.on("disconnect", handleDisconnect);
 
       // Set initial connection status
-      setIsConnected(socket.connected);
+      setIsConnected(socket.socket.connected);
 
       return () => {
-        socket.off("connect", handleConnect);
-        socket.off("disconnect", handleDisconnect);
+        if (socket.socket) {
+          socket.socket.off("connect", handleConnect);
+          socket.socket.off("disconnect", handleDisconnect);
+        }
       };
     } else {
       setIsConnected(false);
     }
   }, [socket]);
 
+  // Update payment status helper
+  const updatePaymentStatus = useCallback(
+    (reference: string, statusData: PaymentStatus) => {
+      setPaymentStatuses((prev) => ({
+        ...prev,
+        [reference]: statusData,
+      }));
+    },
+    []
+  );
+
   // Payment status update events
   useEffect(() => {
-    if (!socket) {
-      console.log(`⚠️ PaymentTracker: Socket not available for payment events`);
-      return;
-    }
-
-    console.log(`💰 PaymentTracker: Setting up payment event listeners`, {
-      socketConnected: socket.connected,
-      socketId: socket.id,
-    });
+    if (!socket.socket) return;
 
     // Payment status update events
     const handlePaymentInitiated = (data: {
@@ -101,14 +106,7 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
     };
 
     const handlePaymentStatusUpdate = (data: PaymentStatus) => {
-      console.log(`💰 Payment status update received:`, {
-        reference: data.reference,
-        status: data.status,
-        appointmentId: data.appointmentId,
-        message: data.message,
-        timestamp: data.timestamp,
-      });
-
+      console.log("💳 Payment status updated:", data);
       updatePaymentStatus(data.reference, data);
 
       // Dispatch custom event for the booking payment hook to listen to
@@ -123,7 +121,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       window.dispatchEvent(event);
 
       if (data.status === "SUCCESSFUL") {
-        console.log(`✅ Payment successful - showing success toast`);
         toast.success(
           "Payment completed successfully! Your appointment is confirmed.",
           {
@@ -133,33 +130,26 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       }
     };
 
-    socket.on("payment-initiated", handlePaymentInitiated);
-    socket.on("payment-status-update", handlePaymentStatusUpdate);
+    socket.socket.on("payment-initiated", handlePaymentInitiated);
+    socket.socket.on("payment-status-update", handlePaymentStatusUpdate);
 
     return () => {
-      console.log(`🧹 PaymentTracker: Removing payment event listeners`);
-      socket.off("payment-initiated", handlePaymentInitiated);
-      socket.off("payment-status-update", handlePaymentStatusUpdate);
+      if (socket.socket) {
+        socket.socket.off("payment-initiated", handlePaymentInitiated);
+        socket.socket.off("payment-status-update", handlePaymentStatusUpdate);
+      }
     };
-  }, [socket]);
-
-  // Update payment status helper
-  const updatePaymentStatus = useCallback(
-    (reference: string, statusData: PaymentStatus) => {
-      setPaymentStatuses((prev) => ({
-        ...prev,
-        [reference]: statusData,
-      }));
-    },
-    []
-  );
+  }, [socket.socket, updatePaymentStatus]);
 
   // Track a payment
   const trackPayment = useCallback(
     (paymentReference: string, appointmentId: string) => {
       if (trackedPayments.has(paymentReference)) {
+        console.log(`Already tracking payment ${paymentReference}`);
         return;
       }
+
+      console.log(`👤 Starting to track payment: ${paymentReference}`);
 
       // Add to tracked payments
       setTrackedPayments((prev) => new Set([...prev, paymentReference]));
@@ -173,44 +163,19 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         timestamp: new Date(),
       });
 
-      console.log("Socket information: ", socket);
+      console.log("Socket ref", socket);
+      console.log("Is connected", isConnected);
 
-      if (socket) {
-        // Force join payment room regardless of connection status
-        // The socket might be connected but our state is stale
-        const attemptJoin = () => {
-          socket.emit("track-payment", {
-            paymentReference,
-            userId: user?.id,
-          });
-          setIsConnected(true); // Update connection status
-        };
-
-        if (socket.connected) {
-          attemptJoin();
-        } else {
-          console.warn(
-            `⚠️ PaymentTracker: Socket not connected, will join when ready`,
-            {
-              socketConnected: socket.connected,
-              socketId: socket.id,
-            }
-          );
-
-          // Try to join immediately anyway (socket might be connecting)
-          attemptJoin();
-
-          // Also set up listener for when socket connects
-          const handleConnect = () => {
-            attemptJoin();
-            socket.off("connect", handleConnect);
-          };
-
-          socket.on("connect", handleConnect);
-        }
+      // Join payment room via socket
+      if (socket.socket && isConnected) {
+        socket.emit("track-payment", {
+          paymentReference,
+          userId: user?.id,
+        });
+        console.log(`🔌 Socket tracking enabled for ${paymentReference}`);
       } else {
         console.warn(
-          `⚠️ PaymentTracker: No socket available for payment tracking`
+          "Socket not available or not connected for payment tracking"
         );
       }
     },
@@ -220,8 +185,10 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
   // Stop tracking a payment
   const stopTrackingPayment = useCallback(
     (paymentReference: string) => {
+      console.log(`🛑 Stopping tracking for payment: ${paymentReference}`);
+
       // Leave payment room via socket
-      if (socket && isConnected) {
+      if (socket.socket && isConnected) {
         socket.emit("stop-tracking-payment", {
           paymentReference,
         });
