@@ -83,10 +83,7 @@ const StatCard: React.FC<StatCardProps> = ({
         )}
         {/* Description */}
         {description && (
-          <p
-            className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed w-fit truncate"
-            style={{ maxWidth: "150px" }}
-          >
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed w-fit truncate max-w-[150px] lg:max-w-[180px]">
             {description}
           </p>
         )}

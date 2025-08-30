@@ -240,39 +240,7 @@ class AppointmentReminderService {
     await this.markReminderSent(appointment.id, "day_before");
   }
 
-  async send10MinuteReminder(appointment) {
-    if (await this.wasReminderSent(appointment.id, "10_minutes")) {
-      return;
-    }
-    logger.info(`Sending 10-minute reminder for appointment ${appointment.id}`);
-    await this.markReminderSent(appointment.id, "10_minutes");
-    await this.sendMultiChannelReminder({
-      appointment,
-      recipient: appointment.patient.user,
-      recipientType: "patient",
-      reminderType: "10_minutes",
-      subject: "Your appointment is in 10 minutes",
-    });
-    await this.sendMultiChannelReminder({
-      appointment,
-      recipient: appointment.doctor.user,
-      recipientType: "doctor",
-      reminderType: "10_minutes",
-    });
-    await this.markReminderSent(appointment.id, "10_minutes");
-  }
 
-  async send5MinuteReminder(appointment) {
-    if (await this.wasReminderSent(appointment.id, "5_minutes")) {
-      return;
-    }
-  }
-
-  async send0MinuteReminder(appointment) {
-    if (await this.wasReminderSent(appointment.id, "0_minutes")) {
-      return;
-    }
-  }
 
   /**
    * Send 30-minute reminder
@@ -729,6 +697,60 @@ class AppointmentReminderService {
     });
 
     await this.markReminderSent(appointment.id, "start_now");
+  }
+
+  /**
+   * Send 4-hour reminder
+   */
+  async send4HourReminder(appointment) {
+    if (await this.wasReminderSent(appointment.id, "4_hours")) {
+      return;
+    }
+
+    logger.info(`Sending 4-hour reminder for appointment ${appointment.id}`);
+
+    const appointmentTime = new Date(
+      `2000-01-01T${appointment.timeSlot.startTime}`
+    ).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    const appointmentDate = new Date(
+      appointment.timeSlot.date
+    ).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Send to patient
+    await this.sendMultiChannelReminder({
+      appointment,
+      recipient: appointment.patient.user,
+      recipientType: "patient",
+      reminderType: "4_hours",
+      subject: "Appointment in 4 hours",
+      message: `Your appointment with Dr. ${appointment.doctor.user.name} is in 4 hours (${appointmentTime}) on ${appointmentDate}.`,
+      emailTemplate: "appointment-reminder-4-hours",
+      smsMessage: `Your appointment with Dr. ${appointment.doctor.user.name} is in 4 hours (${appointmentTime}). Please prepare accordingly.`,
+    });
+
+    // Send to doctor
+    await this.sendMultiChannelReminder({
+      appointment,
+      recipient: appointment.doctor.user,
+      recipientType: "doctor",
+      reminderType: "4_hours",
+      subject: "Appointment in 4 hours",
+      message: `Your appointment with ${appointment.patient.user.name} is in 4 hours (${appointmentTime}) on ${appointmentDate}.`,
+      emailTemplate: "doctor-appointment-reminder-4-hours",
+      smsMessage: `Appointment in 4 hours: ${appointmentTime} - ${appointment.patient.user.name} (${appointment.consultationType})`,
+    });
+
+    await this.markReminderSent(appointment.id, "4_hours");
   }
 
   /**

@@ -121,33 +121,73 @@ const initializeSocket = (server) => {
       });
     });
 
-    // Handle video call signaling
+    // ====================================
+    // ===== VIDEO CALL SIGNALING =======
+    // ====================================
+
+    // Patient accepts the call and is ready to join
+    socket.on("video:accept-call", (data) => {
+      const { roomId, doctorId } = data;
+      console.log(`📞 Patient ${socket.userId} accepted call from doctor ${doctorId}`);
+      // Notify doctor that patient has accepted
+      io.to(`user-${doctorId}`).emit("video:call-accepted", { roomId, patientId: socket.userId });
+    });
+
+    // Patient rejects the call
+    socket.on("video:reject-call", (data) => {
+      const { doctorId } = data;
+      console.log(`🚫 Patient ${socket.userId} rejected call from doctor ${doctorId}`);
+      // Notify doctor that patient has rejected
+      io.to(`user-${doctorId}`).emit("video:call-rejected", { patientId: socket.userId });
+    });
+
+    // User (doctor or patient) joins the video call room
+    socket.on("video:join-room", (data) => {
+      const { roomId } = data;
+      if (!roomId) return;
+      socket.join(roomId);
+      console.log(`✅ User ${socket.userId} joined video room: ${roomId}`);
+      // Announce to others in the room that a new user has joined
+      socket.to(roomId).emit("video:user-joined", { userId: socket.userId, name: socket.user.name });
+    });
+
+    // --- WebRTC Signaling Events --- 
+
+    // Relay SDP offer
     socket.on("video:offer", (data) => {
-      socket.to(`user-${data.targetUserId}`).emit("video:offer", {
-        fromUserId: socket.userId,
-        fromUserName: socket.user.name,
-        offer: data.offer,
-      });
+      const { offer, toUserId, roomId } = data;
+      io.to(`user-${toUserId}`).emit("video:offer", { offer, fromUserId: socket.userId, roomId });
     });
 
+    // Relay SDP answer
     socket.on("video:answer", (data) => {
-      socket.to(`user-${data.targetUserId}`).emit("video:answer", {
-        fromUserId: socket.userId,
-        answer: data.answer,
-      });
+      const { answer, toUserId, roomId } = data;
+      io.to(`user-${toUserId}`).emit("video:answer", { answer, fromUserId: socket.userId, roomId });
     });
 
+    // Relay ICE candidate
     socket.on("video:ice-candidate", (data) => {
-      socket.to(`user-${data.targetUserId}`).emit("video:ice-candidate", {
-        fromUserId: socket.userId,
-        candidate: data.candidate,
-      });
+      const { candidate, toUserId, roomId } = data;
+      io.to(`user-${toUserId}`).emit("video:ice-candidate", { candidate, fromUserId: socket.userId, roomId });
     });
 
+    // User leaves the video call room
+    socket.on("video:leave-room", (data) => {
+      const { roomId } = data;
+      if (!roomId) return;
+      socket.leave(roomId);
+      console.log(`❌ User ${socket.userId} left video room: ${roomId}`);
+      // Announce to others that a user has left
+      socket.to(roomId).emit("video:user-left", { userId: socket.userId });
+    });
+
+    // A user ends the call for everyone
     socket.on("video:end-call", (data) => {
-      socket.to(`user-${data.targetUserId}`).emit("video:end-call", {
-        fromUserId: socket.userId,
-      });
+        const { roomId } = data;
+        if (!roomId) return;
+        console.log(`📞 User ${socket.userId} ended the call for room ${roomId}`);
+        // Notify all clients in the room to end the call
+        io.in(roomId).emit("video:call-ended", { fromUserId: socket.userId });
     });
 
     // Handle appointment payment tracking

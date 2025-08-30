@@ -1,0 +1,164 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Appointment in 4 Hours - Doctor Schedule</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 25px;
+        border-radius: 8px;
+      }
+      .logo {
+        max-width: 150px;
+        margin-bottom: 15px;
+      }
+      .appointment-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+      }
+      .patient-info {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 15px 0;
+      }
+      .time-notice {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        padding: 15px;
+        border-radius: 4px;
+        text-align: center;
+        margin: 20px 0;
+      }
+      .preparation-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+      .action-button {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        margin: 10px;
+      }
+      .secondary-button {
+        background: #17a2b8;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="cid:logo" alt="DrogCine" class="logo" />
+        <h2 style="margin: 0;">🩺 Upcoming Consultation in 4 Hours</h2>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">Doctor Schedule Reminder</p>
+      </div>
+
+      <div class="time-notice">
+        <h3 style="margin: 0; color: #0066cc;">🕐 Consultation in 4 hours</h3>
+        <p style="margin: 10px 0 0 0; color: #0066cc;">Time to review patient information and prepare</p>
+      </div>
+
+      <p>Hello <strong>Dr. {{recipientName}}</strong>,</p>
+
+      <p>You have an upcoming {{consultationType}} consultation with your patient in 4 hours.</p>
+
+      <div class="appointment-card">
+        <h4 style="margin-top: 0; color: #495057;">📅 Consultation Details</h4>
+        <div class="patient-info">
+          <div>
+            <p><strong>👤 Patient:</strong> {{patientName}}</p>
+            <p><strong>📅 Date:</strong> {{appointmentDate}}</p>
+            <p><strong>🕐 Time:</strong> {{appointmentTime}}</p>
+            <p><strong>💻 Type:</strong> {{consultationType}}</p>
+          </div>
+        </div>
+      </div>
+
+      {{#if joinUrl}}
+        <!-- Online Consultation Preparation -->
+        <div class="preparation-section">
+          <h4 style="color: #0066cc;">🖥️ Online Consultation Preparation</h4>
+          <p>Please prepare for your online consultation:</p>
+          <ul>
+            <li>✅ Review patient's medical history and previous notes</li>
+            <li>✅ Test your video conference setup</li>
+            <li>✅ Ensure stable internet connection</li>
+            <li>✅ Prepare consultation room with good lighting</li>
+            <li>✅ Have necessary medical references accessible</li>
+            <li>✅ Check any lab results or imaging studies</li>
+            <li>✅ Prepare prescription pad or e-prescribing system</li>
+          </ul>
+
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="{{joinUrl}}" class="action-button secondary-button">🔧 Test Consultation Setup</a>
+          </div>
+        </div>
+      {{else}}
+        <!-- In-Person Consultation Preparation -->
+        <div class="preparation-section">
+          <h4 style="color: #0066cc;">🏥 In-Person Consultation Preparation</h4>
+          <p>Please prepare for your clinic consultation:</p>
+          <ul>
+            <li>✅ Review patient's medical history and previous notes</li>
+            <li>✅ Check examination room setup and equipment</li>
+            <li>✅ Ensure necessary medical instruments are available</li>
+            <li>✅ Review any lab results or imaging studies</li>
+            <li>✅ Prepare prescription pad</li>
+            <li>✅ Check patient's insurance and billing information</li>
+            <li>✅ Review clinic protocols and safety measures</li>
+          </ul>
+        </div>
+      {{/if}}
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboardUrl}}" class="action-button">📋 View Patient Details</a>
+      </div>
+
+      <div
+        style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0;"
+      >
+        <strong>⚠️ Need to reschedule?</strong><br />
+        Please notify the patient and clinic staff as soon as possible if you need to reschedule this consultation.
+      </div>
+
+      <div class="footer">
+        <p>Best regards,<br />The DrogCine Team</p>
+        <p>Questions? Contact us at <strong>support@drogcine.com</strong></p>
+        <p>This is an automated reminder. Please do not reply to this email.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -7,6 +7,7 @@ const {
   TimeSlot,
   DoctorAvailability,
   Doctor,
+  Consultation,
 } = require("../db/models");
 const appointmentNotificationService = require("./appointmentNotificationService");
 const logger = require("../utils/logger");
@@ -150,6 +151,29 @@ class PaymentTrackingService {
           logger.info(
             `Time slot ${timeSlot.id} booked for successful payment ${paymentReference} (polling)`
           );
+
+          // Create consultation record when payment is successful
+          const existingConsultation = await Consultation.findOne({
+            where: { appointmentId: appointment.id },
+            transaction,
+          });
+
+          if (!existingConsultation) {
+            await Consultation.create(
+              {
+                appointmentId: appointment.id,
+                status: "not_started",
+                type:
+                  appointment.consultationType === "online"
+                    ? "video_call"
+                    : "in_person",
+              },
+              { transaction }
+            );
+            logger.info(
+              `Consultation created for appointment ${appointment.id} after successful payment ${paymentReference} (polling)`
+            );
+          }
           break;
 
         case "FAILED":
@@ -248,6 +272,8 @@ class PaymentTrackingService {
       );
     } catch (error) {
       // Rollback transaction on error
+
+      console.log("The error: ", error);
       if (transaction && !transaction.finished) {
         try {
           await transaction.rollback();

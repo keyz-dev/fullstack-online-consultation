@@ -24,3 +24,7 @@ export {
   DoctorAppointmentProvider,
   useDoctorAppointments,
 } from "./DoctorAppointmentContext";
+export {
+  ConsultationProvider,
+  useConsultation,
+} from "./ConsultationContext";

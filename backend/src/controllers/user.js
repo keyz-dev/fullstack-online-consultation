@@ -7,6 +7,8 @@ const {
 } = require("../db/models");
 const { Op } = require("sequelize");
 const formatUserData = require("../utils/returnFormats/userData");
+const { getIO } = require("../sockets");
+const logger = require("../utils/logger");
 
 // Get all users with filters and pagination
 const getAllUsers = async (req, res) => {
@@ -371,10 +373,76 @@ const getUserActivity = async (req, res) => {
   }
 };
 
+// Get user presence status (for doctors to check patient availability)
+const getUserPresence = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the user (patient)
+    const user = await User.findByPk(id, {
+      attributes: ["id", "name", "email", "role", "isActive"],
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if user is a patient
+    if (user.role !== "patient") {
+      return res.status(400).json({
+        success: false,
+        message: "Can only check presence for patients",
+      });
+    }
+
+    // Get Socket.io instance to check active connections
+    let isOnline = false;
+
+    try {
+      const io = getIO();
+      // Check if user has any active socket connections
+      const sockets = await io.fetchSockets();
+
+      isOnline = sockets.some((socket) => socket.userId === user.id);
+    } catch (error) {
+      console.warn(
+        "Socket.io not available for presence check:",
+        error.message
+      );
+      // Fallback to false if socket not available
+      isOnline = false;
+    }
+
+    logger.info(user.name + " isOnline? ", isOnline);
+    logger.info(user.name + " isActive? ", user.isActive);
+
+    res.json({
+      success: true,
+      data: {
+        userId: user.id,
+        isOnline: isOnline && user.isActive,
+        userName: user.name,
+        userEmail: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Error checking user presence:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to check user presence",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserStats,
   getUserById,
   updateUserStatus,
   getUserActivity,
+  getUserPresence,
 };

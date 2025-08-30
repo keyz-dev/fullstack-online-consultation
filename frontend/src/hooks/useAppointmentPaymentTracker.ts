@@ -122,10 +122,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       });
       window.dispatchEvent(event);
 
-      console.log(
-        `📢 Dispatched payment-status-updated event for ${data.reference}`
-      );
-
       if (data.status === "SUCCESSFUL") {
         console.log(`✅ Payment successful - showing success toast`);
         toast.success(
@@ -137,9 +133,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       }
     };
 
-    console.log(
-      `📡 PaymentTracker: Adding socket event listeners for payment events`
-    );
     socket.on("payment-initiated", handlePaymentInitiated);
     socket.on("payment-status-update", handlePaymentStatusUpdate);
 
@@ -179,6 +172,8 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         message: "Payment tracking started...",
         timestamp: new Date(),
       });
+
+      console.log("Socket information: ", socket);
 
       if (socket) {
         // Force join payment room regardless of connection status

@@ -2,6 +2,7 @@
 
 import { PatientAppointmentProvider } from "@/contexts";
 import RouteProtection from "@/components/auth/RouteProtection";
+import IncomingCallWrapper from "@/components/dashboard/patient/IncomingCallWrapper";
 
 export default function PatientLayout({
   children,
@@ -22,7 +23,11 @@ export default function PatientLayout({
       ]}
       redirectTo="/login"
     >
-      <PatientAppointmentProvider>{children}</PatientAppointmentProvider>
+      <PatientAppointmentProvider>
+        <IncomingCallWrapper>
+          {children}
+        </IncomingCallWrapper>
+      </PatientAppointmentProvider>
     </RouteProtection>
   );
 }

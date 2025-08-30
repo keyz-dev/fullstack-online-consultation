@@ -1,0 +1,154 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Appointment in 4 Hours</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .logo {
+        max-width: 150px;
+        margin-bottom: 20px;
+      }
+      .time-notice {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        padding: 15px;
+        border-radius: 4px;
+        text-align: center;
+        margin: 20px 0;
+      }
+      .appointment-card {
+        background: #e8f5e8;
+        border-left: 4px solid #28a745;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .preparation-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+      .action-button {
+        display: inline-block;
+        background: #28a745;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        margin: 10px;
+      }
+      .secondary-button {
+        background: #17a2b8;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="cid:logo" alt="DrogCine" class="logo" />
+        <h2 style="color: #28a745; margin: 0;">📅 Appointment in 4 Hours</h2>
+      </div>
+
+      <div class="time-notice">
+        <h3 style="margin: 0; color: #0066cc;">🕐 Your appointment is in 4 hours</h3>
+        <p style="margin: 10px 0 0 0; color: #0066cc;">Perfect time to prepare and plan ahead!</p>
+      </div>
+
+      <p>Hello <strong>{{recipientName}}</strong>,</p>
+
+      <p>Your
+        {{consultationType}}
+        {{#if doctorName}}with <strong>Dr. {{doctorName}}</strong>{{else}}with
+          <strong>{{patientName}}</strong>{{/if}}
+        is scheduled to begin in 4 hours.</p>
+
+      <div class="appointment-card">
+        <h4 style="margin-top: 0; color: #155724;">📅 Appointment Summary</h4>
+        <p><strong>{{#if doctorName}}Doctor{{else}}Patient{{/if}}:</strong>
+          {{#if doctorName}}Dr. {{doctorName}}{{else}}{{patientName}}{{/if}}</p>
+        <p><strong>Date:</strong> {{appointmentDate}}</p>
+        <p><strong>Time:</strong> {{appointmentTime}}</p>
+        <p><strong>Type:</strong> {{consultationType}}</p>
+      </div>
+
+      {{#if joinUrl}}
+        <!-- Online Consultation Preparation -->
+        <div class="preparation-section">
+          <h4 style="color: #0066cc;">🖥️ Online Consultation Preparation</h4>
+          <p>You have plenty of time to prepare for your online consultation:</p>
+          <ul>
+            <li>✅ Test your internet connection</li>
+            <li>✅ Check camera and microphone functionality</li>
+            <li>✅ Find a quiet, private location</li>
+            <li>✅ Ensure good lighting (face clearly visible)</li>
+            <li>✅ Gather any medical documents or test results</li>
+            <li>✅ Prepare a list of questions or concerns</li>
+            <li>✅ Have a glass of water nearby</li>
+          </ul>
+
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="{{joinUrl}}" class="action-button secondary-button">🔧 Test Your Setup Now</a>
+          </div>
+        </div>
+      {{else}}
+        <!-- In-Person Visit Preparation -->
+        <div class="preparation-section">
+          <h4 style="color: #0066cc;">🏥 In-Person Visit Preparation</h4>
+          <p>You have time to prepare for your clinic visit:</p>
+          <ul>
+            <li>✅ Gather valid ID or insurance card</li>
+            <li>✅ Prepare list of current medications</li>
+            <li>✅ Collect any relevant medical documents</li>
+            <li>✅ Plan to arrive 10-15 minutes early</li>
+            <li>✅ Check clinic location and parking</li>
+            <li>✅ Bring a mask (if required by clinic policy)</li>
+            <li>✅ Prepare questions for your doctor</li>
+          </ul>
+        </div>
+      {{/if}}
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{dashboardUrl}}" class="action-button">📋 View Full Details</a>
+      </div>
+
+      <div
+        style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 4px; margin: 20px 0;"
+      >
+        <strong>⚠️ Need to reschedule?</strong><br />
+        You still have time to reschedule if needed. Please do so at least 2 hours before your appointment time.
+      </div>
+
+      <div class="footer">
+        <p>Best regards,<br />The DrogCine Team</p>
+        <p>Questions? Contact us at <strong>support@drogcine.com</strong></p>
+        <p>This is an automated reminder. Please do not reply to this email.</p>
+      </div>
+    </div>
+  </body>
+</html>

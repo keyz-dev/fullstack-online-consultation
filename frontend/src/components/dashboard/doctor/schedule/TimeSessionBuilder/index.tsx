@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, Button, Input, Select, ModalWrapper } from "@/components/ui";
+import { Card, Button, Input, ModalWrapper } from "@/components/ui";
 import { TimeBlock } from "@/types/availability";
-import { timeUtils, validationUtils } from "@/utils/availabilityHelpers";
-import { Clock, DollarSign, AlertCircle, Check } from "lucide-react";
+import { timeUtils } from "@/utils/availabilityHelpers";
+import { DollarSign, AlertCircle, Check } from "lucide-react";
 
 interface TimeSessionBuilderProps {
   isOpen: boolean;
@@ -32,44 +32,6 @@ const CONSULTATION_TYPES = [
   { value: "both", label: "Both Types", icon: "🔄" },
 ];
 
-const TIME_OPTIONS = [
-  "06:00",
-  "06:30",
-  "07:00",
-  "07:30",
-  "08:00",
-  "08:30",
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-  "18:30",
-  "19:00",
-  "19:30",
-  "20:00",
-  "20:30",
-  "21:00",
-  "21:30",
-  "22:00",
-  "22:30",
-  "23:00",
-  "23:30",
-];
 
 export const TimeSessionBuilder: React.FC<TimeSessionBuilderProps> = ({
   isOpen,
@@ -109,7 +71,7 @@ export const TimeSessionBuilder: React.FC<TimeSessionBuilderProps> = ({
       const newFormData = {
         startTime: "",
         endTime: "",
-        consultationType: "online",
+        consultationType: "online" as "online" | "physical" | "both",
         consultationFee: "",
         maxPatients: "",
       };
@@ -259,23 +221,6 @@ export const TimeSessionBuilder: React.FC<TimeSessionBuilderProps> = ({
   const slots = calculateSlots();
   const earnings = calculateEarnings();
 
-  // Filter end time options based on start time
-  const getEndTimeOptions = () => {
-    if (!formData.startTime) {
-      return TIME_OPTIONS.map((time) => ({
-        value: time,
-        label: timeUtils.formatTime(time),
-      }));
-    }
-
-    const startMinutes = timeUtils.timeToMinutes(formData.startTime);
-    return TIME_OPTIONS.filter(
-      (time) => timeUtils.timeToMinutes(time) > startMinutes
-    ).map((time) => ({
-      value: time,
-      label: timeUtils.formatTime(time),
-    }));
-  };
 
   if (!isOpen) return null;
 
@@ -312,29 +257,32 @@ export const TimeSessionBuilder: React.FC<TimeSessionBuilderProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Select
-                  label="Start Time"
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Start Time
+                </label>
+                <Input
+                  type="time"
                   value={formData.startTime}
-                  onChange={(e) =>
+                  onChangeHandler={(e) =>
                     handleInputChange("startTime", e.target.value)
                   }
-                  options={TIME_OPTIONS.map((time) => ({
-                    value: time,
-                    label: timeUtils.formatTime(time),
-                  }))}
                   placeholder="Select start time"
                   error={errors.startTime}
+                  step="300"
                 />
               </div>
 
               <div>
-                <Select
-                  label="End Time"
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  End Time
+                </label>
+                <Input
+                  type="time"
                   value={formData.endTime}
-                  onChange={(e) => handleInputChange("endTime", e.target.value)}
-                  options={getEndTimeOptions()}
+                  onChangeHandler={(e) => handleInputChange("endTime", e.target.value)}
                   placeholder="Select end time"
                   error={errors.endTime}
+                  step="300"
                 />
               </div>
             </div>

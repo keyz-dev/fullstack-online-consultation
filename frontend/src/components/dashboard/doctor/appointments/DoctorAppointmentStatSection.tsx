@@ -26,7 +26,7 @@ const DoctorAppointmentStatSection: React.FC<
       value: stats.today.toString(),
       icon: Calendar,
       colorTheme: "blue" as const,
-      description: "Appointments scheduled for today",
+      description: "Today's Appointments",
     },
     {
       title: "This Week",
@@ -55,7 +55,7 @@ const DoctorAppointmentStatSection: React.FC<
     <div className="mb-6">
       <StatRenderer
         statCards={statCards}
-        className="lg:w-[220px]"
+        className="lg:w-[240px]"
         isLoading={loading}
       />
     </div>

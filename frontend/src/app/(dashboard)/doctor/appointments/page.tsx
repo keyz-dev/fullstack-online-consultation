@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDoctorAppointments } from "@/contexts/DoctorAppointmentContext";
 import {
-  DoctorAppointmentStatSection,
   DoctorAppointmentListView,
+  DoctorAppointmentStatSection,
+  VideoCallInitiationModal,
 } from "@/components/dashboard/doctor/appointments";
 import AppointmentDetailsModal from "@/components/dashboard/doctor/appointments/AppointmentDetailsModal";
 import {
@@ -17,7 +18,7 @@ import {
   DeleteModal,
 } from "@/components/ui";
 import { DoctorAppointment } from "@/api/appointments";
-import { Plus, Video, Phone, MessageSquare, MapPin } from "lucide-react";
+import { Plus, MapPin } from "lucide-react";
 
 const DoctorAppointmentsPage: React.FC = () => {
   const router = useRouter();
@@ -25,6 +26,7 @@ const DoctorAppointmentsPage: React.FC = () => {
     useState<DoctorAppointment | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showVideoCallModal, setShowVideoCallModal] = useState(false);
 
   const {
     appointments,
@@ -63,22 +65,6 @@ const DoctorAppointmentsPage: React.FC = () => {
         { value: "physical", label: "In Person" },
       ],
     },
-    {
-      key: "dateFrom",
-      label: "From Date",
-      type: "date" as const,
-    },
-    {
-      key: "dateTo",
-      label: "To Date",
-      type: "date" as const,
-    },
-    {
-      key: "search",
-      label: "Search Patients",
-      type: "text" as const,
-      placeholder: "Search by patient name...",
-    },
   ];
 
   // Sort options
@@ -104,24 +90,21 @@ const DoctorAppointmentsPage: React.FC = () => {
     setShowDetailsModal(true);
   };
 
-  const handleStartConsultation = (appointment: DoctorAppointment) => {
-    // TODO: Navigate to consultation page
-    console.log("Start consultation:", appointment.id);
+  const handleStartVideoCall = (appointment: DoctorAppointment) => {
+    setSelectedAppointment(appointment);
+    setShowVideoCallModal(true);
   };
 
-  const handleStartVideoCall = (appointment: DoctorAppointment) => {
-    // TODO: Navigate to video call page
-    console.log("Start video call:", appointment.id);
+  const handleCallInitiated = (roomId: string, consultationId: string) => {
+    // Navigate to video call room
+    router.push(
+      `/doctor/consultation/${consultationId}/video?roomId=${roomId}`
+    );
   };
 
   const handleStartChat = (appointment: DoctorAppointment) => {
     // TODO: Navigate to chat page
     console.log("Start chat:", appointment.id);
-  };
-
-  const handleRescheduleAppointment = (appointment: DoctorAppointment) => {
-    // TODO: Open reschedule modal
-    console.log("Reschedule appointment:", appointment.id);
   };
 
   const handleInvalidateAppointment = (appointment: DoctorAppointment) => {
@@ -164,7 +147,10 @@ const DoctorAppointmentsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <FadeInContainer>
-        {/* Header */}
+        {/* Statistics */}
+        <DoctorAppointmentStatSection stats={stats} />
+
+        {/* Buttons */}
         <div className="flex items-center justify-end">
           <div className="flex space-x-3">
             <Button variant="outline" onClick={handleViewCalendar}>
@@ -178,16 +164,13 @@ const DoctorAppointmentsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Statistics */}
-        <DoctorAppointmentStatSection stats={stats} />
-
         {/* Filters */}
         <AdvancedFilters
           filters={filters}
           filterConfigs={filterConfigs}
           sortOptions={sortOptions}
           onFilterChange={handleFilterChange}
-          onSortChange={(sortBy) => setFilters({ sortBy })}
+          onSortChange={(sortBy: string) => setFilters({ sortBy })}
         />
 
         {/* Appointments List */}
@@ -195,14 +178,13 @@ const DoctorAppointmentsPage: React.FC = () => {
           <EmptyState
             title="Loading appointments..."
             description="Please wait while we fetch your appointments."
-            loading={true}
           />
         ) : error ? (
           <EmptyState
             title="Error loading appointments"
             description={error}
             action={{
-              label: "Try Again",
+              text: "Try Again",
               onClick: refreshAppointments,
             }}
           />
@@ -210,17 +192,15 @@ const DoctorAppointmentsPage: React.FC = () => {
           <EmptyState
             title="No appointments found"
             description="You don't have any appointments yet. Patients will appear here once they book appointments with you."
-            icon={Video}
+            icon="package"
           />
         ) : (
           <>
             <DoctorAppointmentListView
               appointments={appointments}
               onViewAppointment={handleViewAppointment}
-              onStartConsultation={handleStartConsultation}
               onStartVideoCall={handleStartVideoCall}
               onStartChat={handleStartChat}
-              onRescheduleAppointment={handleRescheduleAppointment}
               onCancelAppointment={handleCancelAppointment}
               onInvalidateAppointment={handleInvalidateAppointment}
             />
@@ -231,6 +211,7 @@ const DoctorAppointmentsPage: React.FC = () => {
                 <Pagination
                   currentPage={pagination.page}
                   totalPages={pagination.totalPages}
+                  total={pagination.total}
                   onPageChange={handlePageChange}
                 />
               </div>
@@ -248,7 +229,7 @@ const DoctorAppointmentsPage: React.FC = () => {
         }}
         onConfirm={handleCancelConfirm}
         title="Cancel Appointment"
-        description={`Are you sure you want to cancel the appointment with ${selectedAppointment?.patient?.user.name}? This action cannot be undone.`}
+        message={`Are you sure you want to cancel the appointment with ${selectedAppointment?.patient?.user.name}? This action cannot be undone.`}
         confirmText="Cancel Appointment"
         cancelText="Keep"
       />
@@ -261,6 +242,17 @@ const DoctorAppointmentsPage: React.FC = () => {
           setShowDetailsModal(false);
           setSelectedAppointment(null);
         }}
+      />
+
+      {/* Video Call Initiation Modal */}
+      <VideoCallInitiationModal
+        appointment={selectedAppointment}
+        isOpen={showVideoCallModal}
+        onClose={() => {
+          setShowVideoCallModal(false);
+          setSelectedAppointment(null);
+        }}
+        onCallInitiated={handleCallInitiated}
       />
     </div>
   );

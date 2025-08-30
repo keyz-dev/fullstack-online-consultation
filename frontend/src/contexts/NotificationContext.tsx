@@ -278,24 +278,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   // Listen for custom notification events (since direct socket approach had issues)
   useEffect(() => {
     if (!user) return;
-
-    console.log(
-      `🔔 NotificationContext: Setting up custom event listener for user ${user.id}`
-    );
-
     const handleNotificationReceived = (event: Event) => {
       const customEvent = event as CustomEvent<APINotification>;
       const notification = customEvent.detail;
-
-      console.log(
-        `🔔 NotificationContext: Received custom notification event:`,
-        {
-          id: notification.id,
-          type: notification.type,
-          title: notification.title,
-          message: notification.message,
-        }
-      );
 
       // Add notification to state (but don't show toast since useSocket already did)
       setNotifications((prev) => [notification, ...prev]);
@@ -304,10 +289,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       if (!notification.isRead) {
         setUnreadCount((prev) => prev + 1);
       }
-
-      console.log(
-        `✅ NotificationContext: Notification added to state (bell should update)`
-      );
     };
 
     window.addEventListener(
@@ -316,9 +297,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     );
 
     return () => {
-      console.log(
-        `🧹 NotificationContext: Removing custom event listener for user ${user.id}`
-      );
       window.removeEventListener(
         "notification:received",
         handleNotificationReceived

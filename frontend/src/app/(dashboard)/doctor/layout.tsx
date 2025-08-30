@@ -1,6 +1,6 @@
 "use client";
 
-import { DoctorAppointmentProvider } from "@/contexts";
+import { DoctorAppointmentProvider, ConsultationProvider } from "@/contexts";
 import RouteProtection from "@/components/auth/RouteProtection";
 
 export default function DoctorLayout({
@@ -21,7 +21,11 @@ export default function DoctorLayout({
       ]}
       redirectTo="/home"
     >
-      <DoctorAppointmentProvider>{children}</DoctorAppointmentProvider>
+      <DoctorAppointmentProvider>
+        <ConsultationProvider>
+          {children}
+        </ConsultationProvider>
+      </DoctorAppointmentProvider>
     </RouteProtection>
   );
 }

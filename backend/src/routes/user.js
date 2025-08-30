@@ -7,10 +7,16 @@ const {
   getUserById,
   updateUserStatus,
   getUserActivity,
+  getUserPresence,
 } = require("../controllers/user");
 
-// Apply authentication and admin middleware to all routes
+// Apply authentication to all routes
 router.use(authenticate);
+
+// Patient presence endpoint (accessible to doctors)
+router.get("/:id/presence", authorizeRoles(["doctor"]), getUserPresence);
+
+// Admin-only routes
 router.use(authorizeRoles(["admin"]));
 
 // Get all users with filters and pagination
@@ -19,7 +25,7 @@ router.get("/", getAllUsers);
 // Get user statistics
 router.get("/stats", getUserStats);
 
-// Get single user by ID
+// Get single user by ID (admin only)
 router.get("/:id", getUserById);
 
 // Update user status (activate/deactivate)

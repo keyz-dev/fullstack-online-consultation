@@ -86,6 +86,12 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
+      roomId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+        comment: "Unique identifier for the video/voice call room",
+      },
       status: {
         type: DataTypes.ENUM(
           "not_started",

@@ -5,6 +5,7 @@ const {
   DoctorAvailability,
   Doctor,
   User,
+  Consultation,
 } = require("../db/models");
 const campayService = require("../services/campay");
 const paymentTrackingService = require("../services/paymentTracking");
@@ -202,6 +203,23 @@ exports.handleAppointmentPaymentWebhook = async (req, res, next) => {
         logger.info(
           `Time slot ${timeSlot.id} booked for successful payment ${reference}`
         );
+
+        // Create consultation record when payment is successful
+        const existingConsultation = await Consultation.findOne({
+          where: { appointmentId: appointment.id },
+          transaction
+        });
+
+        if (!existingConsultation) {
+          await Consultation.create({
+            appointmentId: appointment.id,
+            status: "not_started",
+            type: appointment.consultationType === "online" ? "video_call" : "in_person",
+          }, { transaction });
+          logger.info(
+            `Consultation created for appointment ${appointment.id} after successful payment ${reference}`
+          );
+        }
         break;
 
       case "FAILED":

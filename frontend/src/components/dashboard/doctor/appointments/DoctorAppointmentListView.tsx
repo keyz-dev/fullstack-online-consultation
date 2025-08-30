@@ -15,7 +15,6 @@ import {
   Eye,
   CalendarClock,
   MessageCircle,
-  RotateCcw,
   Trash2,
 } from "lucide-react";
 
@@ -23,7 +22,6 @@ interface DoctorAppointmentListViewProps {
   appointments: DoctorAppointment[];
   onViewAppointment?: (appointment: DoctorAppointment) => void;
   onStartConsultation?: (appointment: DoctorAppointment) => void;
-  onRescheduleAppointment?: (appointment: DoctorAppointment) => void;
   onCancelAppointment?: (appointment: DoctorAppointment) => void;
   onStartVideoCall?: (appointment: DoctorAppointment) => void;
   onStartChat?: (appointment: DoctorAppointment) => void;
@@ -33,7 +31,6 @@ interface DoctorAppointmentListViewProps {
 const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
   appointments,
   onViewAppointment,
-  onRescheduleAppointment,
   onCancelAppointment,
   onStartVideoCall,
   onStartChat,
@@ -80,7 +77,7 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
           return `Starting in ${minutesToStart} min${
             minutesToStart !== 1 ? "s" : ""
           }`;
-        } else if (isToday && minutesToStart <= 0 && minutesSinceStart <= 30) {
+        } else if (isToday && minutesToStart <= 0 && minutesSinceStart <= 5) {
           return "Should Start Now";
         } else if (isPast) {
           return "Overdue";
@@ -319,17 +316,57 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
       accessor: "actions",
       Cell: ({ row }: { row: DoctorAppointment }) => {
         const appointment = row;
-        const canStartConsultation =
-          appointment.status === "confirmed" || appointment.status === "paid";
+        // Timing calculations
+        const now = new Date();
+        const appointmentDateTime = new Date(
+          `${appointment.timeSlot.date}T${appointment.timeSlot.startTime}`
+        );
+        const endDateTime = new Date(
+          `${appointment.timeSlot.date}T${appointment.timeSlot.endTime}`
+        );
+
+        // Calculate minutes to start (negative means appointment has started)
+        const minutesToStart = Math.floor(
+          (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60)
+        );
+
+        // Calculate minutes since start (positive means appointment has started)
+        const minutesSinceStart = Math.floor(
+          (now.getTime() - appointmentDateTime.getTime()) / (1000 * 60)
+        );
+
+        const isCurrentlyHappening =
+          now >= appointmentDateTime && now <= endDateTime;
+
+        // Call window: 15 minutes before start to 30 minutes after start
+        const isWithinCallWindow =
+          (minutesToStart <= 15 && minutesToStart > 0) || // Before appointment
+          (minutesSinceStart >= 0 && minutesSinceStart <= 30) || // During/after appointment
+          isCurrentlyHappening; // Currently happening
+
+        console.log(`Appointment ${appointment.id}:`, {
+          date: appointment.timeSlot.date,
+          startTime: appointment.timeSlot.startTime,
+          endTime: appointment.timeSlot.endTime,
+          now: now.toISOString(),
+          appointmentDateTime: appointmentDateTime.toISOString(),
+          minutesToStart,
+          minutesSinceStart,
+          isCurrentlyHappening,
+          isWithinCallWindow,
+        });
         const canCancel = ["confirmed", "paid", "pending_payment"].includes(
           appointment.status
         );
         const canStartVideoCall =
           (appointment.status === "confirmed" ||
             appointment.status === "paid") &&
-          appointment.consultationType === "online";
+          appointment.consultationType === "online" &&
+          (isCurrentlyHappening || isWithinCallWindow);
         const canStartChat =
-          appointment.status === "confirmed" || appointment.status === "paid";
+          (appointment.status === "confirmed" ||
+            appointment.status === "paid") &&
+          (isCurrentlyHappening || isWithinCallWindow);
 
         const menuItems = [
           ...(onViewAppointment
@@ -356,15 +393,6 @@ const DoctorAppointmentListView: React.FC<DoctorAppointmentListViewProps> = ({
                   icon: <MessageCircle className="w-4 h-4" />,
                   label: "Start Chat",
                   onClick: () => onStartChat(appointment),
-                },
-              ]
-            : []),
-          ...(onRescheduleAppointment
-            ? [
-                {
-                  icon: <RotateCcw className="w-4 h-4" />,
-                  label: "Reschedule",
-                  onClick: () => onRescheduleAppointment(appointment),
                 },
               ]
             : []),
