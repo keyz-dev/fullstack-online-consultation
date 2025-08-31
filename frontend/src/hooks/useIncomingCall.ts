@@ -23,16 +23,19 @@ export const useIncomingCall = () => {
   // Handle incoming call event
   const handleIncomingCall = useCallback((callData: IncomingCallData) => {
     console.log("📞 Incoming call received:", callData);
-    console.log("📞 Setting call visible to true");
     setIncomingCall(callData);
     setIsCallVisible(true);
     
-    // Additional debugging
-    console.log("📞 Call state after setting:", {
-      incomingCall: callData,
-      isCallVisible: true
-    });
-  }, []);
+    // Emit ringing status to doctor
+    if (socket.socket) {
+      socket.socket.emit("video_call_ringing", {
+        roomId: callData.roomId,
+        consultationId: callData.consultationId
+      });
+    }
+    
+    console.log("📞 Call notification displayed, ringing status sent to doctor");
+  }, [socket]);
 
   // Accept call
   const acceptCall = useCallback(async (roomId: string, consultationId: string) => {
@@ -64,9 +67,15 @@ export const useIncomingCall = () => {
 
   // Decline call
   const declineCall = useCallback(() => {
+    if (incomingCall && socket.socket) {
+      socket.socket.emit("video_call_rejected", {
+        roomId: incomingCall.roomId,
+        consultationId: incomingCall.consultationId
+      });
+    }
     setIsCallVisible(false);
     setIncomingCall(null);
-  }, []);
+  }, [incomingCall, socket]);
 
   // Socket event listeners
   useEffect(() => {

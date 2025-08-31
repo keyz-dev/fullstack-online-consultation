@@ -1,35 +1,33 @@
 import { useState, useCallback, useRef } from 'react';
 
-export const useVideoCallControls = () => {
+export const useVideoCallControls = (localStreamRef?: React.MutableRefObject<MediaStream | null>) => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
 
-  const localStreamRef = useRef<MediaStream | null>(null);
-
   // Toggle audio
   const toggleAudio = useCallback(() => {
-    if (localStreamRef.current) {
+    if (localStreamRef?.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsAudioEnabled(audioTrack.enabled);
       }
     }
-  }, []);
+  }, [localStreamRef]);
 
   // Toggle video
   const toggleVideo = useCallback(() => {
-    if (localStreamRef.current) {
+    if (localStreamRef?.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsVideoEnabled(videoTrack.enabled);
       }
     }
-  }, []);
+  }, [localStreamRef]);
 
   // Toggle screen share
   const toggleScreenShare = useCallback(async () => {
@@ -41,7 +39,7 @@ export const useVideoCallControls = () => {
         });
         
         // Replace video track with screen share
-        if (localStreamRef.current && localStreamRef.current.getVideoTracks()[0]) {
+        if (localStreamRef?.current && localStreamRef.current.getVideoTracks()[0]) {
           const videoTrack = localStreamRef.current.getVideoTracks()[0];
           localStreamRef.current.removeTrack(videoTrack);
           localStreamRef.current.addTrack(screenStream.getVideoTracks()[0]);
@@ -52,7 +50,7 @@ export const useVideoCallControls = () => {
         // Switch back to camera
         const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
         
-        if (localStreamRef.current && localStreamRef.current.getVideoTracks()[0]) {
+        if (localStreamRef?.current && localStreamRef.current.getVideoTracks()[0]) {
           const screenTrack = localStreamRef.current.getVideoTracks()[0];
           localStreamRef.current.removeTrack(screenTrack);
           localStreamRef.current.addTrack(cameraStream.getVideoTracks()[0]);
@@ -63,7 +61,7 @@ export const useVideoCallControls = () => {
     } catch (error) {
       console.error('Error toggling screen share:', error);
     }
-  }, [isScreenSharing]);
+  }, [isScreenSharing, localStreamRef]);
 
   return {
     isAudioEnabled,
@@ -76,6 +74,5 @@ export const useVideoCallControls = () => {
     toggleAudio,
     toggleVideo,
     toggleScreenShare,
-    localStreamRef,
   };
 };

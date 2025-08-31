@@ -224,11 +224,10 @@ class PaymentTrackingService {
         `Payment polling transaction committed for ${paymentReference}`
       );
 
-      // Send notifications only for major status changes
+      // Send notifications only for major status changes (and only once)
       if (
-        status === "SUCCESSFUL" ||
-        status === "FAILED" ||
-        status === "CANCELLED"
+        (status === "SUCCESSFUL" || status === "FAILED" || status === "CANCELLED") &&
+        payment.metadata?.lastNotificationStatus !== status
       ) {
         await appointmentNotificationService.notifyPaymentStatusUpdate(
           appointment,
@@ -236,6 +235,15 @@ class PaymentTrackingService {
           payment,
           status
         );
+
+        // Update payment metadata to track last notification sent
+        await payment.update({
+          metadata: {
+            ...payment.metadata,
+            lastNotificationStatus: status,
+            lastNotificationAt: new Date(),
+          }
+        });
 
         // Send notification to doctor if payment successful
         if (status === "SUCCESSFUL") {

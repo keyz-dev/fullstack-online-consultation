@@ -10,10 +10,36 @@ require("./config/database.js");
 const port = process.env.PORT || 4500;
 const app = express();
 
-// CORS configuration
+// CORS configuration for local network testing
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:3000",
+  "http://localhost:3000", // Local development
+  /^http:\/\/192\.168\.\d+\.\d+:3000$/, // Local network IPs
+  /^http:\/\/10\.\d+\.\d+\.\d+:3000$/, // Private network range
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is allowed
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        if (typeof allowedOrigin === 'string') {
+          return origin === allowedOrigin;
+        } else {
+          return allowedOrigin.test(origin);
+        }
+      });
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.log(`❌ CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

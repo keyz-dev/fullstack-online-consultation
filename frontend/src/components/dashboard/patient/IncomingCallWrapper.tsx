@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import IncomingCallNotification from "./IncomingCallNotification";
+import { FloatingCallNotification } from "@/components/video/FloatingCallNotification";
 import { useIncomingCall } from "@/hooks/useIncomingCall";
 
 const IncomingCallWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -17,7 +17,7 @@ const IncomingCallWrapper: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <>
       {children}
-      <IncomingCallNotification
+      <FloatingCallNotification
         isVisible={isCallVisible}
         callData={incomingCall}
         onAccept={acceptCall}

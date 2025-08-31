@@ -148,9 +148,9 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, className = "" }) => {
           </button>
           <button
             onClick={handleBookAppointment}
-            className="flex-1 bg-accent text-white px-3 py-2 rounded text-sm font-medium hover:bg-accent/90 transition-colors flex items-center justify-center gap-1"
+            className="flex-1 bg-accent text-white px-3 py-2 rounded-xs text-sm font-medium hover:bg-accent/90 transition-colors flex items-center justify-center gap-1"
           >
-            Book Appointment
+            Book
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

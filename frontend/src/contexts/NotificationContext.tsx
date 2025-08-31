@@ -14,6 +14,7 @@ import {
 import { useAuth } from "./AuthContext";
 import { useSocketContext } from "./SocketProvider";
 import { toast } from "react-toastify";
+import { shouldShowNotification } from "@/utils/notificationDeduplicator";
 
 // Frontend notification interface (compatible with API)
 export interface Notification {
@@ -264,16 +265,26 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       setUnreadCount((prev) => prev + 1);
     }
 
-    // Show toast for new notifications
-    toast.info(notification.message, {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  }, []);
+    // Check for duplicates before showing toast
+    const shouldShow = shouldShowNotification(
+      'notification_context',
+      notification.message,
+      notification.data?.relatedId,
+      user?.id?.toString()
+    );
+
+    if (shouldShow) {
+      // Show toast for new notifications
+      toast.info(notification.message, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  }, [user]);
 
   // Listen for custom notification events (since direct socket approach had issues)
   useEffect(() => {

@@ -1,23 +1,31 @@
-"use client";
+'use client';
 
-import { Upcoming } from "@/components/ui";
+import React from 'react';
+import Upcoming from '@/components/ui/Upcoming';
 
 export default function PatientMedicationsPage() {
+  const medicationFeatures = [
+    'View all current and past medications',
+    'Medication adherence tracking and reminders',
+    'Prescription refill requests and management',
+    'Pharmacy location finder and recommendations',
+    'Drug information and side effect warnings',
+    'Medication interaction checker',
+    'Dosage instructions and scheduling',
+    'Insurance coverage and cost information',
+    'Medication delivery tracking',
+    'Health progress correlation with medications'
+  ];
+
   return (
     <Upcoming
       title="My Medications"
-      description="Personal medication management system for patients to track and manage their prescribed medications."
-      expectedDate="March 2024"
-      colorTheme="orange"
-      progressPercentage={80}
-      features={[
-        "Medication tracking",
-        "Dosage reminders",
-        "Medication history",
-        "Side effects monitoring",
-        "Refill notifications",
-        "Medication interactions",
-      ]}
+      description="Comprehensive medication management for patients. Track prescriptions, set reminders, find pharmacies, monitor adherence, and stay informed about your medications."
+      features={medicationFeatures}
+      expectedDate="3-4 weeks"
+      colorTheme="emerald"
+      progressPercentage={40}
+      additionalInfo="Priority: High - Patient medication tracking and adherence"
     />
   );
 }

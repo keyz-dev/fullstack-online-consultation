@@ -95,7 +95,7 @@ const ConsultationTypeSelector: React.FC = () => {
   const doctorName = state.doctor?.user?.name || "the doctor";
 
   return (
-    <div className="p-6">
+    <div className="p-6 w-full">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
         Consultation Type
       </h2>

@@ -8,6 +8,8 @@ import {
   DoctorAppointmentStatSection,
   VideoCallInitiationModal,
 } from "@/components/dashboard/doctor/appointments";
+import { DoctorCallStatus } from "@/components/video/DoctorCallStatus";
+import { useDoctorCallStatus } from "@/hooks/useDoctorCallStatus";
 import AppointmentDetailsModal from "@/components/dashboard/doctor/appointments/AppointmentDetailsModal";
 import {
   Button,
@@ -27,6 +29,18 @@ const DoctorAppointmentsPage: React.FC = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showVideoCallModal, setShowVideoCallModal] = useState(false);
+
+  // Call status management
+  const {
+    isCallStatusVisible,
+    callStatus,
+    callData,
+    ringDuration,
+    startCall,
+    cancelCall,
+    retryCall,
+    closeStatus,
+  } = useDoctorCallStatus();
 
   const {
     appointments,
@@ -95,11 +109,19 @@ const DoctorAppointmentsPage: React.FC = () => {
     setShowVideoCallModal(true);
   };
 
-  const handleCallInitiated = (roomId: string, consultationId: string) => {
-    // Navigate to video call room
-    router.push(
-      `/doctor/consultation/${consultationId}/video?roomId=${roomId}`
-    );
+  const handleCallInitiated = (roomId: string, consultationId: string, patientOnline: boolean = true) => {
+    // Close the modal first
+    setShowVideoCallModal(false);
+    
+    // Start call status tracking
+    if (selectedAppointment) {
+      startCall({
+        consultationId,
+        roomId,
+        patientName: selectedAppointment.patient.user.name,
+        patientEmail: selectedAppointment.patient.user.email,
+      }, patientOnline);
+    }
   };
 
   const handleStartChat = (appointment: DoctorAppointment) => {
@@ -253,6 +275,17 @@ const DoctorAppointmentsPage: React.FC = () => {
           setSelectedAppointment(null);
         }}
         onCallInitiated={handleCallInitiated}
+      />
+
+      {/* Doctor Call Status (Floating) */}
+      <DoctorCallStatus
+        isVisible={isCallStatusVisible}
+        patientName={callData?.patientName || ''}
+        patientEmail={callData?.patientEmail}
+        callStatus={callStatus}
+        ringDuration={ringDuration}
+        onCancel={cancelCall}
+        onRetry={retryCall}
       />
     </div>
   );

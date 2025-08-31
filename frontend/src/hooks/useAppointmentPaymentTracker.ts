@@ -34,17 +34,14 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
   // Update connection status when socket changes
   useEffect(() => {
     if (socket.socket) {
-      console.log("Initial Socket information: ", socket.socket);
       setIsConnected(socket.socket.connected);
 
       // Listen for connection events
       const handleConnect = () => {
-        console.log("🔌 Connected to appointment payment socket");
         setIsConnected(true);
       };
 
       const handleDisconnect = () => {
-        console.log("🔌 Disconnected from appointment payment socket");
         setIsConnected(false);
       };
 
@@ -87,7 +84,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       message?: string;
       timestamp: string;
     }) => {
-      console.log("💳 Payment initiated:", data);
       updatePaymentStatus(data.reference, {
         reference: data.reference,
         status: "PENDING",
@@ -96,37 +92,31 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
           data.message || "Payment request sent. Please check your phone.",
         timestamp: new Date(data.timestamp),
       });
-
-      toast.info(
-        "Payment initiated. Please check your phone for the payment prompt.",
-        {
-          autoClose: 5000,
-        }
-      );
     };
 
     const handlePaymentStatusUpdate = (data: PaymentStatus) => {
-      console.log("💳 Payment status updated:", data);
       updatePaymentStatus(data.reference, data);
 
-      // Dispatch custom event for the booking payment hook to listen to
-      const event = new CustomEvent("payment-status-updated", {
-        detail: {
-          status: data.status,
-          reference: data.reference,
-          appointmentId: data.appointmentId,
-          message: data.message,
-        },
-      });
-      window.dispatchEvent(event);
+      // Only dispatch event if not a duplicate
+      const { shouldShowNotification } = require("@/utils/notificationDeduplicator");
+      const shouldDispatch = shouldShowNotification(
+        'payment_tracker',
+        data.message || '',
+        data.reference,
+        user?.id?.toString()
+      );
 
-      if (data.status === "SUCCESSFUL") {
-        toast.success(
-          "Payment completed successfully! Your appointment is confirmed.",
-          {
-            autoClose: 5000,
-          }
-        );
+      if (shouldDispatch) {
+        // Dispatch custom event for the booking payment hook to listen to
+        const event = new CustomEvent("payment-status-updated", {
+          detail: {
+            status: data.status,
+            reference: data.reference,
+            appointmentId: data.appointmentId,
+            message: data.message,
+          },
+        });
+        window.dispatchEvent(event);
       }
     };
 
@@ -148,9 +138,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         console.log(`Already tracking payment ${paymentReference}`);
         return;
       }
-
-      console.log(`👤 Starting to track payment: ${paymentReference}`);
-
       // Add to tracked payments
       setTrackedPayments((prev) => new Set([...prev, paymentReference]));
 
@@ -162,9 +149,6 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
         message: "Payment tracking started...",
         timestamp: new Date(),
       });
-
-      console.log("Socket ref", socket);
-      console.log("Is connected", isConnected);
 
       // Join payment room via socket
       if (socket.socket && isConnected) {

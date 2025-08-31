@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
         pathname: "/uploads/**",
       },
       {
+        protocol: "http",
+        hostname: "192.168.*.*",
+        port: "4500",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: "10.*.*.*",
+        port: "4500",
+        pathname: "/uploads/**",
+      },
+      
+      {
         protocol: "https",
         hostname: "upload.wikimedia.org",
       },

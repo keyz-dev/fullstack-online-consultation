@@ -5,7 +5,6 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  TrendingUp,
   CreditCard,
 } from "lucide-react";
 
@@ -38,13 +37,6 @@ const PatientAppointmentStatSection: React.FC<
       colorTheme: "purple",
       icon: CheckCircle,
       description: "Finished consultations",
-    },
-    {
-      title: "This Month",
-      value: stats?.thisMonth ?? (loading ? "..." : 0),
-      colorTheme: "orange",
-      icon: TrendingUp,
-      description: "Appointments this month",
     },
     {
       title: "Pending Payment",

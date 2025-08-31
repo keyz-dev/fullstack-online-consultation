@@ -3,6 +3,7 @@ import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "react-toastify";
 import { API_BASE_URL } from "@/api";
+import { shouldShowNotification } from "@/utils/notificationDeduplicator";
 
 interface NotificationData {
   id: number;
@@ -75,17 +76,27 @@ export const useSocket = () => {
     socketRef.current.on(
       "notification:new",
       (data: { notification: NotificationData }) => {
-        // Show toast immediately
-        toast.info(data.notification.message, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        // Check for duplicates before showing
+        const shouldShow = shouldShowNotification(
+          'socket_notification',
+          data.notification.message,
+          data.notification.data?.relatedId,
+          user.id.toString()
+        );
 
-        // Dispatch custom event for other components to listen to
+        if (shouldShow) {
+          // Show toast immediately
+          toast.info(data.notification.message, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+        }
+
+        // Always dispatch custom event for other components (they can handle their own deduplication)
         const event = new CustomEvent("notification:received", {
           detail: data.notification,
         });

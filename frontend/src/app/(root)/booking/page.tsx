@@ -165,8 +165,8 @@ const BookingPageContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen max-w-4xl mx-auto">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen max-w-4xl mx-auto bg-white dark:bg-gray-900">
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center">
         {/* Header */}
         <div className="mb-8 mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -181,14 +181,14 @@ const BookingPageContent: React.FC = () => {
         <BookingProgress />
 
         {/* Step Content */}
-        <div className="mt-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="mt-8 w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full">
             {renderCurrentStep()}
           </div>
         </div>
 
         {/* Navigation Buttons */}
-        <div className="mt-8 flex justify-between">
+        <div className="mt-8 flex justify-between w-full">
           <Button
             onClickHandler={handlePrevious}
             isDisabled={state.currentStep === 0}

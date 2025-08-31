@@ -17,6 +17,164 @@ const {
 
 class ConsultationController {
   /**
+   * @desc    Get consultation messages
+   * @route   GET /api/v1/consultations/:id/messages
+   * @access  Private (Doctor/Patient)
+   */
+  async getConsultationMessages(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { ConsultationMessage } = require("../db/models");
+      const { formatImageUrl } = require("../utils/imageUtils");
+
+      const messages = await ConsultationMessage.findAll({
+        where: { consultationId: id },
+        include: [
+          {
+            model: User,
+            as: "sender",
+            attributes: ["id", "name", "avatar"]
+          }
+        ],
+        order: [["createdAt", "ASC"]]
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          messages: messages.map(msg => ({
+            id: msg.id,
+            content: msg.content,
+            sender: msg.sender.name,
+            senderType: msg.senderType,
+            type: msg.type,
+            timestamp: msg.createdAt,
+            fileUrl: msg.fileUrl ? formatImageUrl(msg.fileUrl) : null,
+            fileName: msg.fileName,
+            fileSize: msg.fileSize,
+            mimeType: msg.mimeType
+          }))
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching consultation messages:", error);
+      return next(new Error("Failed to fetch consultation messages"));
+    }
+  }
+
+  /**
+   * @desc    Upload file for consultation
+   * @route   POST /api/v1/consultations/:id/upload
+   * @access  Private (Doctor/Patient)
+   */
+  async uploadConsultationFile(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { ConsultationMessage } = require("../db/models");
+      const { formatImageUrl } = require("../utils/imageUtils");
+      
+      if (!req.file) {
+        return next(new BadRequestError("No file uploaded"));
+      }
+
+      const file = req.file;
+
+      // Save file message to database (file.path is already formatted by multer middleware)
+      const savedMessage = await ConsultationMessage.create({
+        consultationId: parseInt(id),
+        senderId: req.user.id,
+        senderType: req.user.role === 'doctor' ? 'doctor' : 'patient',
+        type: file.mimetype.startsWith('image/') ? 'image' : 'file',
+        content: `Shared ${file.originalname}`,
+        fileUrl: file.path, // Use the path from multer (already formatted)
+        fileName: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        metadata: {
+          uploadedAt: new Date().toISOString()
+        }
+      });
+
+      // Get consultation for room info
+      const consultation = await Consultation.findByPk(id);
+      if (!consultation) {
+        return next(new NotFoundError("Consultation not found"));
+      }
+
+      // Format the file URL for serving
+      const formattedFileUrl = formatImageUrl(file.path);
+
+      // Emit file share event to room
+      const { getIO } = require("../sockets");
+      const io = getIO();
+      io.in(consultation.roomId).emit("file_shared", {
+        id: savedMessage.id,
+        fileName: file.originalname,
+        fileUrl: formattedFileUrl,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        uploadedBy: req.user.name,
+        uploadedByType: req.user.role,
+        timestamp: savedMessage.createdAt,
+        consultationId: id
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: savedMessage.id,
+          fileName: file.originalname,
+          fileUrl: formattedFileUrl,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          message: "File uploaded successfully"
+        }
+      });
+
+    } catch (error) {
+      console.error("Error uploading consultation file:", error);
+      return next(new Error("Failed to upload file"));
+    }
+  }
+
+  /**
+   * @desc    Update consultation notes
+   * @route   PUT /api/v1/consultations/:id
+   * @access  Private (Doctor)
+   */
+  async updateConsultationNotes(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { notes, diagnosis } = req.body;
+
+      const consultation = await Consultation.findByPk(id);
+      if (!consultation) {
+        return next(new NotFoundError("Consultation not found"));
+      }
+
+      // Update consultation notes
+      if (notes !== undefined) consultation.notes = notes;
+      if (diagnosis !== undefined) consultation.diagnosis = diagnosis;
+
+      await consultation.save();
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: consultation.id,
+          notes: consultation.notes,
+          diagnosis: consultation.diagnosis,
+          message: "Consultation updated successfully"
+        }
+      });
+
+    } catch (error) {
+      console.error("Error updating consultation:", error);
+      return next(new Error("Failed to update consultation"));
+    }
+  }
+
+  /**
    * @desc    Initiate a video call for a consultation
    * @route   POST /api/v1/consultations/:id/initiate
    * @access  Private (Doctor)

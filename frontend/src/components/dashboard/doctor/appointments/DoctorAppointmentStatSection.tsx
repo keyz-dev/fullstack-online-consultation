@@ -3,7 +3,7 @@
 import React from "react";
 import { StatRenderer } from "@/components/ui";
 import { DoctorAppointmentStats } from "@/api/appointments";
-import { Calendar, Clock, TrendingUp, Activity } from "lucide-react";
+import { Calendar, Clock, Activity } from "lucide-react";
 
 interface DoctorAppointmentStatSectionProps {
   stats: DoctorAppointmentStats;
@@ -34,13 +34,6 @@ const DoctorAppointmentStatSection: React.FC<
       icon: Clock,
       colorTheme: "green" as const,
       description: "Appointments this week",
-    },
-    {
-      title: "This Month",
-      value: stats.thisMonth.toString(),
-      icon: TrendingUp,
-      colorTheme: "purple" as const,
-      description: "Appointments this month",
     },
     {
       title: "Success Rate",

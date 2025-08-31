@@ -125,33 +125,12 @@ const TimeSlotSelector: React.FC = () => {
         payload: { stepIndex: 2, completed: true },
       });
     }
-  };
 
-  const handleConsultationTypeSelect = (type: "online" | "physical") => {
-    setSelectedConsultationType(type);
-
-    // Update booking state with consultation type
-    if (selectedTimeSlot) {
-      dispatch({
-        type: "UPDATE_STEP_DATA",
-        payload: {
-          stepIndex: 2,
-          data: {
-            timeSlotId: selectedTimeSlot.id,
-            timeSlot: selectedTimeSlot,
-            consultationType: type,
-            appointmentDate: selectedTimeSlot.date,
-            appointmentTime: selectedTimeSlot.startTime,
-          },
-        },
-      });
-
-      // Mark step as completed
-      dispatch({
-        type: "SET_STEP_COMPLETED",
-        payload: { stepIndex: 2, completed: true },
-      });
-    }
+    // move to the next step
+    dispatch({
+      type: "SET_CURRENT_STEP",
+      payload: 3,
+    });
   };
 
   const formatTime = (time: string) => {
@@ -192,7 +171,7 @@ const TimeSlotSelector: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 w-full">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">

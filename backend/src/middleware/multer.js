@@ -20,6 +20,7 @@ function createUploadDirs() {
     "uploads/documents",
     "uploads/documents/patients",
     "uploads/documents/doctors",
+    "uploads/consultations",
     "uploads/pharmacies",
     "uploads/pharmacies/documents",
     "uploads/pharmacies/logos",
@@ -46,6 +47,8 @@ function getUploadSubDir(fieldname) {
       return "documents/patients";
     case "doctorDocument":
       return "documents/doctors";
+    case "consultationFile":
+      return "consultations";
     case "pharmacyDocument":
       return "pharmacies/documents";
     case "pharmacyLogo":
@@ -94,7 +97,7 @@ const fileFilter = (req, file, cb) => {
   const documentExtensions = /\.(pdf|doc|docx|txt|jpg|jpeg|png|webp)$/;
 
   if (
-    ["patientDocument", "doctorDocument", "pharmacyDocument"].includes(
+    ["patientDocument", "doctorDocument", "pharmacyDocument", "consultationFile"].includes(
       file.fieldname
     )
   ) {

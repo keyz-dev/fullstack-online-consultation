@@ -266,13 +266,24 @@ exports.handleAppointmentPaymentWebhook = async (req, res, next) => {
     await transaction.commit();
     logger.info(`Payment webhook transaction committed for ${reference}`);
 
-    // Send notifications
-    await appointmentNotificationService.notifyPaymentStatusUpdate(
-      appointment,
-      { userId: payment.user.id, ...payment.user.patient },
-      payment,
-      status
-    );
+    // Send notifications only if this is a new status
+    if (payment.metadata?.lastNotificationStatus !== status) {
+      await appointmentNotificationService.notifyPaymentStatusUpdate(
+        appointment,
+        { userId: payment.user.id, ...payment.user.patient },
+        payment,
+        status
+      );
+
+      // Update payment metadata to prevent duplicate notifications
+      await payment.update({
+        metadata: {
+          ...payment.metadata,
+          lastNotificationStatus: status,
+          lastNotificationAt: new Date(),
+        }
+      });
+    }
 
     // Emit socket event for real-time frontend updates
     if (global.io) {

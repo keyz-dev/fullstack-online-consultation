@@ -3,6 +3,12 @@
 const express = require("express");
 const { authenticateUser, authorizeRoles } = require("../middleware/auth");
 const consultationController = require("../controllers/consultation");
+const {
+  upload,
+  handleCloudinaryUpload,
+  formatFilePaths,
+  handleUploadError,
+} = require("../middleware/multer");
 
 const router = express.Router();
 
@@ -22,6 +28,38 @@ router.get("/", consultationController.getConsultations);
  * @access  Private
  */
 router.get("/:id", consultationController.getConsultation);
+
+/**
+ * @desc    Get consultation messages
+ * @route   GET /api/v1/consultations/:id/messages
+ * @access  Private (Doctor/Patient)
+ */
+router.get("/:id/messages", consultationController.getConsultationMessages);
+
+/**
+ * @desc    Upload file for consultation
+ * @route   POST /api/v1/consultations/:id/upload
+ * @access  Private (Doctor/Patient)
+ */
+router.post(
+  "/:id/upload",
+  upload.single("consultationFile"),
+  handleCloudinaryUpload,
+  formatFilePaths,
+  handleUploadError,
+  consultationController.uploadConsultationFile
+);
+
+/**
+ * @desc    Update consultation notes
+ * @route   PUT /api/v1/consultations/:id
+ * @access  Private (Doctor)
+ */
+router.put(
+  "/:id",
+  authorizeRoles("doctor"),
+  consultationController.updateConsultationNotes
+);
 
 /**
  * @desc    Initiate a video call for a consultation
