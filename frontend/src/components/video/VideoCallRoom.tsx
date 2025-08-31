@@ -44,6 +44,10 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   
+  // Connection states
+  const [isConnected, setIsConnected] = useState(false);
+  const [remoteUserId, setRemoteUserId] = useState<number | null>(null);
+  
   // WebRTC refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -91,9 +95,10 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
 
       // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
-        if (event.candidate && socket) {
-          socket.emit("ice_candidate", {
+        if (event.candidate && socket && remoteUserId) {
+          socket.emit("video:ice-candidate", {
             roomId,
+            toUserId: remoteUserId,
             candidate: event.candidate,
           });
         }
@@ -101,7 +106,7 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
 
       // Join room
       if (socket) {
-        socket.emit("join_room", { roomId, consultationId });
+        socket.emit("video:join-room", { roomId, consultationId });
       }
 
     } catch (error) {
@@ -213,7 +218,7 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
 
     // Emit call end event
     if (socket) {
-      socket.emit("call_ended", { roomId, consultationId });
+      socket.emit("video:end-call", { roomId, consultationId });
     }
 
     onCallEnd();
@@ -240,25 +245,42 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
   useEffect(() => {
     if (!socket) return;
 
-    // WebRTC signaling
-    socket.on("offer", async (data) => {
+    // User joined room - set up peer connection if we're the second person
+    socket.on("video:user-joined", (data) => {
+      const { userId } = data;
+      setRemoteUserId(userId);
+      
+      // If we're the doctor (initiator), create offer when patient joins
+      if (userRole === "doctor" && peerConnectionRef.current) {
+        createOffer();
+      }
+    });
+
+    // WebRTC signaling - corrected event names
+    socket.on("video:offer", async (data) => {
+      const { offer, fromUserId } = data;
+      setRemoteUserId(fromUserId);
+      
       if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(data.offer);
+        await peerConnectionRef.current.setRemoteDescription(offer);
         const answer = await peerConnectionRef.current.createAnswer();
         await peerConnectionRef.current.setLocalDescription(answer);
-        socket.emit("answer", { roomId, answer });
+        socket.emit("video:answer", { roomId, toUserId: fromUserId, answer });
       }
     });
 
-    socket.on("answer", async (data) => {
+    socket.on("video:answer", async (data) => {
+      const { answer } = data;
       if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(data.answer);
+        await peerConnectionRef.current.setRemoteDescription(answer);
+        setIsConnected(true);
       }
     });
 
-    socket.on("ice_candidate", async (data) => {
+    socket.on("video:ice-candidate", async (data) => {
+      const { candidate } = data;
       if (peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(data.candidate);
+        await peerConnectionRef.current.addIceCandidate(candidate);
       }
     });
 
@@ -268,18 +290,26 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
     });
 
     // Call ended by other party
-    socket.on("call_ended", () => {
+    socket.on("video:call-ended", () => {
       handleEndCall();
     });
 
+    // User left room
+    socket.on("video:user-left", (data) => {
+      setRemoteUserId(null);
+      setIsConnected(false);
+    });
+
     return () => {
-      socket.off("offer");
-      socket.off("answer");
-      socket.off("ice_candidate");
+      socket.off("video:user-joined");
+      socket.off("video:offer");
+      socket.off("video:answer");
+      socket.off("video:ice-candidate");
       socket.off("chat_message");
-      socket.off("call_ended");
+      socket.off("video:call-ended");
+      socket.off("video:user-left");
     };
-  }, [socket, roomId, handleEndCall]);
+  }, [socket, roomId, userRole, createOffer, handleEndCall]);
 
   // Initialize on mount
   useEffect(() => {
@@ -301,16 +331,16 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
 
   // Create offer (for call initiator)
   const createOffer = useCallback(async () => {
-    if (!peerConnectionRef.current || !socket) return;
+    if (!peerConnectionRef.current || !socket || !remoteUserId) return;
 
     try {
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
-      socket.emit("offer", { roomId, offer });
+      socket.emit("video:offer", { roomId, toUserId: remoteUserId, offer });
     } catch (error) {
       console.error("Error creating offer:", error);
     }
-  }, [roomId, socket]);
+  }, [roomId, socket, remoteUserId]);
 
   // Toggle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -324,24 +354,32 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
   }, []);
 
   return (
-    <div className="h-screen bg-gray-900 flex flex-col">
-      {/* Header */}
-      <div className="bg-gray-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Video className="w-5 h-5 text-blue-400" />
-          <span className="text-white font-medium">
-            Video Consultation - Room {roomId.slice(-6)}
-          </span>
+    <div className="h-full bg-gray-900 dark:bg-gray-900 flex flex-col min-h-0">
+      {/* Header - Responsive */}
+      <div className="bg-gray-800 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+          <Video className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 flex-shrink-0" />
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 min-w-0">
+            <span className="text-white font-medium text-xs sm:text-sm md:text-base truncate">
+              Room {roomId.slice(-6)}
+            </span>
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+              <span className="text-xs text-gray-300">
+                {isConnected ? 'Connected' : 'Connecting...'}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <Button
             onClickHandler={toggleFullscreen}
-            additionalClasses="bg-gray-700 hover:bg-gray-600 text-white p-2"
-            text={isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            additionalClasses="bg-gray-700 hover:bg-gray-600 text-white p-1.5 sm:p-2 hidden sm:block"
+            text={isFullscreen ? <Minimize2 className="w-3 h-3 sm:w-4 sm:h-4" /> : <Maximize2 className="w-3 h-3 sm:w-4 sm:h-4" />}
           />
           <Button
             onClickHandler={handleEndCall}
-            additionalClasses="bg-red-600 hover:bg-red-700 text-white px-4 py-2"
+            additionalClasses="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 sm:px-4 sm:py-2"
             text="End Call"
           />
         </div>
@@ -358,8 +396,8 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
             className="w-full h-full object-cover bg-gray-800"
           />
           
-          {/* Local Video (Picture-in-Picture) */}
-          <div className="absolute top-4 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600">
+          {/* Local Video (Picture-in-Picture) - Responsive */}
+          <div className="absolute top-2 right-2 w-24 h-18 sm:w-32 sm:h-24 md:w-48 md:h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600">
             <video
               ref={localVideoRef}
               autoPlay
@@ -369,77 +407,100 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
             />
           </div>
 
-          {/* Controls Overlay */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <div className="bg-gray-800/80 backdrop-blur-sm rounded-full px-6 py-3 flex items-center space-x-4">
+          {/* Controls Overlay - Responsive */}
+          <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2">
+            <div className="bg-gray-800/80 backdrop-blur-sm rounded-full px-3 sm:px-6 py-2 sm:py-3 flex items-center space-x-2 sm:space-x-4">
               <Button
                 onClickHandler={toggleAudio}
-                additionalClasses={`p-3 rounded-full ${
+                additionalClasses={`p-2 sm:p-3 rounded-full ${
                   isAudioEnabled 
                     ? "bg-gray-600 hover:bg-gray-500 text-white" 
                     : "bg-red-600 hover:bg-red-500 text-white"
                 }`}
-                text={isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                text={isAudioEnabled ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
               
               <Button
                 onClickHandler={toggleVideo}
-                additionalClasses={`p-3 rounded-full ${
+                additionalClasses={`p-2 sm:p-3 rounded-full ${
                   isVideoEnabled 
                     ? "bg-gray-600 hover:bg-gray-500 text-white" 
                     : "bg-red-600 hover:bg-red-500 text-white"
                 }`}
-                text={isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                text={isVideoEnabled ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
 
               {userRole === "doctor" && (
                 <Button
                   onClickHandler={toggleScreenShare}
-                  additionalClasses={`p-3 rounded-full ${
+                  additionalClasses={`p-2 sm:p-3 rounded-full hidden sm:flex ${
                     isScreenSharing 
                       ? "bg-blue-600 hover:bg-blue-500 text-white" 
                       : "bg-gray-600 hover:bg-gray-500 text-white"
                   }`}
-                  text={isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                  text={isScreenSharing ? <MonitorOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />}
                 />
               )}
 
               <Button
                 onClickHandler={() => setShowChat(!showChat)}
-                additionalClasses={`p-3 rounded-full ${
+                additionalClasses={`p-2 sm:p-3 rounded-full ${
                   showChat 
                     ? "bg-blue-600 hover:bg-blue-500 text-white" 
                     : "bg-gray-600 hover:bg-gray-500 text-white"
                 }`}
-                text={<MessageSquare className="w-5 h-5" />}
+                text={<MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />}
               />
 
               {userRole === "doctor" && (
                 <Button
                   onClickHandler={() => setShowNotes(!showNotes)}
-                  additionalClasses={`p-3 rounded-full ${
+                  additionalClasses={`p-2 sm:p-3 rounded-full ${
                     showNotes 
                       ? "bg-blue-600 hover:bg-blue-500 text-white" 
                       : "bg-gray-600 hover:bg-gray-500 text-white"
                   }`}
-                  text={<FileText className="w-5 h-5" />}
+                  text={<FileText className="w-4 h-4 sm:w-5 sm:h-5" />}
                 />
               )}
 
               <Button
                 onClickHandler={handleEndCall}
-                additionalClasses="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full"
-                text={<Phone className="w-5 h-5 transform rotate-[135deg]" />}
+                additionalClasses="bg-red-600 hover:bg-red-700 text-white p-2 sm:p-3 rounded-full"
+                text={<Phone className="w-4 h-4 sm:w-5 sm:h-5 transform rotate-[135deg]" />}
               />
             </div>
           </div>
         </div>
 
-        {/* Side Panel */}
+        {/* Mobile Backdrop */}
         {(showNotes || showChat) && (
-          <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
+          <div 
+            className="md:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => { setShowNotes(false); setShowChat(false); }}
+          />
+        )}
+
+        {/* Side Panel - Responsive */}
+        {(showNotes || showChat) && (
+          <div className="fixed md:relative inset-y-0 right-0 md:w-80 w-full max-w-sm bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col z-40 md:z-auto">
+            {/* Panel Header with Close Button */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 md:hidden">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                {showNotes ? "Notes" : "Chat"}
+              </h2>
+              <button
+                onClick={() => { setShowNotes(false); setShowChat(false); }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
             {/* Panel Tabs */}
-            <div className="flex border-b border-gray-200 dark:border-gray-700">
+            <div className="hidden md:flex border-b border-gray-200 dark:border-gray-700">
               {userRole === "doctor" && (
                 <button
                   onClick={() => { setShowNotes(true); setShowChat(false); }}
