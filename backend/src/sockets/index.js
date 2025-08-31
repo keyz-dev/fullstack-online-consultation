@@ -97,6 +97,12 @@ const initializeSocket = (server) => {
     // Handle disconnection
     socket.on("disconnect", () => {
       console.log(`🔌 User ${socket.userId} disconnected`);
+      // If user was in a video room, notify others they left
+      if (socket.currentVideoRoom) {
+        socket.to(socket.currentVideoRoom).emit("video:user-left", { 
+          userId: socket.userId 
+        });
+      }
     });
 
     // Handle notification read
@@ -143,12 +149,19 @@ const initializeSocket = (server) => {
 
     // User (doctor or patient) joins the video call room
     socket.on("video:join-room", (data) => {
-      const { roomId } = data;
+      const { roomId, consultationId } = data;
       if (!roomId) return;
       socket.join(roomId);
       console.log(`✅ User ${socket.userId} joined video room: ${roomId}`);
+      // Store room association for this socket
+      socket.currentVideoRoom = roomId;
       // Announce to others in the room that a new user has joined
-      socket.to(roomId).emit("video:user-joined", { userId: socket.userId, name: socket.user.name });
+      socket.to(roomId).emit("video:user-joined", { 
+        userId: socket.userId, 
+        name: socket.user.name,
+        roomId,
+        consultationId 
+      });
     });
 
     // --- WebRTC Signaling Events --- 
@@ -186,8 +199,28 @@ const initializeSocket = (server) => {
         const { roomId } = data;
         if (!roomId) return;
         console.log(`📞 User ${socket.userId} ended the call for room ${roomId}`);
-        // Notify all clients in the room to end the call
-        io.in(roomId).emit("video:call-ended", { fromUserId: socket.userId });
+        // Notify OTHER clients in the room to end the call (exclude sender)
+        socket.to(roomId).emit("video:call-ended", { fromUserId: socket.userId });
+        // Remove this socket from the room
+        socket.leave(roomId);
+        socket.currentVideoRoom = null;
+    });
+
+    // Handle video chat messages
+    socket.on("video:chat-message", (data) => {
+      const { roomId, consultationId, message, timestamp, senderRole } = data;
+      if (!roomId) return;
+      console.log(`💬 User ${socket.userId} sent chat message in room ${roomId}`);
+      // Relay message to others in the room
+      socket.to(roomId).emit("video:chat-message", {
+        roomId,
+        consultationId,
+        message,
+        timestamp,
+        senderRole,
+        fromUserId: socket.userId,
+        sent: false
+      });
     });
 
     // Handle appointment payment tracking

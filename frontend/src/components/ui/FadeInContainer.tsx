@@ -1,64 +1,38 @@
-import React, { useState, useEffect } from "react";
+"use client";
 
-interface FadeInContainerProps {
+import React, { useEffect, useState } from "react";
+
+type FadeInContainerProps = {
   children: React.ReactNode;
-  delay?: number;
-  duration?: number;
   className?: string;
-  staggerDelay?: number;
-  direction?: "up" | "down" | "left" | "right";
-}
+};
 
-export default function FadeInContainer({
+const FadeInContainer: React.FC<FadeInContainerProps> = ({
   children,
-  delay = 0,
-  duration = 600,
   className = "",
-  staggerDelay = 100,
-  direction = "up",
-}: FadeInContainerProps) {
-  const [isVisible, setIsVisible] = useState(false);
+}) => {
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  const getTransformClass = () => {
-    switch (direction) {
-      case "up":
-        return "translate-y-4";
-      case "down":
-        return "-translate-y-4";
-      case "left":
-        return "translate-x-4";
-      case "right":
-        return "-translate-x-4";
-      default:
-        return "translate-y-4";
-    }
-  };
+    // Trigger fade-in after mount
+    const timeout = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
     <div
       className={`
-        transition-all ease-out
-        ${
-          isVisible
-            ? "opacity-100 transform translate-y-0 translate-x-0"
-            : `opacity-0 transform ${getTransformClass()}`
-        }
+        transition-opacity duration-500 ease-out
+        ${visible ? "opacity-100" : "opacity-0"}
+        bg-white dark:bg-gray-900
+        text-gray-900 dark:text-white
         ${className}
       `}
-      style={{
-        transitionDelay: `${staggerDelay}ms`,
-        transitionDuration: `${duration}ms`,
-      }}
+      data-testid="fade-in-container"
     >
       {children}
     </div>
   );
-}
+};
+
+export default FadeInContainer;

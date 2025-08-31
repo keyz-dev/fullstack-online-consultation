@@ -19,7 +19,7 @@ export { default as Table } from "./Table";
 export { default as Pagination } from "./Pagination";
 export { default as LoadingSpinner } from "./LoadingSpinner";
 export { default as AdvancedFilters } from "./AdvancedFilters";
-export { default as FadeInContainer } from "./FadeInContainer";
+
 export { default as EmptyState } from "./EmptyState";
 export { default as SearchBar } from "./SearchBar";
 export { default as FilterDropdown } from "./FilterDropdown";
