@@ -27,7 +27,7 @@ export default function DoctorVideoCallPage() {
 
   if (!roomId) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
             Invalid Room
@@ -41,11 +41,13 @@ export default function DoctorVideoCallPage() {
   }
 
   return (
-    <VideoCallRoom
-      roomId={roomId}
-      consultationId={consultationId}
-      userRole="doctor"
-      onCallEnd={handleCallEnd}
-    />
+    <div className="h-[calc(100vh-4rem)] overflow-hidden">
+      <VideoCallRoom
+        roomId={roomId}
+        consultationId={consultationId}
+        userRole="doctor"
+        onCallEnd={handleCallEnd}
+      />
+    </div>
   );
 }

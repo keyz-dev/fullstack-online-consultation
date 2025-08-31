@@ -34,4 +34,18 @@ router.post(
   consultationController.initiateCall
 );
 
+/**
+ * @desc    Get messages for a consultation
+ * @route   GET /api/v1/consultations/:id/messages
+ * @access  Private
+ */
+router.get("/:id/messages", consultationController.getMessages);
+
+/**
+ * @desc    Send a message in a consultation
+ * @route   POST /api/v1/consultations/:id/messages
+ * @access  Private
+ */
+router.post("/:id/messages", consultationController.sendMessage);
+
 module.exports = router;
