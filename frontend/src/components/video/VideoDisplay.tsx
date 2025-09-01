@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ConnectionStatus } from "./ConnectionStatus";
 
 interface VideoDisplayProps {
@@ -16,6 +16,30 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
   isConnected,
   children,
 }) => {
+  // Debug video streams
+  useEffect(() => {
+    const checkStreams = () => {
+      if (localVideoRef.current?.srcObject) {
+        const stream = localVideoRef.current.srcObject as MediaStream;
+        console.log("🎥 Local video has stream:", stream.getTracks().length, "tracks");
+      } else {
+        console.log("❌ Local video has no stream");
+      }
+
+      if (remoteVideoRef.current?.srcObject) {
+        const stream = remoteVideoRef.current.srcObject as MediaStream;
+        console.log("🎥 Remote video has stream:", stream.getTracks().length, "tracks");
+      } else {
+        console.log("❌ Remote video has no stream");
+      }
+    };
+
+    // Check immediately and then every 2 seconds
+    checkStreams();
+    const interval = setInterval(checkStreams, 2000);
+    return () => clearInterval(interval);
+  }, [localVideoRef, remoteVideoRef]);
+
   return (
     <div className="flex-1 relative">
       {/* Remote Video */}
@@ -24,6 +48,8 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
         autoPlay
         playsInline
         className="w-full h-full object-cover bg-gray-800"
+        onLoadedMetadata={() => console.log("🎥 Remote video metadata loaded")}
+        onCanPlay={() => console.log("🎥 Remote video can play")}
       />
       
       {/* Local Video (Picture-in-Picture) */}
@@ -34,6 +60,8 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
           playsInline
           muted
           className="w-full h-full object-cover"
+          onLoadedMetadata={() => console.log("🎥 Local video metadata loaded")}
+          onCanPlay={() => console.log("🎥 Local video can play")}
         />
       </div>
 

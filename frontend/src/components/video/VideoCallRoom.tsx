@@ -110,14 +110,21 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
     };
   }, [socket]);
 
-  // Initialize on mount
+  // Initialize on mount - only run once
   useEffect(() => {
+    console.log("🚀 VideoCallRoom initializing for:", { roomId, consultationId, userRole });
     initializeWebRTC();
     
     return () => {
+      console.log("🧹 VideoCallRoom unmounting, cleaning up");
       cleanup();
     };
-  }, [initializeWebRTC, cleanup]);
+  }, []); // Empty dependency array to run only once
+
+  // Debug remote user state
+  useEffect(() => {
+    console.log("👤 Remote user state:", { remoteUserId, isConnected });
+  }, [remoteUserId, isConnected]);
 
   // Toggle fullscreen
   const toggleFullscreen = () => {

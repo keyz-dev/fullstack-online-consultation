@@ -38,77 +38,148 @@ export const useVideoSocket = ({
 
   // Socket event listeners
   useEffect(() => {
-    if (!socket) return;
+    console.log("🔌 Setting up video socket listeners with:", { 
+      hasSocket: !!socket, 
+      socketConnected: socket?.connected,
+      roomId,
+      userRole 
+    });
+    
+    if (!socket) {
+      console.log("❌ No socket available in useVideoSocket");
+      return;
+    }
 
-    // User joined room - set up peer connection if we're the second person
-    socket.on("video:user-joined", (data: { userId: number; name: string; roomId: string; consultationId: string }) => {
-      const { userId } = data;
-      setRemoteUserId(userId);
+    if (!socket.connected) {
+      console.log("⚠️ Socket not connected yet, waiting for connection...");
       
-      // If we're the doctor (initiator), create offer when patient joins
-      if (userRole === "doctor" && peerConnectionRef.current) {
-        createOffer();
-      }
-    });
-
-    // WebRTC signaling
-    socket.on("video:offer", async (data: { offer: RTCSessionDescriptionInit; fromUserId: number; roomId: string }) => {
-      const { offer, fromUserId } = data;
-      setRemoteUserId(fromUserId);
+      const handleConnect = () => {
+        console.log("✅ Socket connected, setting up video socket listeners");
+        setupVideoListeners();
+      };
       
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(offer);
-        const answer = await peerConnectionRef.current.createAnswer();
-        await peerConnectionRef.current.setLocalDescription(answer);
-        socket.emit("video:answer", { roomId, toUserId: fromUserId, answer });
-      }
-    });
-
-    socket.on("video:answer", async (data: { answer: RTCSessionDescriptionInit; fromUserId: number; roomId: string }) => {
-      const { answer } = data;
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(answer);
-        console.log("✅ Answer received and set as remote description");
-        // Don't set connected here - let the connection state handler do it
-      }
-    });
-
-    socket.on("video:ice-candidate", async (data: { candidate: RTCIceCandidateInit; fromUserId: number; roomId: string }) => {
-      const { candidate } = data;
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(candidate);
-      }
-    });
-
-    // Call ended by other party
-    socket.on("video:call-ended", async () => {
-      console.log("📞 Call ended by other party");
+      socket.on("connect", handleConnect);
       
-      // Clean up media streams
-      try {
-        const { mediaStreamManager } = await import('../utils/mediaStreamManager');
-        mediaStreamManager.releaseMediaStream(roomId);
-      } catch (error) {
-        console.error("Error releasing media stream on call end:", error);
-      }
+      return () => {
+        socket.off("connect", handleConnect);
+        cleanupListeners();
+      };
+    } else {
+      setupVideoListeners();
+      return cleanupListeners;
+    }
+
+    function setupVideoListeners() {
+      console.log("🎧 Setting up video socket event listeners...");
       
-      onCallEnd();
-    });
+      // User joined room - set up peer connection if we're the second person
+      socket.on("video:user-joined", (data: { userId: number; name: string; roomId: string; consultationId: string }) => {
+        const { userId } = data;
+        console.log("👥 User joined room:", userId, "Role:", userRole);
+        setRemoteUserId(userId);
+        
+        // Send any pending ICE candidates now that we have a remote user
+        const pc = peerConnectionRef.current as RTCPeerConnection & { sendPendingCandidates?: () => void };
+        if (pc && pc.sendPendingCandidates) {
+          pc.sendPendingCandidates();
+        }
+        
+        // If we're the doctor (initiator), create offer when patient joins
+        if (userRole === "doctor" && peerConnectionRef.current) {
+          console.log("👨‍⚕️ Doctor creating offer for patient:", userId);
+          setTimeout(() => createOffer(), 100); // Small delay to ensure everything is set up
+        }
+      });
 
-    // User left room
-    socket.on("video:user-left", () => {
-      setRemoteUserId(null);
-      setIsConnected(false);
-    });
+      // WebRTC signaling
+      socket.on("video:offer", async (data: { offer: RTCSessionDescriptionInit; fromUserId: number; roomId: string }) => {
+        const { offer, fromUserId } = data;
+        console.log("📥 Offer received from:", fromUserId);
+        setRemoteUserId(fromUserId);
+        
+        if (peerConnectionRef.current) {
+          try {
+            await peerConnectionRef.current.setRemoteDescription(offer);
+            console.log("✅ Remote description set from offer");
+            
+            const answer = await peerConnectionRef.current.createAnswer();
+            await peerConnectionRef.current.setLocalDescription(answer);
+            console.log("✅ Answer created and set as local description");
+            
+            socket.emit("video:answer", { roomId, toUserId: fromUserId, answer });
+            console.log("📤 Answer sent to:", fromUserId);
 
-    return () => {
+            // Send any pending ICE candidates now that we have a remote user
+            const pc = peerConnectionRef.current as RTCPeerConnection & { sendPendingCandidates?: () => void };
+            if (pc.sendPendingCandidates) {
+              pc.sendPendingCandidates();
+            }
+          } catch (error) {
+            console.error("❌ Error handling offer:", error);
+          }
+        }
+      });
+
+      socket.on("video:answer", async (data: { answer: RTCSessionDescriptionInit; fromUserId: number; roomId: string }) => {
+        const { answer } = data;
+        console.log("📥 Answer received from:", data.fromUserId);
+        
+        if (peerConnectionRef.current) {
+          try {
+            await peerConnectionRef.current.setRemoteDescription(answer);
+            console.log("✅ Answer received and set as remote description");
+            // Don't set connected here - let the connection state handler do it
+          } catch (error) {
+            console.error("❌ Error handling answer:", error);
+          }
+        }
+      });
+
+      socket.on("video:ice-candidate", async (data: { candidate: RTCIceCandidateInit; fromUserId: number; roomId: string }) => {
+        const { candidate, fromUserId } = data;
+        console.log("🧊 ICE candidate received from:", fromUserId);
+        
+        if (peerConnectionRef.current) {
+          try {
+            await peerConnectionRef.current.addIceCandidate(candidate);
+            console.log("✅ ICE candidate added successfully");
+          } catch (error) {
+            console.error("❌ Error adding ICE candidate:", error);
+          }
+        }
+      });
+
+      // Call ended by other party
+      socket.on("video:call-ended", async () => {
+        console.log("📞 Call ended by other party");
+        
+        // Clean up media streams
+        try {
+          const { mediaStreamManager } = await import('../utils/mediaStreamManager');
+          mediaStreamManager.releaseMediaStream(roomId);
+        } catch (error) {
+          console.error("Error releasing media stream on call end:", error);
+        }
+        
+        onCallEnd();
+      });
+
+      // User left room
+      socket.on("video:user-left", () => {
+        setRemoteUserId(null);
+        setIsConnected(false);
+      });
+    }
+
+    function cleanupListeners() {
+      console.log("🔌 Cleaning up video socket listeners");
       socket.off("video:user-joined");
       socket.off("video:offer");
       socket.off("video:answer");
       socket.off("video:ice-candidate");
       socket.off("video:call-ended");
       socket.off("video:user-left");
-    };
+    }
   }, [socket, roomId, userRole, peerConnectionRef, setRemoteUserId, setIsConnected, createOffer, onCallEnd]);
 
   return {

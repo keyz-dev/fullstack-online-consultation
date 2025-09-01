@@ -15,6 +15,11 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [remoteUserId, setRemoteUserId] = useState<number | null>(null);
+  
+  // Debug remoteUserId changes
+  useEffect(() => {
+    console.log("🆔 Remote user ID changed:", remoteUserId);
+  }, [remoteUserId]);
 
   // WebRTC refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -28,6 +33,19 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
   // Initialize WebRTC
   const initializeWebRTC = useCallback(async () => {
     try {
+      // Prevent multiple initializations
+      if (peerConnectionRef.current) {
+        console.log("⚠️ WebRTC already initialized, skipping...");
+        return;
+      }
+
+      console.log("🔍 Initializing WebRTC with dependencies:", { 
+        roomId, 
+        consultationId, 
+        hasSocket: !!socket,
+        socketConnected: socket?.connected 
+      });
+
       console.log("🎥 Initializing WebRTC...");
       
       // Use MediaStreamManager for proper device management
@@ -60,26 +78,66 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
 
       // Handle remote stream
       peerConnection.ontrack = (event) => {
-        console.log("🎥 Remote stream received");
-        if (remoteVideoRef.current) {
+        console.log("🎥 Remote stream received:", event.streams[0]);
+        console.log("🎥 Remote stream tracks:", event.streams[0]?.getTracks().map(t => `${t.kind}: ${t.label}`));
+        if (remoteVideoRef.current && event.streams[0]) {
           remoteVideoRef.current.srcObject = event.streams[0];
+          console.log("🎥 Remote video element updated with stream");
+          
+          // Force video to play
+          setTimeout(() => {
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.play().catch(e => console.log("Video play error:", e));
+            }
+          }, 100);
+        } else {
+          console.error("❌ Cannot set remote stream:", {
+            hasVideoRef: !!remoteVideoRef.current,
+            hasStream: !!event.streams[0]
+          });
         }
       };
 
-      // Handle ICE candidates - removed remoteUserId dependency
+      // Store ICE candidates until we have remote user ID
+      const pendingIceCandidates: RTCIceCandidate[] = [];
+
+      // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
         if (event.candidate && socket) {
-          console.log("🧊 ICE candidate generated");
-          // We'll send this when we know the remote user ID
+          console.log("🧊 ICE candidate generated:", event.candidate.candidate);
+          
           if (remoteUserId) {
             socket.emit("video:ice-candidate", {
               roomId,
               candidate: event.candidate,
               toUserId: remoteUserId,
             });
+            console.log("🧊 ICE candidate sent to:", remoteUserId);
+          } else {
+            // Store candidates until we have remote user ID
+            pendingIceCandidates.push(event.candidate);
+            console.log("🧊 ICE candidate stored (no remote user yet)");
           }
         }
       };
+
+      // Send pending ICE candidates when remote user is set
+      const sendPendingCandidates = () => {
+        if (remoteUserId && socket && pendingIceCandidates.length > 0) {
+          console.log(`🧊 Sending ${pendingIceCandidates.length} pending ICE candidates`);
+          pendingIceCandidates.forEach(candidate => {
+            socket.emit("video:ice-candidate", {
+              roomId,
+              candidate,
+              toUserId: remoteUserId,
+            });
+          });
+          pendingIceCandidates.length = 0; // Clear the array
+        }
+      };
+
+      // Store the function to send pending candidates
+      (peerConnection as RTCPeerConnection & { sendPendingCandidates?: () => void }).sendPendingCandidates = sendPendingCandidates;
 
       // Handle connection state changes
       peerConnection.onconnectionstatechange = () => {
@@ -101,18 +159,34 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
     } catch (error) {
       console.error("❌ Error initializing WebRTC:", error);
     }
-  }, [roomId, consultationId, socket]);
+  }, [roomId, consultationId, socket]); // Remove remoteUserId to prevent re-initialization
 
   // Create offer (for call initiator)
   const createOffer = useCallback(async () => {
-    if (!peerConnectionRef.current || !socket || !remoteUserId) return;
+    if (!peerConnectionRef.current || !socket || !remoteUserId) {
+      console.log("❌ Cannot create offer - missing:", {
+        peerConnection: !!peerConnectionRef.current,
+        socket: !!socket,
+        remoteUserId: !!remoteUserId
+      });
+      return;
+    }
 
     try {
+      console.log("🤝 Creating offer for remote user:", remoteUserId);
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
+      
       socket.emit("video:offer", { roomId, toUserId: remoteUserId, offer });
+      console.log("📤 Offer sent to remote user:", remoteUserId);
+
+      // Send any pending ICE candidates now that we have a remote user
+      const pc = peerConnectionRef.current as RTCPeerConnection & { sendPendingCandidates?: () => void };
+      if (pc.sendPendingCandidates) {
+        pc.sendPendingCandidates();
+      }
     } catch (error) {
-      console.error("Error creating offer:", error);
+      console.error("❌ Error creating offer:", error);
     }
   }, [roomId, socket, remoteUserId]);
 

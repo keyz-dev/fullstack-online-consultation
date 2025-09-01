@@ -34,6 +34,12 @@ module.exports = {
         type: Sequelize.ENUM("video_call", "voice_call", "chat", "in_person"),
         allowNull: false,
       },
+      roomId: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        unique: true,
+        comment: "Unique identifier for the video/voice call room",
+      },
       startedAt: {
         type: Sequelize.DATE,
         allowNull: true,
@@ -91,6 +97,7 @@ module.exports = {
     await queryInterface.addIndex("Consultations", ["appointmentId"]);
     await queryInterface.addIndex("Consultations", ["status"]);
     await queryInterface.addIndex("Consultations", ["type"]);
+    await queryInterface.addIndex("Consultations", ["roomId"]);
     await queryInterface.addIndex("Consultations", ["startedAt"]);
     await queryInterface.addIndex("Consultations", ["endedAt"]);
     await queryInterface.addIndex("Consultations", ["followUpDate"]);

@@ -29,6 +29,16 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
+      doctorId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Doctors",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
       status: {
         type: Sequelize.ENUM(
           "pending_payment",
@@ -100,6 +110,7 @@ module.exports = {
     // Indexes
     await queryInterface.addIndex("Appointments", ["timeSlotId"]);
     await queryInterface.addIndex("Appointments", ["patientId"]);
+    await queryInterface.addIndex("Appointments", ["doctorId"]);
     await queryInterface.addIndex("Appointments", ["status"]);
     await queryInterface.addIndex("Appointments", ["consultationType"]);
     await queryInterface.addIndex("Appointments", ["paymentStatus"]);
