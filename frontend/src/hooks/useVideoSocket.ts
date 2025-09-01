@@ -21,6 +21,13 @@ export const useVideoSocket = ({
   onCallEnd,
 }: UseVideoSocketProps) => {
   const { socket } = useSocketContext();
+  
+  console.log("🎯 useVideoSocket hook called with:", {
+    roomId,
+    userRole,
+    hasSocket: !!socket,
+    socketConnected: socket?.connected
+  });
 
   // Send chat message
   const sendMessage = useCallback((messageData: {
@@ -74,20 +81,25 @@ export const useVideoSocket = ({
       
       // User joined room - set up peer connection if we're the second person
       socket.on("video:user-joined", (data: { userId: number; name: string; roomId: string; consultationId: string }) => {
-        const { userId } = data;
-        console.log("👥 User joined room:", userId, "Role:", userRole);
+        const { userId, name } = data;
+        console.log(`👥 User ${name} (ID: ${userId}) joined room. Current user role: ${userRole}`);
+        
         setRemoteUserId(userId);
         
         // Send any pending ICE candidates now that we have a remote user
         const pc = peerConnectionRef.current as RTCPeerConnection & { sendPendingCandidates?: () => void };
         if (pc && pc.sendPendingCandidates) {
+          console.log("📤 Sending pending ICE candidates to new user");
           pc.sendPendingCandidates();
         }
         
         // If we're the doctor (initiator), create offer when patient joins
         if (userRole === "doctor" && peerConnectionRef.current) {
           console.log("👨‍⚕️ Doctor creating offer for patient:", userId);
-          setTimeout(() => createOffer(), 100); // Small delay to ensure everything is set up
+          setTimeout(() => {
+            console.log("🤝 Creating offer after delay...");
+            createOffer();
+          }, 500); // Increased delay to ensure everything is set up
         }
       });
 

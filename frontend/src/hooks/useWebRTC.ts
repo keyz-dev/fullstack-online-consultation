@@ -59,12 +59,16 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
 
       console.log("🎥 Local stream obtained and set");
 
-      // Create peer connection
+      // Create peer connection with better ICE servers
       const peerConnection = new RTCPeerConnection({
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
           { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:stun2.l.google.com:19302" },
+          { urls: "stun:stun3.l.google.com:19302" },
+          { urls: "stun:stun4.l.google.com:19302" },
         ],
+        iceCandidatePoolSize: 10,
       });
 
       peerConnectionRef.current = peerConnection;
@@ -80,14 +84,40 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
       peerConnection.ontrack = (event) => {
         console.log("🎥 Remote stream received:", event.streams[0]);
         console.log("🎥 Remote stream tracks:", event.streams[0]?.getTracks().map(t => `${t.kind}: ${t.label}`));
+        
         if (remoteVideoRef.current && event.streams[0]) {
-          remoteVideoRef.current.srcObject = event.streams[0];
+          const stream = event.streams[0];
+          remoteVideoRef.current.srcObject = stream;
           console.log("🎥 Remote video element updated with stream");
           
-          // Force video to play
-          setTimeout(() => {
+          // Ensure all tracks are enabled
+          stream.getTracks().forEach(track => {
+            if (!track.enabled) {
+              track.enabled = true;
+              console.log(`✅ Enabled ${track.kind} track`);
+            }
+          });
+          
+          // Force video to play with better error handling
+          setTimeout(async () => {
             if (remoteVideoRef.current) {
-              remoteVideoRef.current.play().catch(e => console.log("Video play error:", e));
+              try {
+                await remoteVideoRef.current.play();
+                console.log("✅ Remote video playing successfully");
+              } catch (error) {
+                console.error("❌ Remote video play error:", error);
+                // Try again with user gesture if needed
+                if (error instanceof Error && error.name === 'NotAllowedError') {
+                  console.log("🔄 Retrying video play on user interaction");
+                  const playOnClick = () => {
+                    remoteVideoRef.current?.play().then(() => {
+                      console.log("✅ Remote video started after user interaction");
+                      document.removeEventListener('click', playOnClick);
+                    });
+                  };
+                  document.addEventListener('click', playOnClick);
+                }
+              }
             }
           }, 100);
         } else {
@@ -142,18 +172,52 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
       // Handle connection state changes
       peerConnection.onconnectionstatechange = () => {
         console.log("🔗 Connection state:", peerConnection.connectionState);
+        console.log("🔗 ICE connection state:", peerConnection.iceConnectionState);
+        console.log("🔗 ICE gathering state:", peerConnection.iceGatheringState);
+        
         if (peerConnection.connectionState === 'connected') {
+          console.log("✅ WebRTC connection established!");
           setIsConnected(true);
         } else if (peerConnection.connectionState === 'disconnected' || 
-                   peerConnection.connectionState === 'failed') {
+                   peerConnection.connectionState === 'failed' ||
+                   peerConnection.connectionState === 'closed') {
+          console.log("❌ WebRTC connection lost or failed");
           setIsConnected(false);
         }
       };
 
+      // Also monitor ICE connection state for better feedback
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log("🧊 ICE connection state changed:", peerConnection.iceConnectionState);
+        
+        if (peerConnection.iceConnectionState === 'connected' || 
+            peerConnection.iceConnectionState === 'completed') {
+          console.log("✅ ICE connection successful!");
+          setIsConnected(true);
+        } else if (peerConnection.iceConnectionState === 'failed' ||
+                   peerConnection.iceConnectionState === 'disconnected' ||
+                   peerConnection.iceConnectionState === 'closed') {
+          console.log("❌ ICE connection failed or lost");
+          setIsConnected(false);
+        }
+      };
+
+      // Monitor ICE gathering state
+      peerConnection.onicegatheringstatechange = () => {
+        console.log("🧊 ICE gathering state:", peerConnection.iceGatheringState);
+      };
+
       // Join room
       if (socket) {
+        console.log("🔍 Socket state before joining room:", {
+          connected: socket.connected,
+          id: socket.id,
+          hasListeners: socket.listeners('video:user-joined').length
+        });
         socket.emit("video:join-room", { roomId, consultationId });
         console.log("🏠 Joined room:", roomId);
+      } else {
+        console.error("❌ No socket available to join room!");
       }
 
     } catch (error) {

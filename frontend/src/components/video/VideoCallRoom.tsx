@@ -1,21 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useSocketContext } from "@/contexts";
-import { Button } from "@/components/ui";
-import {
-  Video,
-  VideoOff,
-  Mic,
-  MicOff,
-  Phone,
-  Monitor,
-  MonitorOff,
-  MessageSquare,
-  FileText,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useVideoSocket } from "@/hooks/useVideoSocket";
 import VideoDisplay from "./VideoDisplay";
@@ -39,9 +25,15 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
   const [showNotes, setShowNotes] = useState(userRole === "doctor");
   const [showChat, setShowChat] = useState(false);
   const [notes, setNotes] = useState("");
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<Array<{
+    roomId: string;
+    consultationId: string;
+    message: string;
+    timestamp: string;
+    senderRole: string;
+    sent: boolean;
+  }>>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const { socket } = useSocketContext();
 
@@ -65,6 +57,17 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
     setRemoteUserId,
     setIsConnected,
   } = useWebRTC({ roomId, consultationId, userRole, onCallEnd });
+
+  // Debug socket state
+  useEffect(() => {
+    console.log("🔍 Socket state in VideoCallRoom:", {
+      hasSocket: !!socket,
+      socketConnected: socket?.connected,
+      socketId: socket?.id,
+      roomId,
+      userRole
+    });
+  }, [socket, roomId, userRole]);
 
   // Use socket hook
   const { sendMessage: sendSocketMessage } = useVideoSocket({
@@ -100,7 +103,13 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
     if (!socket) return;
 
     // Chat messages - use the correct event name
-    socket.on("video:chat-message", (message: any) => {
+    socket.on("video:chat-message", (message: {
+      roomId: string;
+      consultationId: string;
+      message: string;
+      timestamp: string;
+      senderRole: string;
+    }) => {
       console.log("💬 Chat message received:", message);
       setChatMessages(prev => [...prev, { ...message, sent: false }]);
     });
@@ -110,32 +119,33 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
     };
   }, [socket]);
 
-  // Initialize on mount - only run once
+  // Initialize on mount - only run once with stable dependencies
   useEffect(() => {
     console.log("🚀 VideoCallRoom initializing for:", { roomId, consultationId, userRole });
-    initializeWebRTC();
+    
+    let isActive = true;
+    
+    const initialize = async () => {
+      if (isActive) {
+        await initializeWebRTC();
+      }
+    };
+    
+    initialize();
     
     return () => {
       console.log("🧹 VideoCallRoom unmounting, cleaning up");
+      isActive = false;
       cleanup();
     };
-  }, []); // Empty dependency array to run only once
+  }, [roomId, consultationId, userRole, initializeWebRTC, cleanup]); // Include stable dependencies
 
   // Debug remote user state
   useEffect(() => {
     console.log("👤 Remote user state:", { remoteUserId, isConnected });
   }, [remoteUserId, isConnected]);
 
-  // Toggle fullscreen
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  };
+  // Note: Fullscreen functionality removed to clean up unused code
 
   return (
     <div className="flex h-full bg-gray-900">

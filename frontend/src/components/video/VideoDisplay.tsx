@@ -34,9 +34,9 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
       }
     };
 
-    // Check immediately and then every 2 seconds
+    // Check immediately and then every 5 seconds (reduced spam)
     checkStreams();
-    const interval = setInterval(checkStreams, 2000);
+    const interval = setInterval(checkStreams, 5000);
     return () => clearInterval(interval);
   }, [localVideoRef, remoteVideoRef]);
 
@@ -50,6 +50,21 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
         className="w-full h-full object-cover bg-gray-800"
         onLoadedMetadata={() => console.log("🎥 Remote video metadata loaded")}
         onCanPlay={() => console.log("🎥 Remote video can play")}
+        onError={(e) => {
+          console.error("❌ Remote video error:", e);
+          const video = e.target as HTMLVideoElement;
+          console.error("❌ Video error details:", {
+            error: video.error,
+            networkState: video.networkState,
+            readyState: video.readyState,
+            src: video.src,
+            srcObject: video.srcObject
+          });
+        }}
+        onLoadStart={() => console.log("🎥 Remote video load started")}
+        onWaiting={() => console.log("⏳ Remote video waiting for data")}
+        onPlaying={() => console.log("▶️ Remote video playing")}
+        onPause={() => console.log("⏸️ Remote video paused")}
       />
       
       {/* Local Video (Picture-in-Picture) */}

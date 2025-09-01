@@ -29,18 +29,116 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
   onDecline,
 }) => {
   const [ringDuration, setRingDuration] = useState(0);
+  const [audioStatus, setAudioStatus] = useState<'loading' | 'ready' | 'fallback' | 'blocked'>('loading');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize ringtone audio
   useEffect(() => {
-    // Create audio element for ringtone
-    audioRef.current = new Audio("/sounds/incoming-call.mp3");
-    audioRef.current.loop = true;
-    audioRef.current.volume = 0.7;
+    const initializeAudio = async () => {
+      try {
+        // Create audio element for ringtone
+        const audio = new Audio();
+        
+        // Set up error handling before setting src
+        audio.addEventListener('error', (e) => {
+          console.error('❌ Ringtone audio failed to load:', e);
+          console.error('❌ Audio error details:', {
+            error: audio.error,
+            networkState: audio.networkState,
+            readyState: audio.readyState,
+            src: audio.src
+          });
+          
+          // Try fallback with data URL beep sound
+          createBeepTone();
+        });
+        
+        // Set up success handler
+        audio.addEventListener('canplaythrough', () => {
+          console.log('🔔 Ringtone audio loaded successfully');
+          setAudioStatus('ready');
+        });
+        
+        audio.addEventListener('loadeddata', () => {
+          console.log('🔔 Audio data loaded');
+        });
+        
+        // Configure audio
+        audio.loop = true;
+        audio.volume = 0.7;
+        audio.preload = 'auto';
+        
+        // Set source
+        audio.src = "/sounds/incoming-call.mp3";
+        
+        // Try to load the audio
+        audio.load();
+        
+        audioRef.current = audio;
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize audio:', error);
+        createBeepTone();
+      }
+    };
+
+    // Create a simple beep tone as fallback
+    const createBeepTone = () => {
+      try {
+        console.log('🔔 Creating fallback beep tone...');
+        // Create a simple beep using Web Audio API
+        const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        
+        const createBeep = () => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.5);
+        };
+        
+        // Create a mock audio object that plays beeps
+        const mockAudio = {
+          play: () => {
+            createBeep();
+            return Promise.resolve();
+          },
+          pause: () => {},
+          currentTime: 0,
+          loop: true,
+          volume: 0.7,
+          _ringtoneInterval: null as NodeJS.Timeout | null
+        };
+        audioRef.current = mockAudio as unknown as HTMLAudioElement;
+        
+        console.log('✅ Fallback beep tone created');
+        setAudioStatus('fallback');
+      } catch (error) {
+        console.error('❌ Failed to create beep tone:', error);
+        audioRef.current = null;
+      }
+    };
+
+    initializeAudio();
 
     return () => {
       if (audioRef.current) {
-        audioRef.current.pause();
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        } catch (e) {
+          console.log('Audio cleanup error (expected):', e);
+        }
         audioRef.current = null;
       }
     };
@@ -48,33 +146,87 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
 
   const stopRingtone = useCallback(() => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      try {
+        // Clear any ringtone interval
+        const audioWithInterval = audioRef.current as HTMLAudioElement & { _ringtoneInterval?: NodeJS.Timeout | null };
+        if (audioWithInterval._ringtoneInterval) {
+          clearInterval(audioWithInterval._ringtoneInterval);
+          audioWithInterval._ringtoneInterval = null;
+        }
+        
+        // Stop the audio
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        console.log('🔇 Ringtone stopped');
+      } catch (error) {
+        console.log('Ringtone stop error (expected):', error);
+      }
     }
   }, []);
 
   // Handle ringtone when call comes in
   useEffect(() => {
-    if (isVisible && callData) {
-      // Start ringtone with user interaction fallback
-      if (audioRef.current) {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            console.log('🔔 Ringtone autoplay prevented:', error.message);
-            // Fallback: Try to play on user interaction
-            const playOnInteraction = () => {
-              if (audioRef.current) {
+    if (isVisible && callData && audioRef.current) {
+      console.log('🔔 Starting ringtone for incoming call...');
+      
+      // Start ringtone with comprehensive error handling
+      const startRingtone = async () => {
+        try {
+          // Create a repeating interval for beep sounds if using fallback
+          let ringtoneInterval: NodeJS.Timeout | null = null;
+          
+          const playPromise = audioRef.current!.play();
+          
+          if (playPromise !== undefined) {
+            await playPromise;
+            console.log('✅ Ringtone started successfully');
+          } else {
+            // For our custom beep tone, set up interval
+            ringtoneInterval = setInterval(() => {
+              if (audioRef.current && isVisible) {
                 audioRef.current.play().catch(console.error);
               }
-              document.removeEventListener('click', playOnInteraction);
-              document.removeEventListener('keydown', playOnInteraction);
-            };
-            document.addEventListener('click', playOnInteraction, { once: true });
-            document.addEventListener('keydown', playOnInteraction, { once: true });
+            }, 1000); // Beep every second
+          }
+          
+          // Store interval for cleanup
+          const audioWithInterval = audioRef.current as HTMLAudioElement & { _ringtoneInterval?: NodeJS.Timeout | null };
+          audioWithInterval._ringtoneInterval = ringtoneInterval;
+          
+        } catch (error) {
+          console.log('🔔 Ringtone autoplay prevented:', error);
+          
+          // Enhanced fallback: Try multiple approaches
+          const tryPlayOnInteraction = () => {
+            if (audioRef.current) {
+              audioRef.current.play().then(() => {
+                console.log('✅ Ringtone started after user interaction');
+              }).catch(console.error);
+            }
+          };
+          
+          // Try on various user interactions
+          const interactionEvents = ['click', 'keydown', 'touchstart', 'mousedown'];
+          const cleanup = () => {
+            interactionEvents.forEach(event => {
+              document.removeEventListener(event, tryPlayOnInteraction);
+            });
+          };
+          
+          interactionEvents.forEach(event => {
+            document.addEventListener(event, () => {
+              tryPlayOnInteraction();
+              cleanup();
+            }, { once: true });
           });
+          
+          // Also try a visual notification since audio is blocked
+          console.log('🔔 Audio blocked - relying on visual notification');
+          setAudioStatus('blocked');
         }
-      }
+      };
+      
+      startRingtone();
     } else {
       stopRingtone();
     }
@@ -149,10 +301,18 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-semibold text-sm">Incoming Video Call</p>
-                  <p className="text-white/80 text-xs flex items-center">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {formatRingTime(ringDuration)}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-white/80 text-xs flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {formatRingTime(ringDuration)}
+                    </p>
+                    {audioStatus === 'blocked' && (
+                      <p className="text-yellow-300 text-xs">🔇 Click to enable sound</p>
+                    )}
+                    {audioStatus === 'fallback' && (
+                      <p className="text-blue-300 text-xs">🔔 Beep tone</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
