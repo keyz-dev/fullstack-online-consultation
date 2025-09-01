@@ -11,8 +11,9 @@ import {
   StatusPill,
   DropdownMenu,
   AdvancedFilters,
+  DeleteModal,
 } from "@/components/ui";
-import { AddMedicationModal, CardSection } from "./";
+import { AddMedicationModal, UpdateMedicationModal, CardSection } from "./";
 import { Trash2, Eye, Edit, Plus } from "lucide-react";
 
 const MainView = ({ setView }: { setView: () => void }) => {
@@ -27,6 +28,10 @@ const MainView = ({ setView }: { setView: () => void }) => {
   } = usePharmacyMedications();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedMedication, setSelectedMedication] = useState<any>(null);
+  const [medicationToDelete, setMedicationToDelete] = useState<any>(null);
   const [showAddOptions, setShowAddOptions] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +44,8 @@ const MainView = ({ setView }: { setView: () => void }) => {
 
   useEffect(() => {
     fetchMedicationStats();
-  }, [fetchMedicationStats]);
+    fetchMedications(1); // Load initial medications list
+  }, [fetchMedicationStats, fetchMedications]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -100,17 +106,54 @@ const MainView = ({ setView }: { setView: () => void }) => {
     }
   };
 
-  const handleDeleteMedication = (medicationId: number) => {
-    if (window.confirm("Are you sure you want to delete this medication?")) {
-      deleteMedication(medicationId);
+  const handleDeleteMedication = (medication: any) => {
+    setMedicationToDelete(medication);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (medicationToDelete) {
+      const result = await deleteMedication(medicationToDelete.id);
+      if (result.success) {
+        setIsDeleteModalOpen(false);
+        setMedicationToDelete(null);
+      }
     }
   };
 
+  const handleEditMedication = (medication: any) => {
+    setSelectedMedication(medication);
+    setIsUpdateModalOpen(true);
+  };
+
   const columns = [
-    { Header: "Name", accessor: "name" },
-    { Header: "Generic Name", accessor: "genericName" },
+    { 
+      Header: "Name", 
+      accessor: "name",
+      Cell: ({ row }: any) => (
+        <div className="flex items-center space-x-3">
+          {row.imageUrl ? (
+            <img 
+              src={row.imageUrl} 
+              alt={row.name}
+              className="w-10 h-10 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center">
+              <span className="text-gray-500 text-xs">No Image</span>
+            </div>
+          )}
+          <div>
+            <div className="font-medium text-gray-900">{row.name}</div>
+            {row.genericName && (
+              <div className="text-sm text-gray-500">{row.genericName}</div>
+            )}
+          </div>
+        </div>
+      )
+    },
     { Header: "Category", accessor: "category" },
-    { Header: "Price", accessor: "price", Cell: ({ row }: any) => `$${row.price}` },
+    { Header: "Price", accessor: "price", Cell: ({ row }: any) => `${row.price} XAF` },
     { Header: "Stock", accessor: "stockQuantity" },
     {
       Header: "Status",
@@ -127,7 +170,6 @@ const MainView = ({ setView }: { setView: () => void }) => {
       ),
     },
     {
-      Header: "Actions",
       accessor: "actions",
       Cell: ({ row }: any) => {
         const items = [
@@ -137,14 +179,14 @@ const MainView = ({ setView }: { setView: () => void }) => {
             onClick: () => console.log("View medication", row.id),
           },
           {
-            label: "Edit Medication",
+            label: "Edit",
             icon: <Edit size={16} />,
-            onClick: () => console.log("Edit medication", row.id),
+            onClick: () => handleEditMedication(row),
           },
           {
-            label: "Delete Medication",
+            label: "Delete",
             icon: <Trash2 size={16} />,
-            onClick: () => handleDeleteMedication(row.id),
+            onClick: () => handleDeleteMedication(row),
             isDestructive: true,
           },
         ];
@@ -153,13 +195,28 @@ const MainView = ({ setView }: { setView: () => void }) => {
     },
   ];
 
+  // Debug: Log medications state
+  console.log("MainView - medications:", medications);
+  console.log("MainView - loading:", loading);
+  console.log("MainView - pagination:", pagination);
+
   return (
     <section>
       {/* Medication stats */}
       <CardSection medicationStats={medicationStats} loading={loading} />
 
       {/* Add medication button */}
-      <div className="flex flex-wrap items-center justify-end gap-4 my-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 my-4">
+        <Button
+          onClickHandler={() => {
+            console.log("Manual refresh triggered");
+            fetchMedications(1);
+            fetchMedicationStats();
+          }}
+          additionalClasses="text-blue-600 border-blue-600 hover:bg-blue-50"
+          text="Refresh"
+        />
+        
         <div className="relative" ref={dropdownRef}>
           <Button
             onClickHandler={() => setShowAddOptions(!showAddOptions)}
@@ -232,29 +289,74 @@ const MainView = ({ setView }: { setView: () => void }) => {
 
       {/* Medication table */}
       <section>
-        <Table columns={columns} data={medications} />
-        <div className="p-4 flex justify-between items-center">
-          <p className="text-sm text-gray-600">
-            Page {pagination.currentPage} of {pagination.totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              onClickHandler={() => fetchMedications(pagination.currentPage - 1)}
-              isDisabled={pagination.currentPage <= 1 || loading}
-              text="Previous"
-            />
-            <Button
-              onClickHandler={() => fetchMedications(pagination.currentPage + 1)}
-              isDisabled={pagination.currentPage >= pagination.totalPages || loading}
-              text="Next"
-            />
+        {medications.length === 0 && !loading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No medications found. Add your first medication to get started!</p>
           </div>
-        </div>
+        ) : (
+          <Table columns={columns} data={medications} />
+        )}
+        {/* Pagination - Only show if there are multiple pages */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Showing{" "}
+              {(pagination.currentPage - 1) * pagination.itemsPerPage + 1} to{" "}
+              {Math.min(
+                pagination.currentPage * pagination.itemsPerPage,
+                pagination.totalItems
+              )}{" "}
+              of {pagination.totalItems} medications
+            </p>
+            <div className="flex space-x-2">
+              <Button
+                onClickHandler={() => fetchMedications(pagination.currentPage - 1)}
+                isDisabled={pagination.currentPage <= 1 || loading}
+                additionalClasses="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+                text="Previous"
+              />
+              <Button
+                onClickHandler={() => fetchMedications(pagination.currentPage + 1)}
+                isDisabled={pagination.currentPage >= pagination.totalPages || loading}
+                additionalClasses="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+                text="Next"
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {isModalOpen && (
         <AddMedicationModal
           onClose={() => setIsModalOpen(false)}
+        />
+      )}
+
+      {isUpdateModalOpen && (
+        <UpdateMedicationModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => {
+            setIsUpdateModalOpen(false);
+            setSelectedMedication(null);
+          }}
+          medication={selectedMedication}
+        />
+      )}
+
+      {isDeleteModalOpen && (
+        <DeleteModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setMedicationToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          title="Delete Medication"
+          message="Are you sure you want to delete this medication?"
+          itemName={medicationToDelete?.name}
+          loading={loading}
+          confirmText="Delete Medication"
+          cancelText="Cancel"
         />
       )}
     </section>

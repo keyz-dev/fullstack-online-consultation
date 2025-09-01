@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePharmacyMedications } from "@/hooks/usePharmacyMedications";
 import { 
   Input, 
@@ -35,8 +35,32 @@ const DOSAGE_FORMS = [
   "Inhaler"
 ];
 
-const AddMedicationModal = ({ onClose }: { onClose: () => void }) => {
-  const { createMedication, loading, error } = usePharmacyMedications();
+interface Medication {
+  id: number;
+  name: string;
+  genericName?: string;
+  description?: string;
+  dosageForm?: string;
+  strength?: string;
+  manufacturer?: string;
+  price: number;
+  currency: string;
+  stockQuantity: number;
+  isAvailable: boolean;
+  requiresPrescription: boolean;
+  category?: string;
+  expiryDate?: string;
+  imageUrl?: string;
+}
+
+interface UpdateMedicationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  medication: Medication | null;
+}
+
+const UpdateMedicationModal = ({ isOpen, onClose, medication }: UpdateMedicationModalProps) => {
+  const { updateMedication, loading, error } = usePharmacyMedications();
   const [formData, setFormData] = useState({
     name: "",
     genericName: "",
@@ -54,6 +78,27 @@ const AddMedicationModal = ({ onClose }: { onClose: () => void }) => {
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Populate form when medication changes
+  useEffect(() => {
+    if (medication) {
+      setFormData({
+        name: medication.name || "",
+        genericName: medication.genericName || "",
+        description: medication.description || "",
+        dosageForm: medication.dosageForm || "",
+        strength: medication.strength || "",
+        manufacturer: medication.manufacturer || "",
+        price: medication.price?.toString() || "",
+        currency: medication.currency || "XAF",
+        stockQuantity: medication.stockQuantity?.toString() || "",
+        category: medication.category || "",
+        requiresPrescription: medication.requiresPrescription || false,
+        expiryDate: medication.expiryDate || "",
+      });
+      setImagePreview(medication.imageUrl || undefined);
+    }
+  }, [medication]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -88,7 +133,7 @@ const AddMedicationModal = ({ onClose }: { onClose: () => void }) => {
   };
 
   const handleSave = async () => {
-    if (!validateForm()) return;
+    if (!validateForm() || !medication) return;
 
     // Ensure currency is set to XAF and convert price to number
     const medicationData = {
@@ -98,34 +143,18 @@ const AddMedicationModal = ({ onClose }: { onClose: () => void }) => {
       stockQuantity: parseInt(formData.stockQuantity) || 0
     };
 
-    console.log("Creating medication with data:", medicationData);
+    console.log("Updating medication with data:", medicationData);
     console.log("Image file:", imageFile);
 
-    const result = await createMedication(medicationData, imageFile);
+    const result = await updateMedication(medication.id, medicationData, imageFile);
     if (result.success) {
-      // Reset form
-      setFormData({
-        name: "",
-        genericName: "",
-        description: "",
-        dosageForm: "",
-        strength: "",
-        manufacturer: "",
-        price: "",
-        currency: "XAF",
-        stockQuantity: "",
-        category: "",
-        requiresPrescription: false,
-        expiryDate: "",
-      });
-      setImageFile(undefined);
-      setImagePreview(undefined);
-      setErrors({});
       onClose();
     }
   };
 
   const isFormIncomplete = !formData.name || !formData.price || !formData.stockQuantity || !formData.category || !formData.dosageForm;
+
+  if (!isOpen || !medication) return null;
 
   return (
     <ModalWrapper>
@@ -138,8 +167,8 @@ const AddMedicationModal = ({ onClose }: { onClose: () => void }) => {
         </button>
 
         <FormHeader
-          title="Add a medication"
-          description="Add a new medication to your pharmacy inventory"
+          title="Update medication"
+          description="Update medication information in your pharmacy inventory"
         />
 
         <form
@@ -323,7 +352,7 @@ const AddMedicationModal = ({ onClose }: { onClose: () => void }) => {
               additionalClasses="primaryBtn bg-accent text-white"
               isLoading={loading}
               isDisabled={isFormIncomplete || Object.keys(errors).length > 0}
-              text="Add Medication"
+              text="Update Medication"
             />
           </div>
         </form>
@@ -332,4 +361,4 @@ const AddMedicationModal = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export default AddMedicationModal;
+export default UpdateMedicationModal;

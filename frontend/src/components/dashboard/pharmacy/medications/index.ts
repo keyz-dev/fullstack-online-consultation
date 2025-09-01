@@ -1,6 +1,7 @@
 export { default as MainView } from './MainView';
 export { default as BulkInsertView } from './BulkInsertView';
 export { default as AddMedicationModal } from './AddMedicationModal';
+export { default as UpdateMedicationModal } from './UpdateMedicationModal';
 export { default as CardSection } from './CardSection';
 export { default as BulkImportRequirement } from './BulkImportRequirement';
 export { default as BulkInsertTable } from './BulkInsertTable';

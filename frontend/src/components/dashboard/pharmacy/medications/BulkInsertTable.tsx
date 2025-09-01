@@ -69,7 +69,7 @@ const BulkInsertTable = ({ medications, handleImport, loading }: BulkInsertTable
                   {medication.dosageForm}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${medication.price}
+                  {medication.price} XAF
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {medication.stockQuantity}

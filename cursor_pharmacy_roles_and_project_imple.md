@@ -2077,7 +2077,7 @@ Now let me fix the pharmacy drug controller to use the correct patterns:
 
     // Handle file uploads if any
     let imageUrl = null;
-    if (req.files && req.files.medicationImage) {
+      if (req.files && req.files.medicationImage) {
       const uploadedFiles = await handleFileUploads(req.files);
       imageUrl = uploadedFiles.medicationImage;
     }

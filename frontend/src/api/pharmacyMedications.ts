@@ -166,7 +166,7 @@ class PharmacyMedicationsApi {
     }
   }
 
-  // Bulk import medications
+  // Bulk import medications (file-based)
   async bulkImportMedications(file: File): Promise<BulkImportResponse> {
     try {
       const formData = new FormData();
@@ -175,6 +175,22 @@ class PharmacyMedicationsApi {
       const response = await api.post('/pharmacyDrugs/bulk-import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  // Bulk create medications from processed data
+  async bulkCreateMedications(medications: any[]): Promise<BulkImportResponse> {
+    try {
+      const response = await api.post('/pharmacyDrugs/bulk-create', {
+        medications: medications
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
         },
       });
       return response.data;

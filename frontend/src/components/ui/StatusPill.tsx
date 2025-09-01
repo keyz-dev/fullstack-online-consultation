@@ -39,6 +39,7 @@ const StatusPill: React.FC<StatusPillProps> = ({ status }) => {
       case "failed":
       case "refunded":
       case "declined":
+      case "required":
         return {
           bg: "bg-red-100 dark:bg-red-900/20",
           text: "text-red-800 dark:text-red-300",

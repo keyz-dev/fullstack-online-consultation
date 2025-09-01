@@ -1,9 +1,11 @@
-const { PharmacyDrug, Pharmacy } = require("../db/models");
+const { PharmacyDrug } = require("../db/models");
 const { Op } = require("sequelize");
 const xlsx = require("xlsx");
 const fs = require("fs");
 const path = require("path");
 const { BadRequestError } = require("../utils/errors");
+const { formatMedicationsData, formatMedicationData } = require("../utils/returnFormats/medicationData");
+
 
 // ==================== PHARMACY DRUG SERVICE ====================
 
@@ -50,7 +52,7 @@ class PharmacyDrugService {
     });
 
     return {
-      medications: rows,
+      medications: formatMedicationsData(rows),
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(count / limit),
@@ -105,9 +107,10 @@ class PharmacyDrugService {
 
   // Get a single medication by ID
   static async getPharmacyDrug(id, pharmacyId) {
-    return await PharmacyDrug.findOne({
+    const medication = await PharmacyDrug.findOne({
       where: { id, pharmacyId },
     });
+    return medication ? formatMedicationData(medication) : null;
   }
 
   // Create a new medication
@@ -117,7 +120,8 @@ class PharmacyDrugService {
       medicationData.isAvailable = false;
     }
 
-    return await PharmacyDrug.create(medicationData);
+    const medication = await PharmacyDrug.create(medicationData);
+    return formatMedicationData(medication);
   }
 
   // Update a medication
@@ -136,7 +140,7 @@ class PharmacyDrugService {
     }
 
     await medication.update(updateData);
-    return medication;
+    return formatMedicationData(medication);
   }
 
   // Delete a medication
@@ -216,7 +220,7 @@ class PharmacyDrugService {
             strength: row.strength?.trim() || null,
             manufacturer: row.manufacturer?.trim() || null,
             price: parseFloat(row.price),
-            currency: row.currency?.toUpperCase() || "USD",
+            currency: row.currency?.toUpperCase() || "XAF",
             stockQuantity: parseInt(row.stockQuantity) || 0,
             isAvailable: (parseInt(row.stockQuantity) || 0) > 0,
             requiresPrescription: row.requiresPrescription === "true" || row.requiresPrescription === true,
@@ -260,6 +264,90 @@ class PharmacyDrugService {
     }
   }
 
+  // Bulk create medications from processed data (frontend-parsed)
+  static async bulkCreatePharmacyDrugs(pharmacyId, medicationsData) {
+    try {
+      if (!medicationsData || !Array.isArray(medicationsData) || medicationsData.length === 0) {
+        throw new BadRequestError("No medications data provided");
+      }
+
+      const errors = [];
+      const imported = [];
+      let total = medicationsData.length;
+
+      // Process each medication
+      for (let i = 0; i < medicationsData.length; i++) {
+        const medicationData = medicationsData[i];
+        const rowNumber = i + 1;
+
+        try {
+          // Validate required fields
+          if (!medicationData.name) {
+            errors.push(`Row ${rowNumber}: Medication name is required`);
+            continue;
+          }
+
+          if (!medicationData.price || isNaN(parseFloat(medicationData.price))) {
+            errors.push(`Row ${rowNumber}: Valid price is required`);
+            continue;
+          }
+
+          if (medicationData.stockQuantity !== undefined && isNaN(parseInt(medicationData.stockQuantity))) {
+            errors.push(`Row ${rowNumber}: Valid stock quantity is required`);
+            continue;
+          }
+
+          // Prepare medication data with pharmacy ID
+          const processedMedicationData = {
+            pharmacyId,
+            name: medicationData.name.trim(),
+            genericName: medicationData.genericName?.trim() || null,
+            description: medicationData.description?.trim() || null,
+            dosageForm: medicationData.dosageForm?.trim() || null,
+            strength: medicationData.strength?.trim() || null,
+            manufacturer: medicationData.manufacturer?.trim() || null,
+            price: parseFloat(medicationData.price),
+            currency: medicationData.currency?.toUpperCase() || "XAF",
+            stockQuantity: parseInt(medicationData.stockQuantity) || 0,
+            isAvailable: (parseInt(medicationData.stockQuantity) || 0) > 0,
+            requiresPrescription: medicationData.requiresPrescription === true || medicationData.requiresPrescription === "true",
+            category: medicationData.category?.trim() || null,
+            sideEffects: Array.isArray(medicationData.sideEffects) ? medicationData.sideEffects : [],
+            contraindications: Array.isArray(medicationData.contraindications) ? medicationData.contraindications : [],
+            expiryDate: medicationData.expiryDate ? new Date(medicationData.expiryDate) : null,
+          };
+
+          // Validate expiry date
+          if (processedMedicationData.expiryDate && processedMedicationData.expiryDate <= new Date()) {
+            errors.push(`Row ${rowNumber}: Expiry date must be in the future`);
+            continue;
+          }
+
+          // Create medication
+
+          const medication = await PharmacyDrug.create(processedMedicationData);
+          imported.push(formatMedicationData(medication));
+
+        } catch (error) {
+          console.error(`Error creating medication ${rowNumber}:`, error.message);
+          errors.push(`Row ${rowNumber}: ${error.message}`);
+        }
+      }
+      if (errors.length > 0) {
+        console.log('Error details:', errors);
+      }
+
+      return {
+        imported: imported.length,
+        errors,
+        total,
+        medications: imported,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Generate Excel template for medication import
   static async generateTemplate() {
     const templateData = [
@@ -270,8 +358,8 @@ class PharmacyDrugService {
         dosageForm: "Tablet",
         strength: "500mg",
         manufacturer: "Generic Pharma",
-        price: "5.99",
-        currency: "USD",
+        price: "2100",
+        currency: "XAF",
         stockQuantity: "100",
         requiresPrescription: "false",
         category: "Pain Relief",
@@ -286,8 +374,8 @@ class PharmacyDrugService {
         dosageForm: "Capsule",
         strength: "250mg",
         manufacturer: "MedCorp",
-        price: "12.50",
-        currency: "USD",
+        price: "3500",
+        currency: "XAF",
         stockQuantity: "50",
         requiresPrescription: "true",
         category: "Antibiotics",

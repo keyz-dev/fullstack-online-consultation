@@ -56,15 +56,18 @@ export const usePharmacyMedications = () => {
     setError(null);
 
     try {
+      console.log("Fetching medications with params:", { page, limit: 10, ...filters });
       const response = await pharmacyMedicationsApi.getMedications({
         page,
         limit: 10,
         ...filters
       });
+      console.log("Medications response:", response);
       setMedications(response.data.medications);
       setPagination(response.data.pagination);
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to fetch medications";
+      console.error("Error fetching medications:", err);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -88,23 +91,27 @@ export const usePharmacyMedications = () => {
 
     try {
       const formData = createMedicationFormData(medicationData, imageFile);
+      console.log("Creating medication with formData:", formData);
       const response = await pharmacyMedicationsApi.createMedication(formData);
+      console.log("Create medication response:", response);
       
       toast.success(response.message);
       // Refresh the medications list
-      await fetchMedications(pagination.currentPage);
+      console.log("Refreshing medications list...");
+      await fetchMedications(1); // Always refresh to page 1 after creation
       await fetchMedicationStats();
       
       return { success: true, message: response.message };
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to create medication";
+      console.error("Error creating medication:", err);
       setError(errorMessage);
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
       setLoading(false);
     }
-  }, [fetchMedications, fetchMedicationStats, pagination.currentPage]);
+  }, [fetchMedications, fetchMedicationStats]);
 
   const updateMedication = useCallback(async (id: number, medicationData: Partial<Medication>, imageFile?: File) => {
     setLoading(true);
@@ -136,8 +143,6 @@ export const usePharmacyMedications = () => {
 
     try {
       const response = await pharmacyMedicationsApi.deleteMedication(id);
-      
-      toast.success(response.message);
       // Refresh the medications list
       await fetchMedications(pagination.currentPage);
       await fetchMedicationStats();
@@ -181,6 +186,34 @@ export const usePharmacyMedications = () => {
     }
   }, [fetchMedications, fetchMedicationStats, pagination.currentPage]);
 
+  const bulkCreateMedications = useCallback(async (medications: any[]) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await pharmacyMedicationsApi.bulkCreateMedications(medications);
+      
+      toast.success(response.message);
+      // Refresh the medications list
+      await fetchMedications(pagination.currentPage);
+      await fetchMedicationStats();
+      
+      return { 
+        success: true, 
+        message: response.message,
+        imported: response.data.imported,
+        errors: response.data.errors
+      };
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to create medications";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return { success: false, message: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchMedications, fetchMedicationStats, pagination.currentPage]);
+
   const downloadTemplate = useCallback(async () => {
     try {
       const blob = await pharmacyMedicationsApi.downloadTemplate();
@@ -210,6 +243,7 @@ export const usePharmacyMedications = () => {
     updateMedication,
     deleteMedication,
     bulkInsertMedications,
+    bulkCreateMedications,
     downloadTemplate
   };
 };

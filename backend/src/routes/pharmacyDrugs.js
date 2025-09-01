@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const pharmacyDrugController = require("../controllers/pharmacyDrugController");
+const pharmacyDrugController = require("../controllers/pharmacyDrug");
 const { authenticate, authorizeRoles } = require("../middleware/auth");
-const { upload } = require("../middleware/multer");
+const { upload, handleCloudinaryUpload, handleUploadError, formatFilePaths } = require("../middleware/multer");
 
 // ==================== PHARMACY DRUG ROUTES ====================
 
@@ -24,18 +24,20 @@ router.get("/:id", pharmacyDrugController.getPharmacyDrug);
 // Create a new medication (with image upload)
 router.post(
   "/",
-  upload.fields([
-    { name: "medicationImage", maxCount: 1 },
-  ]),
+  upload.single("medicationImage"),
+  handleCloudinaryUpload,
+  handleUploadError,
+  formatFilePaths,
   pharmacyDrugController.createPharmacyDrug
 );
 
 // Update a medication (with image upload)
 router.put(
   "/:id",
-  upload.fields([
-    { name: "medicationImage", maxCount: 1 },
-  ]),
+  upload.single("medicationImage"),
+  handleCloudinaryUpload,
+  handleUploadError,
+  formatFilePaths,
   pharmacyDrugController.updatePharmacyDrug
 );
 
@@ -48,11 +50,15 @@ router.patch("/:id/stock", pharmacyDrugController.updateMedicationStock);
 // Bulk import medications from Excel/CSV file
 router.post(
   "/bulk-import",
-  upload.fields([
-    { name: "medicationFile", maxCount: 1 },
-  ]),
+  upload.single("medicationFile"),
+  handleCloudinaryUpload,
+  handleUploadError,
+  formatFilePaths,
   pharmacyDrugController.bulkImportPharmacyDrugs
 );
+
+// Bulk create medications from processed data (frontend-parsed)
+router.post("/bulk-create", pharmacyDrugController.bulkCreatePharmacyDrugs);
 
 // Download medication import template
 router.get("/template/download", pharmacyDrugController.downloadTemplate);

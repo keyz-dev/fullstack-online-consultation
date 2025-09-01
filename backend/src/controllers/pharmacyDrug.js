@@ -1,9 +1,9 @@
-const { PharmacyDrug, Pharmacy } = require("../db/models");
+const { PharmacyDrug } = require("../db/models");
 const PharmacyDrugService = require("../services/pharmacyDrugService");
 const { BadRequestError, NotFoundError } = require("../utils/errors");
-const { validatePharmacyDrug, validateBulkImport } = require("../schema/pharmacyDrugSchema");
-const { handleFileUploads } = require("../utils/documentUtil");
+const { validatePharmacyDrug } = require("../schema/pharmacyDrugSchema");
 const { cleanUpFileImages, cleanUpInstanceImages } = require("../utils/imageCleanup");
+const { formatImageUrl } = require("../utils/imageUtils");
 
 // ==================== PHARMACY DRUG CONTROLLER ====================
 
@@ -105,9 +105,8 @@ exports.createPharmacyDrug = async (req, res, next) => {
 
     // Handle file uploads if any
     let imageUrl = null;
-    if (req.files && req.files.medicationImage) {
-      const uploadedFiles = await handleFileUploads(req.files);
-      imageUrl = uploadedFiles.medicationImage;
+    if(req.file){
+      imageUrl = req.file.path; 
     }
 
     const medicationData = {
@@ -117,6 +116,9 @@ exports.createPharmacyDrug = async (req, res, next) => {
     };
 
     const medication = await PharmacyDrugService.createPharmacyDrug(medicationData);
+
+    medication.imageUrl = formatImageUrl(medication.imageUr)
+
 
     res.status(201).json({
       status: "success",
@@ -147,9 +149,8 @@ exports.updatePharmacyDrug = async (req, res, next) => {
 
     // Handle file uploads if any
     let imageUrl = null;
-    if (req.files && req.files.medicationImage) {
-      const uploadedFiles = await handleFileUploads(req.files);
-      imageUrl = uploadedFiles.medicationImage;
+    if (req.file) {
+      imageUrl = req.file.path;
     }
 
     // Get the medication first to clean up old image if needed
@@ -231,12 +232,11 @@ exports.bulkImportPharmacyDrugs = async (req, res, next) => {
     }
 
     // Handle file upload
-    if (!req.files || !req.files.medicationFile) {
+    if (!req.file) {
       throw new BadRequestError("Please upload a file");
     }
 
-    const uploadedFiles = await handleFileUploads(req.files);
-    const filePath = uploadedFiles.medicationFile;
+    const filePath = req.file.path;
 
     // Process bulk import
     const result = await PharmacyDrugService.bulkImportPharmacyDrugs(pharmacyId, filePath);
@@ -252,6 +252,39 @@ exports.bulkImportPharmacyDrugs = async (req, res, next) => {
     });
   } catch (error) {
     await cleanUpFileImages(req);
+    next(error);
+  }
+};
+
+// Bulk create medications from processed data
+exports.bulkCreatePharmacyDrugs = async (req, res, next) => {
+  try {
+    const pharmacyId = req.authUser.pharmacy?.id;
+
+    if (!pharmacyId) {
+      throw new BadRequestError("Pharmacy not found");
+    }
+
+    const { medications } = req.body;
+
+    if (!medications || !Array.isArray(medications)) {
+      throw new BadRequestError("Medications array is required");
+    }
+
+    // Process bulk create
+    const result = await PharmacyDrugService.bulkCreatePharmacyDrugs(pharmacyId, medications);
+
+    res.status(201).json({
+      status: "success",
+      message: `Successfully created ${result.imported} medications. ${result.errors.length} errors found.`,
+      data: {
+        imported: result.imported,
+        errors: result.errors,
+        total: result.total,
+        medications: result.medications,
+      },
+    });
+  } catch (error) {
     next(error);
   }
 };

@@ -14,9 +14,9 @@ import ErrorMessages from './ErrorMessages';
 import FileUploadSection from './FileUploadSection';
 
 const BulkInsertView = ({ setView }: { setView: () => void }) => {
-    const { bulkInsertMedications, loading, error, downloadTemplate } = usePharmacyMedications();
+    const { bulkCreateMedications, loading, error, downloadTemplate } = usePharmacyMedications();
 
-    const [medications, setMedications] = useState([]);
+    const [medications, setMedications] = useState<any[]>([]);
     const [file, setFile] = useState<File | null>(null);
     const [validationError, setValidationError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -46,16 +46,19 @@ const BulkInsertView = ({ setView }: { setView: () => void }) => {
     };
 
     const handleImport = async () => {
-        if (file && medications.length > 0) {
-            const result = await bulkInsertMedications(file);
+        if (medications.length > 0) {
+            const result = await bulkCreateMedications(medications);
             if (result.success) {
-                setSuccessMessage(result.message || 'Medications imported successfully!');
+                setSuccessMessage(result.message || 'Medications created successfully!');
                 setMedications([]);
                 setFile(null);
                 setValidationError('');
+                
+                // Redirect to main view after successful creation
                 setTimeout(() => {
                     setSuccessMessage('');
-                }, 3000);
+                    setView(); // This will redirect back to the main medications view
+                }, 2000); // Show success message for 2 seconds before redirecting
             }
         }
     };
@@ -76,11 +79,11 @@ const BulkInsertView = ({ setView }: { setView: () => void }) => {
             />
 
             <div className="mb-4">
-                <h1 className="text-2xl font-bold mb-2">Bulk Import your Medications</h1>
+                <h1 className="text-2xl font-bold mb-2">Import your Medications In Bulk</h1>
 
                 <ErrorMessages
                     successMessage={successMessage}
-                    error={error}
+                    error={error || undefined}
                     validationError={validationError}
                 />
             </div>
