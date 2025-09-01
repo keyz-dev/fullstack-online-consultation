@@ -94,12 +94,33 @@ export const useVideoSocket = ({
         }
         
         // If we're the doctor (initiator), create offer when patient joins
-        if (userRole === "doctor" && peerConnectionRef.current) {
-          console.log("👨‍⚕️ Doctor creating offer for patient:", userId);
-          setTimeout(() => {
-            console.log("🤝 Creating offer after delay...");
-            createOffer();
-          }, 500); // Increased delay to ensure everything is set up
+        if (userRole === "doctor") {
+          console.log("👨‍⚕️ Doctor should create offer for patient:", userId);
+          console.log("🔍 Peer connection state:", {
+            hasPeerConnection: !!peerConnectionRef.current,
+            connectionState: peerConnectionRef.current?.connectionState,
+            signalingState: peerConnectionRef.current?.signalingState
+          });
+          
+          if (peerConnectionRef.current) {
+            console.log("✅ Peer connection ready, creating offer");
+            setTimeout(() => {
+              console.log("🤝 Creating offer after delay...");
+              createOffer();
+            }, 500);
+          } else {
+            console.log("⚠️ Peer connection not ready, will retry...");
+            // Retry after a longer delay to allow WebRTC initialization
+            setTimeout(() => {
+              console.log("🔄 Retrying offer creation...");
+              if (peerConnectionRef.current) {
+                console.log("✅ Peer connection now ready, creating offer");
+                createOffer();
+              } else {
+                console.error("❌ Peer connection still not ready after retry");
+              }
+            }, 2000);
+          }
         }
       });
 

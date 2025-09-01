@@ -202,8 +202,53 @@ const initializeSocket = (server) => {
       socket.to(roomId).emit("video:user-left", { userId: socket.userId });
     });
 
-    // A user ends the call for everyone
+    // --- Simple Peer Events ---
+
+    // Handle Simple Peer call initiation
+    socket.on("video:call-user", (data) => {
+      const { userToCall, signalData, from, name, roomId, consultationId } = data;
+      console.log(`📞 Simple Peer call from ${socket.userId} to ${userToCall} in room ${roomId}`);
+      
+      // Send call to specific user
+      io.to(`user-${userToCall}`).emit("video:call-user", {
+        signal: signalData,
+        from: socket.userId,
+        name: name || socket.user?.name || 'Unknown User',
+        roomId,
+        consultationId
+      });
+    });
+
+    // Handle Simple Peer call answer
+    socket.on("video:answer-call", (data) => {
+      const { signal, to, name, roomId, consultationId } = data;
+      console.log(`📞 Simple Peer answer from ${socket.userId} to ${to} in room ${roomId}`);
+      
+      // Send answer to caller
+      io.to(`user-${to}`).emit("video:call-accepted", {
+        signal,
+        from: socket.userId,
+        name: name || socket.user?.name || 'Unknown User',
+        roomId,
+        consultationId
+      });
+    });
+
+    // Handle Simple Peer call end
     socket.on("video:end-call", (data) => {
+      const { roomId, consultationId } = data;
+      console.log(`📞 Simple Peer call ended by ${socket.userId} in room ${roomId}`);
+      
+      // Notify all users in room that call ended
+      socket.to(roomId).emit("video:call-ended", {
+        from: socket.userId,
+        roomId,
+        consultationId
+      });
+    });
+
+    // A user ends the call for everyone (legacy event)
+    socket.on("video:legacy-end-call", (data) => {
         const { roomId } = data;
         if (!roomId) return;
         console.log(`📞 User ${socket.userId} ended the call for room ${roomId}`);

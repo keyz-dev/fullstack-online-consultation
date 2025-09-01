@@ -69,7 +69,7 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
     });
   }, [socket, roomId, userRole]);
 
-  // Use socket hook
+  // Use socket hook - but only after WebRTC is initialized
   const { sendMessage: sendSocketMessage } = useVideoSocket({
     roomId,
     userRole,
@@ -119,7 +119,7 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
     };
   }, [socket]);
 
-  // Initialize on mount - only run once with stable dependencies
+  // Initialize on mount - run only when essential params change
   useEffect(() => {
     console.log("🚀 VideoCallRoom initializing for:", { roomId, consultationId, userRole });
     
@@ -138,7 +138,7 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
       isActive = false;
       cleanup();
     };
-  }, [roomId, consultationId, userRole, initializeWebRTC, cleanup]); // Include stable dependencies
+  }, [roomId, consultationId, userRole, initializeWebRTC, cleanup]); // Include stable functions
 
   // Debug remote user state
   useEffect(() => {

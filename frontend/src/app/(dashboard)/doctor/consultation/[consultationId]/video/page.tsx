@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import VideoCallRoom from "@/components/video/VideoCallRoom";
+import SimplePeerVideoCallRoom from "@/components/video/SimplePeerVideoCallRoom";
 import { useConsultation } from "@/contexts";
 
 export default function DoctorVideoCallPage() {
@@ -42,7 +42,7 @@ export default function DoctorVideoCallPage() {
 
   return (
     <div className="h-[85vh] overflow-hidden">
-      <VideoCallRoom
+      <SimplePeerVideoCallRoom
         roomId={roomId}
         consultationId={consultationId}
         userRole="doctor"
