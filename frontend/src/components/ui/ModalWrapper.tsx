@@ -15,7 +15,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
     >
       <div className="absolute min-h-[calc(100vh-6rem)] bottom-0 w-screen bg-white dark:bg-gray-900 grid place-items-center overflow-auto">
-        <div className={className}>{children}</div>
+        {children}
       </div>
     </div>
   );

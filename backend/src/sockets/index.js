@@ -1,21 +1,13 @@
 const socketIo = require("socket.io");
 const jwt = require("jsonwebtoken");
-const { User, Consultation, ConsultationMessage } = require("../db/models");
+const { User } = require("../db/models");
 
 let io;
 
 const initializeSocket = (server) => {
-  // Allow multiple origins for local network testing
-  const allowedOrigins = [
-    process.env.FRONTEND_URL || "http://localhost:3000",
-    "http://localhost:3000",
-    /^http:\/\/192\.168\.\d+\.\d+:3000$/,
-    /^http:\/\/10\.\d+\.\d+\.\d+:3000$/,
-  ];
-
   io = socketIo(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: process.env.FRONTEND_URL || "http://localhost:3000",
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -56,7 +48,7 @@ const initializeSocket = (server) => {
 
     // Join user-specific room (main notification room)
     socket.join(`user-${socket.userId}`);
-    console.log(`✅ User ${socket.userId} (${socket.user.name}) joined room: user-${socket.userId}`);
+    console.log(`✅ User ${socket.userId} joined room: user-${socket.userId}`);
 
     // Join admin room if user is admin
     if (socket.user.role === "admin") {
@@ -105,6 +97,12 @@ const initializeSocket = (server) => {
     // Handle disconnection
     socket.on("disconnect", () => {
       console.log(`🔌 User ${socket.userId} disconnected`);
+      // If user was in a video room, notify others they left
+      if (socket.currentVideoRoom) {
+        socket.to(socket.currentVideoRoom).emit("video:user-left", { 
+          userId: socket.userId 
+        });
+      }
     });
 
     // Handle notification read
@@ -129,151 +127,48 @@ const initializeSocket = (server) => {
       });
     });
 
-    // Handle consultation chat messages (with persistence)
-    socket.on("chat_message", async (data) => {
-      const { roomId, consultationId, message, timestamp } = data;
-      
-      try {
-        console.log(`💬 Chat message from ${socket.userId} in consultation ${consultationId}`);
-        
-        // Save message to database
-        const { ConsultationMessage } = require("../db/models");
-        const savedMessage = await ConsultationMessage.create({
-          consultationId: parseInt(consultationId),
-          senderId: socket.userId,
-          senderType: socket.user.role === 'doctor' ? 'doctor' : 'patient',
-          type: 'text',
-          content: message,
-          metadata: {
-            roomId: roomId,
-            timestamp: timestamp
-          }
-        });
-
-        // Broadcast message to all users in the room
-        const messageData = {
-          id: savedMessage.id,
-          content: message,
-          sender: socket.user.name,
-          senderType: socket.user.role,
-          timestamp: savedMessage.createdAt,
-          consultationId: consultationId
-        };
-
-        // Send to room (including sender for confirmation)
-        io.in(roomId).emit("chat_message", messageData);
-        
-        console.log(`✅ Message saved and broadcasted to room ${roomId}`);
-        
-      } catch (error) {
-        console.error("❌ Error saving chat message:", error);
-        // Send error back to sender
-        socket.emit("chat_message_error", {
-          error: "Failed to save message",
-          originalMessage: message
-        });
-      }
-    });
-
     // ====================================
     // ===== VIDEO CALL SIGNALING =======
     // ====================================
 
     // Patient accepts the call and is ready to join
-    socket.on("video_call_accepted", (data) => {
-      const { roomId, consultationId } = data;
-      console.log(`📞 Patient ${socket.userId} accepted call for consultation ${consultationId}`);
+    socket.on("video:accept-call", (data) => {
+      const { roomId, doctorId, consultationId } = data;
+      console.log(`📞 Patient ${socket.userId} accepted call from doctor ${doctorId}`);
       // Notify doctor that patient has accepted
-      socket.to(roomId).emit("video_call_accepted", { 
-        roomId, 
-        consultationId, 
-        patientId: socket.userId,
-        patientName: socket.user.name,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    // Patient is ringing (acknowledges call received)
-    socket.on("video_call_ringing", (data) => {
-      const { roomId, consultationId } = data;
-      console.log(`📱 Patient ${socket.userId} is ringing for consultation ${consultationId}`);
-      // Notify doctor that patient's device is ringing
-      socket.to(roomId).emit("video_call_ringing", { 
-        roomId, 
-        consultationId, 
-        patientId: socket.userId,
-        patientName: socket.user.name,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    // Call ended
-    socket.on("call_ended", (data) => {
-      const { roomId, consultationId } = data;
-      console.log(`📞 Call ended by ${socket.userId} for consultation ${consultationId}`);
-      socket.to(roomId).emit("call_ended", { 
-        roomId, 
-        consultationId, 
-        endedBy: socket.userId,
-        endedByName: socket.user.name,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    // Call cancelled by doctor
-    socket.on("call_cancelled", (data) => {
-      const { roomId, consultationId } = data;
-      console.log(`📞 Call cancelled by ${socket.userId} for consultation ${consultationId}`);
-      socket.to(roomId).emit("call_cancelled", { 
-        roomId, 
-        consultationId, 
-        cancelledBy: socket.userId,
-        cancelledByName: socket.user.name,
-        timestamp: new Date().toISOString()
-      });
+      io.to(`user-${doctorId}`).emit("video:call-accepted", { roomId, consultationId, patientId: socket.userId });
     });
 
     // Patient rejects the call
-    socket.on("video_call_rejected", (data) => {
-      const { roomId, consultationId } = data;
-      console.log(`🚫 Patient ${socket.userId} rejected call for consultation ${consultationId}`);
+    socket.on("video:reject-call", (data) => {
+      const { doctorId, consultationId, roomId } = data;
+      console.log(`🚫 Patient ${socket.userId} rejected call from doctor ${doctorId}`);
       // Notify doctor that patient has rejected
-      socket.to(roomId).emit("video_call_rejected", { 
-        roomId, 
-        consultationId, 
-        patientId: socket.userId,
-        patientName: socket.user.name,
-        timestamp: new Date().toISOString()
-      });
+      io.to(`user-${doctorId}`).emit("video:call-rejected", { roomId, consultationId, patientId: socket.userId });
+    });
+
+    // Doctor cancels the call
+    socket.on("video:call-cancelled", (data) => {
+      const { roomId, consultationId } = data;
+      console.log(`📞 Doctor ${socket.userId} cancelled call for consultation ${consultationId}`);
+      // Notify all users in the room that the call was cancelled
+      socket.to(roomId).emit("video:call-cancelled", { roomId, consultationId, cancelledBy: socket.userId });
     });
 
     // User (doctor or patient) joins the video call room
     socket.on("video:join-room", (data) => {
       const { roomId, consultationId } = data;
       if (!roomId) return;
-      
       socket.join(roomId);
-      console.log(`✅ User ${socket.userId} (${socket.user.name}) joined video room: ${roomId}`);
-      
-      // Get all sockets in the room
-      const room = io.sockets.adapter.rooms.get(roomId);
-      const roomSize = room ? room.size : 0;
-      
-      console.log(`📊 Room ${roomId} now has ${roomSize} participants`);
-      
+      console.log(`✅ User ${socket.userId} joined video room: ${roomId}`);
+      // Store room association for this socket
+      socket.currentVideoRoom = roomId;
       // Announce to others in the room that a new user has joined
       socket.to(roomId).emit("video:user-joined", { 
         userId: socket.userId, 
         name: socket.user.name,
-        role: socket.user.role,
-        roomSize: roomSize
-      });
-      
-      // Send room info to the joining user
-      socket.emit("video:room-joined", {
         roomId,
-        roomSize,
-        message: "Successfully joined video room"
+        consultationId 
       });
     });
 
@@ -282,25 +177,19 @@ const initializeSocket = (server) => {
     // Relay SDP offer
     socket.on("video:offer", (data) => {
       const { offer, toUserId, roomId } = data;
-      console.log(`📞 Relaying offer from user ${socket.userId} to room ${roomId}`);
-      // Broadcast to all other users in the room
-      socket.to(roomId).emit("video:offer", { offer, fromUserId: socket.userId, roomId });
+      io.to(`user-${toUserId}`).emit("video:offer", { offer, fromUserId: socket.userId, roomId });
     });
 
     // Relay SDP answer
     socket.on("video:answer", (data) => {
       const { answer, toUserId, roomId } = data;
-      console.log(`📞 Relaying answer from user ${socket.userId} to room ${roomId}`);
-      // Broadcast to all other users in the room
-      socket.to(roomId).emit("video:answer", { answer, fromUserId: socket.userId, roomId });
+      io.to(`user-${toUserId}`).emit("video:answer", { answer, fromUserId: socket.userId, roomId });
     });
 
     // Relay ICE candidate
     socket.on("video:ice-candidate", (data) => {
       const { candidate, toUserId, roomId } = data;
-      console.log(`🧊 Relaying ICE candidate from user ${socket.userId} to room ${roomId}`);
-      // Broadcast to all other users in the room
-      socket.to(roomId).emit("video:ice-candidate", { candidate, fromUserId: socket.userId, roomId });
+      io.to(`user-${toUserId}`).emit("video:ice-candidate", { candidate, fromUserId: socket.userId, roomId });
     });
 
     // User leaves the video call room
@@ -318,8 +207,28 @@ const initializeSocket = (server) => {
         const { roomId } = data;
         if (!roomId) return;
         console.log(`📞 User ${socket.userId} ended the call for room ${roomId}`);
-        // Notify all clients in the room to end the call
-        io.in(roomId).emit("video:call-ended", { fromUserId: socket.userId });
+        // Notify OTHER clients in the room to end the call (exclude sender)
+        socket.to(roomId).emit("video:call-ended", { fromUserId: socket.userId });
+        // Remove this socket from the room
+        socket.leave(roomId);
+        socket.currentVideoRoom = null;
+    });
+
+    // Handle video chat messages
+    socket.on("video:chat-message", (data) => {
+      const { roomId, consultationId, message, timestamp, senderRole } = data;
+      if (!roomId) return;
+      console.log(`💬 User ${socket.userId} sent chat message in room ${roomId}`);
+      // Relay message to others in the room
+      socket.to(roomId).emit("video:chat-message", {
+        roomId,
+        consultationId,
+        message,
+        timestamp,
+        senderRole,
+        fromUserId: socket.userId,
+        sent: false
+      });
     });
 
     // Handle appointment payment tracking

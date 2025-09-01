@@ -16,6 +16,10 @@ const handleFileUploads = async (files, documentNames = []) => {
     uploadedFiles.images = files.pharmacyImage.map((photo) => photo.path);
   }
 
+  if (files.medicationImage) {
+    uploadedFiles.medicationImage = files.medicationImage[0].path;
+  }
+
   // Handle documents with names
   if (files.doctorDocument) {
     uploadedFiles.documents = files.doctorDocument.map((doc, index) => ({
@@ -35,6 +39,10 @@ const handleFileUploads = async (files, documentNames = []) => {
       size: doc.size,
       url: doc.path,
     }));
+  }
+
+  if (files.medicationFile) {
+    uploadedFiles.medicationFile = files.medicationFile[0].path;
   }
 
   // Handle patient documents

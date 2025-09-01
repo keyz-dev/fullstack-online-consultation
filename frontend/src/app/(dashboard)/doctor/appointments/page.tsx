@@ -10,6 +10,7 @@ import {
 } from "@/components/dashboard/doctor/appointments";
 import { DoctorCallStatus } from "@/components/video/DoctorCallStatus";
 import { useDoctorCallStatus } from "@/hooks/useDoctorCallStatus";
+import { useConsultation } from "@/contexts";
 import AppointmentDetailsModal from "@/components/dashboard/doctor/appointments/AppointmentDetailsModal";
 import {
   Button,
@@ -39,8 +40,9 @@ const DoctorAppointmentsPage: React.FC = () => {
     startCall,
     cancelCall,
     retryCall,
-    closeStatus,
   } = useDoctorCallStatus();
+
+  const { initiateVideoCall } = useConsultation();
 
   const {
     appointments,
@@ -137,6 +139,18 @@ const DoctorAppointmentsPage: React.FC = () => {
   const handleCancelAppointment = (appointment: DoctorAppointment) => {
     setSelectedAppointment(appointment);
     setShowCancelModal(true);
+  };
+
+  const handleRetryCall = async () => {
+    try {
+      if (!callData) return;
+      // Re-initiate the call via API which emits to the patient
+      await initiateVideoCall(callData.consultationId);
+      // Update local UI state to show ringing again
+      retryCall();
+    } catch (error) {
+      console.error("Failed to retry call:", error);
+    }
   };
 
   const handleCancelConfirm = async () => {
@@ -285,7 +299,7 @@ const DoctorAppointmentsPage: React.FC = () => {
         callStatus={callStatus}
         ringDuration={ringDuration}
         onCancel={cancelCall}
-        onRetry={retryCall}
+        onRetry={handleRetryCall}
       />
     </div>
   );

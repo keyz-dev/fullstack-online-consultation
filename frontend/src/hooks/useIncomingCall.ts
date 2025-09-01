@@ -12,33 +12,27 @@ interface IncomingCallData {
   appointmentDate: string;
   appointmentTime: string;
   patientName: string;
+  doctorUserId?: string; // normalized from backend payload
 }
 
 export const useIncomingCall = () => {
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null);
   const [isCallVisible, setIsCallVisible] = useState(false);
-  const socket = useSocket();
+  const {socket} = useSocket();
   const router = useRouter();
-
-  // Handle incoming call event
-  const handleIncomingCall = useCallback((callData: IncomingCallData) => {
-    console.log("📞 Incoming call received:", callData);
-    setIncomingCall(callData);
-    setIsCallVisible(true);
-    
-    // Emit ringing status to doctor
-    if (socket.socket) {
-      socket.socket.emit("video_call_ringing", {
-        roomId: callData.roomId,
-        consultationId: callData.consultationId
-      });
-    }
-    
-    console.log("📞 Call notification displayed, ringing status sent to doctor");
-  }, [socket]);
 
   // Accept call
   const acceptCall = useCallback(async (roomId: string, consultationId: string) => {
+    // Emit acceptance to doctor first
+    if (socket && incomingCall) {
+      socket.emit("video:accept-call", {
+        roomId,
+        consultationId,
+        doctorId: incomingCall.doctorUserId
+      });
+      console.log("📞 Call acceptance sent to doctor with doctorId:", incomingCall.doctorUserId);
+    }
+    
     setIsCallVisible(false);
     setIncomingCall(null);
     
@@ -63,44 +57,127 @@ export const useIncomingCall = () => {
       console.log('🚀 Navigating to video call room');
       router.push(`/patient/consultation/${consultationId}/video?roomId=${roomId}`);
     }, 1000);
-  }, [router]);
+  }, [router, socket, incomingCall]);
 
   // Decline call
   const declineCall = useCallback(() => {
-    if (incomingCall && socket.socket) {
-      socket.socket.emit("video_call_rejected", {
+    console.log("🚫 Patient declining call:", incomingCall);
+    
+    if (incomingCall && socket) {
+      const rejectionData = {
         roomId: incomingCall.roomId,
-        consultationId: incomingCall.consultationId
-      });
+        consultationId: incomingCall.consultationId,
+        doctorId: incomingCall.doctorUserId
+      };
+      
+      console.log("📤 Emitting video:reject-call:", rejectionData);
+      socket.emit("video:reject-call", rejectionData);
+    } else {
+      console.log("❌ Cannot decline call - missing data:", { incomingCall: !!incomingCall, socket: !!socket });
     }
+    
     setIsCallVisible(false);
     setIncomingCall(null);
+    console.log("✅ Patient call declined and UI cleared");
   }, [incomingCall, socket]);
 
   // Socket event listeners
   useEffect(() => {
-    if (!socket.socket) return;
+    if (!socket) {
+      console.log("❌ No socket available in useIncomingCall");
+      return;
+    }
 
-    console.log("🔌 Setting up incoming call listeners for socket:", socket.socket.id);
-
-    // Listen for incoming video call
-    socket.socket.on("video_call_initiated", handleIncomingCall);
-
-    // Listen for call cancellation (if doctor cancels before patient responds)
-    socket.socket.on("video_call_cancelled", () => {
-      console.log("📞 Call cancelled by doctor");
-      setIsCallVisible(false);
-      setIncomingCall(null);
-    });
-
-    return () => {
-      console.log("🔌 Cleaning up incoming call listeners");
-      if (socket.socket) {
-        socket.socket.off("video_call_initiated", handleIncomingCall);
-        socket.socket.off("video_call_cancelled");
+    // If socket is not connected, wait for connection
+    if (!socket.connected) {
+      console.log("⏳ Socket not connected yet, waiting for connection...");
+      
+      const handleConnect = () => {
+        console.log("✅ Socket connected, setting up call listeners");
+        setupListeners();
+      };
+      
+      socket.on("connect", handleConnect);
+      
+      // If already connected by the time we get here
+      if (socket.connected) {
+        setupListeners();
       }
-    };
-  }, [socket.socket, handleIncomingCall]);
+      
+      return () => {
+        socket.off("connect", handleConnect);
+        cleanupListeners();
+      };
+    } else {
+      setupListeners();
+      return cleanupListeners;
+    }
+
+    function setupListeners() {
+      console.log("🎧 Actually setting up call event listeners...")
+      console.log("This is the socket: ", socket)
+
+      // Handle incoming video call
+      const handleVideoCallInitiated = (data: IncomingCallData) => {
+        console.log("📞 Incoming call received:", data);
+        // Normalize and persist doctorUserId for accept/reject payloads
+        const normalized: IncomingCallData = {
+          consultationId: String(data.consultationId),
+          roomId: data.roomId,
+          doctorName: data.doctorName,
+          doctorSpecialty: data.doctorSpecialty,
+          appointmentDate: data.appointmentDate,
+          appointmentTime: data.appointmentTime,
+          patientName: data.patientName,
+          doctorUserId: data.doctorUserId ? String(data.doctorUserId) : undefined,
+        };
+        setIncomingCall(normalized);
+        setIsCallVisible(true);
+        
+        // CRITICAL: Join the room so we can receive video:call-cancelled events
+        if (socket) {
+          socket.emit("video:join-room", {
+            roomId: data.roomId,
+            consultationId: data.consultationId
+          });
+          console.log("🏠 Joined room for call notifications:", data.roomId);
+          
+          // Emit ringing status to doctor
+          socket.emit("video:call-ringing", {
+            roomId: data.roomId,
+            consultationId: data.consultationId
+          });
+        }
+        
+        console.log("📞 Call notification displayed, ringing status sent to doctor");
+      };
+
+      // Handle call cancellation
+      const handleCallCancelled = (data: IncomingCallData) => {
+        console.log("📞 Doctor cancelled the call:", data);
+        // Dismiss the incoming call notification
+        setIsCallVisible(false);
+        setIncomingCall(null);
+        // Could show a toast: "Call was cancelled by doctor"
+      };
+
+      // Register event listeners
+      if (socket) {
+        socket.on("video:call-initiated", handleVideoCallInitiated);
+        socket.on("video:call-cancelled", handleCallCancelled);
+      }
+      
+      console.log("✅ Call event listeners registered successfully");
+    }
+
+    function cleanupListeners() {
+      console.log("🔌 Cleaning up incoming call listeners");
+      if (socket) {
+        socket.off("video:call-initiated");
+        socket.off("video:call-cancelled");
+      }
+    }
+  }, [socket]); // Remove handleIncomingCall from dependencies
 
   return {
     incomingCall,

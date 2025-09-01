@@ -63,9 +63,10 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
 
     // Emit socket event to accept call
     if (socket.socket) {
-      socket.emit("video_call_accepted", {
+      socket.emit("video:accept-call", {
         consultationId: callData.consultationId,
         roomId: callData.roomId,
+        doctorId: (callData as any)?.doctorUserId,
       });
     }
 
@@ -79,9 +80,10 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
 
     // Emit socket event to decline call
     if (socket.socket) {
-      socket.emit("video_call_rejected", {
+      socket.emit("video:reject-call", {
         consultationId: callData.consultationId,
         roomId: callData.roomId,
+        doctorId: (callData as any)?.doctorUserId,
       });
     }
 

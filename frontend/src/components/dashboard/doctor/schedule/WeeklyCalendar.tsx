@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, Button } from "@/components/ui";
+import { Card, Button, DropdownMenu } from "@/components/ui";
 import { Availability } from "@/types/availability";
 import { timeUtils, uiUtils } from "@/utils/availabilityHelpers";
 import {
@@ -11,6 +11,10 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
+  Plus,
+  Eye,
+  Ban,
+  MoreVertical,
 } from "lucide-react";
 
 interface WeeklyCalendarProps {
@@ -18,6 +22,8 @@ interface WeeklyCalendarProps {
   onEditSession?: (availability: Availability) => void;
   onDeleteSession: (availability: Availability) => void;
   onInvalidateSession: (availability: Availability, reason: string) => void;
+  onAddSessionToDay?: (dayOfWeek: number) => void;
+  onViewTimeSlots?: (availability: Availability) => void;
 }
 
 const DAY_NAMES = [
@@ -41,9 +47,18 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   onEditSession,
   onDeleteSession,
   onInvalidateSession,
+  onAddSessionToDay,
+  onViewTimeSlots,
 }) => {
   const getAvailabilitiesForDay = (dayOfWeek: number) => {
-    return availabilities.filter((av) => av.dayOfWeek === dayOfWeek);
+    const dayAvailabilities = availabilities.filter((av) => av.dayOfWeek === dayOfWeek);
+    
+    // Debug: Log availabilities for this day
+    if (dayAvailabilities.length > 0) {
+      console.log(`Day ${dayOfWeek} has ${dayAvailabilities.length} availabilities:`, dayAvailabilities.map(av => ({ id: av.id, startTime: av.startTime, endTime: av.endTime })));
+    }
+    
+    return dayAvailabilities;
   };
 
   const calculateDayStats = (dayAvailabilities: Availability[]) => {
@@ -73,9 +88,15 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
           return (
             <Card key={dayIndex} className="p-4">
               <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                  {dayName}
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    {dayName}
+                  </h3>
+                  {onAddSessionToDay && (
+                    <Button onClick={() => onAddSessionToDay(dayIndex)} additionalClasses="outlinebtn min-w-fit min-h-fit h-7 w-7 p-0 rounded-full" leadingIcon={<Plus className="w-4 h-4" />}/>
+                   
+                  )}
+                </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   {dayAvailabilities.length} session
                   {dayAvailabilities.length !== 1 ? "s" : ""}
@@ -106,22 +127,41 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                             {timeUtils.formatTime(availability.endTime)}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          {onEditSession && (
-                            <Button
-                              onClickHandler={() => onEditSession(availability)}
-                              additionalClasses="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                          )}
-                          <Button
-                            onClickHandler={() => onDeleteSession(availability)}
-                            additionalClasses="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        <DropdownMenu
+                          trigger={
+                            <button className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded flex items-center justify-center">
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          }
+                          items={[
+                            ...(onViewTimeSlots ? [{
+                              label: "View Slots",
+                              icon: <Eye className="w-4 h-4" />,
+                              onClick: () => onViewTimeSlots(availability),
+                            }] : []),
+                            ...(onEditSession ? [{
+                              label: "Edit Session",
+                              icon: <Edit className="w-4 h-4" />,
+                              onClick: () => onEditSession(availability),
+                            }] : []),
+                            {
+                              label: "Delete Session",
+                              icon: <Trash2 className="w-4 h-4" />,
+                              onClick: () => onDeleteSession(availability),
+                              isDestructive: true,
+                            },
+                            ...(!availability.isInvalidated ? [{
+                              label: "Invalidate Session",
+                              icon: <Ban className="w-4 h-4" />,
+                              onClick: () => {
+                                const reason = prompt("Please provide a reason for invalidating this session:");
+                                if (reason) {
+                                  onInvalidateSession(availability, reason);
+                                }
+                              },
+                            }] : []),
+                          ]}
+                        />
                       </div>
 
                       <div className="space-y-1">

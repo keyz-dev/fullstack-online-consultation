@@ -115,42 +115,6 @@ class AppointmentNotificationService {
   }
 
   /**
-   * Notify patient about appointment creation
-   */
-  async notifyAppointmentCreated(appointment, patient) {
-    // Validate that we have the required patient data
-    if (!patient || !patient.userId) {
-      logger.error(
-        "Cannot create notification: Missing patient or patient.userId",
-        {
-          patient: patient
-            ? { id: patient.id, hasUserId: !!patient.userId }
-            : null,
-          appointmentId: appointment?.id,
-        }
-      );
-      return;
-    }
-
-    const title = "Appointment Created";
-    const message =
-      "Your appointment has been created successfully. Please complete payment to confirm your booking.";
-
-    await this.createNotification(
-      patient.userId,
-      "appointment_created",
-      title,
-      message,
-      "medium",
-      {
-        appointmentId: appointment.id,
-        appointmentStatus: appointment.status,
-        consultationType: appointment.consultationType,
-      }
-    );
-  }
-
-  /**
    * Notify patient about payment initiation
    */
   async notifyPaymentInitiated(appointment, patient, paymentReference) {
@@ -171,19 +135,6 @@ class AppointmentNotificationService {
     const title = "Payment Initiated";
     const message =
       "Payment has been initiated for your appointment. Please check your phone and complete the payment.";
-
-    await this.createNotification(
-      patient.userId,
-      "payment_initiated",
-      title,
-      message,
-      "high",
-      {
-        appointmentId: appointment.id,
-        paymentReference,
-        amount: appointment.timeSlot.availability.consultationFee,
-      }
-    );
 
     // Emit real-time payment status
     if (global.io) {

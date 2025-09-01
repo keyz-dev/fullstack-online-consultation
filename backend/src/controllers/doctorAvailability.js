@@ -39,32 +39,54 @@ const createAvailabilities = async (req, res, next) => {
       throw new NotFoundError("Doctor not found");
     }
 
-    // Check for conflicts with existing availabilities
-    const existingDays = await DoctorAvailability.findAll({
+    // Check for time conflicts with existing availabilities
+    const existingAvailabilities = await DoctorAvailability.findAll({
       where: {
         doctorId: doctor.id,
         dayOfWeek: { [Op.in]: availabilities.map((av) => av.dayOfWeek) },
         isInvalidated: false,
       },
-      attributes: ["dayOfWeek"],
+      attributes: ["dayOfWeek", "startTime", "endTime", "id"],
     });
 
-    if (existingDays.length > 0) {
-      const conflictingDays = existingDays.map((day) => {
-        const dayNames = [
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-        ];
-        return dayNames[day.dayOfWeek];
-      });
-      throw new ConflictError(
-        `Availability already exists for: ${conflictingDays.join(", ")}`
+    // Helper function to check if two time ranges overlap
+    const timeOverlaps = (start1, end1, start2, end2) => {
+      const startTime1 = new Date(`2000-01-01 ${start1}`);
+      const endTime1 = new Date(`2000-01-01 ${end1}`);
+      const startTime2 = new Date(`2000-01-01 ${start2}`);
+      const endTime2 = new Date(`2000-01-01 ${end2}`);
+      
+      // Two ranges overlap if: start1 < end2 AND start2 < end1
+      return startTime1 < endTime2 && startTime2 < endTime1;
+    };
+
+    // Check each new availability against existing ones for time conflicts
+    for (const newAvailability of availabilities) {
+      const dayExisting = existingAvailabilities.filter(
+        (existing) => existing.dayOfWeek === newAvailability.dayOfWeek
       );
+
+      for (const existing of dayExisting) {
+        if (timeOverlaps(
+          newAvailability.startTime,
+          newAvailability.endTime,
+          existing.startTime,
+          existing.endTime
+        )) {
+          const dayNames = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+          ];
+          throw new ConflictError(
+            `Time conflict on ${dayNames[newAvailability.dayOfWeek]}: ${newAvailability.startTime}-${newAvailability.endTime} overlaps with existing session ${existing.startTime}-${existing.endTime}`
+          );
+        }
+      }
     }
 
     // Validate time conflicts within the request
@@ -127,9 +149,31 @@ const createAvailabilities = async (req, res, next) => {
       return createdAvailabilities;
     });
 
-    // Generate time slots for all availabilities AFTER transaction is committed
+    // Generate time slots for newly created availabilities AFTER transaction is committed
     try {
-      await timeSlotService.generateWeeklySlots(doctor.id, 4);
+      console.log(`Generating time slots for ${result.length} newly created availabilities`);
+      
+      // Generate time slots for each newly created availability
+      for (const availability of result) {
+        try {
+          const startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
+
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 28); // 4 weeks
+
+          await timeSlotService.regenerateSlotsForAvailability(
+            availability.id,
+            startDate.toISOString().split("T")[0],
+            endDate.toISOString().split("T")[0]
+          );
+          
+          console.log(`Generated time slots for availability ID: ${availability.id}`);
+        } catch (slotError) {
+          console.error(`Error generating time slots for availability ${availability.id}:`, slotError);
+          // Continue with other availabilities even if one fails
+        }
+      }
     } catch (slotError) {
       console.error("Error generating time slots:", slotError);
       // Log the error but don't fail the response since availabilities were created successfully
@@ -392,6 +436,64 @@ const invalidateAvailability = async (req, res, next) => {
   }
 };
 
+// ==================== DELETE AVAILABILITY ====================
+const deleteAvailability = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.authUser.id;
+
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
+
+    const availability = await DoctorAvailability.findOne({
+      where: { id, doctorId: doctor.id },
+    });
+
+    if (!availability) {
+      throw new NotFoundError("Availability not found");
+    }
+
+    // Check if there are any booked appointments for this availability
+    const bookedSlots = await TimeSlot.count({
+      where: { 
+        doctorAvailabilityId: id, 
+        isBooked: true,
+        date: {
+          [Op.gte]: new Date().toISOString().split('T')[0] // Only future bookings
+        }
+      }
+    });
+
+    if (bookedSlots > 0) {
+      return res.status(409).json({
+        status: "error",
+        message: "Cannot delete availability with active bookings",
+        data: {
+          bookedSlots,
+          action: "invalidate_required",
+          suggestion: "Use invalidate instead to provide a reason to patients"
+        }
+      });
+    }
+
+    // Safe to delete - no active bookings
+    await availability.destroy();
+
+    res.json({
+      status: "success",
+      message: "Availability deleted successfully",
+      data: { id }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ==================== REACTIVATE AVAILABILITY ====================
 const reactivateAvailability = async (req, res, next) => {
   try {
@@ -510,12 +612,114 @@ const getAvailableDoctors = async (req, res, next) => {
   }
 };
 
+// ==================== REGENERATE TIME SLOTS FOR AVAILABILITY ====================
+const regenerateTimeSlots = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.authUser.id;
+
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
+
+    // Find the availability
+    const availability = await DoctorAvailability.findOne({
+      where: { id, doctorId: doctor.id },
+    });
+
+    if (!availability) {
+      throw new NotFoundError("Availability not found");
+    }
+
+    // Generate time slots for the next 4 weeks
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 28); // 4 weeks
+
+    await timeSlotService.regenerateSlotsForAvailability(
+      availability.id,
+      startDate.toISOString().split("T")[0],
+      endDate.toISOString().split("T")[0]
+    );
+
+    res.json({
+      status: "success",
+      message: "Time slots regenerated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== TEST TIME SLOT GENERATION ====================
+const testTimeSlotGeneration = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.authUser.id;
+
+    // Find the doctor associated with the user
+    const doctor = await Doctor.findOne({
+      where: { userId: userId },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
+
+    // Find the availability
+    const availability = await DoctorAvailability.findOne({
+      where: { id, doctorId: doctor.id },
+    });
+
+    if (!availability) {
+      throw new NotFoundError("Availability not found");
+    }
+
+    console.log(`Testing time slot generation for availability ID: ${availability.id}`);
+    console.log(`Availability details: Day ${availability.dayOfWeek}, Time ${availability.startTime}-${availability.endTime}, Duration ${availability.consultationDuration}min`);
+
+    // Generate time slots for the next 4 weeks
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 28); // 4 weeks
+
+    const result = await timeSlotService.regenerateSlotsForAvailability(
+      availability.id,
+      startDate.toISOString().split("T")[0],
+      endDate.toISOString().split("T")[0]
+    );
+
+    res.json({
+      status: "success",
+      message: "Time slot generation test completed",
+      data: {
+        availabilityId: availability.id,
+        slotsGenerated: result.length,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0]
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createAvailabilities,
   getAllByDoctor,
   getById,
   updateAvailability,
+  deleteAvailability,
   invalidateAvailability,
   reactivateAvailability,
   getAvailableDoctors,
+  regenerateTimeSlots,
+  testTimeSlotGeneration,
 };

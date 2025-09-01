@@ -57,6 +57,11 @@ class MediaStreamManager {
     try {
       console.log(`🎥 MediaStreamManager: Creating new stream for room ${roomId}`);
       
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("MediaDevices API not available in this browser");
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },

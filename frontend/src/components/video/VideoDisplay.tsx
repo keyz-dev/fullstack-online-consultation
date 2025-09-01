@@ -1,13 +1,17 @@
+"use client";
+
 import React from "react";
 
 interface VideoDisplayProps {
-  localVideoRef: React.RefObject<HTMLVideoElement> | null;
-  remoteVideoRef: React.RefObject<HTMLVideoElement> | null;
+  localVideoRef: React.RefObject<HTMLVideoElement | null>;
+  remoteVideoRef: React.RefObject<HTMLVideoElement | null>;
+  children?: React.ReactNode;
 }
 
-export const VideoDisplay: React.FC<VideoDisplayProps> = ({
+const VideoDisplay: React.FC<VideoDisplayProps> = ({
   localVideoRef,
   remoteVideoRef,
+  children,
 }) => {
   return (
     <div className="flex-1 relative">
@@ -18,7 +22,7 @@ export const VideoDisplay: React.FC<VideoDisplayProps> = ({
         playsInline
         className="w-full h-full object-cover bg-gray-800"
       />
-
+      
       {/* Local Video (Picture-in-Picture) */}
       <div className="absolute top-4 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600">
         <video
@@ -29,6 +33,11 @@ export const VideoDisplay: React.FC<VideoDisplayProps> = ({
           className="w-full h-full object-cover"
         />
       </div>
+
+      {/* Render any overlay controls */}
+      {children}
     </div>
   );
 };
+
+export default VideoDisplay;

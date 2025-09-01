@@ -48,6 +48,16 @@ export const availabilityApi = {
     return response.data;
   },
 
+  // Delete an availability (hard delete - only if no bookings)
+  deleteAvailability: async (id: number) => {
+    const response = await api.delete<{
+      status: string;
+      message: string;
+      data: { id: number };
+    }>(`/doctorAvailability/${id}`);
+    return response.data;
+  },
+
   // Invalidate an availability (soft delete)
   invalidateAvailability: async (id: number, reason: string) => {
     const response = await api.patch<{
@@ -67,6 +77,30 @@ export const availabilityApi = {
       message: string;
       data: Availability;
     }>(`/doctorAvailability/${id}/reactivate`);
+    return response.data;
+  },
+
+  // Manually regenerate time slots for an availability
+  regenerateTimeSlots: async (id: number) => {
+    const response = await api.post<{
+      status: string;
+      message: string;
+    }>(`/doctorAvailability/${id}/regenerate-slots`);
+    return response.data;
+  },
+
+  // Test time slot generation for debugging
+  testTimeSlotGeneration: async (id: number) => {
+    const response = await api.post<{
+      status: string;
+      message: string;
+      data: {
+        availabilityId: number;
+        slotsGenerated: number;
+        startDate: string;
+        endDate: string;
+      };
+    }>(`/doctorAvailability/${id}/test-slots`);
     return response.data;
   },
 

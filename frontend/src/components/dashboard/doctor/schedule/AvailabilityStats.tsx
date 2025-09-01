@@ -25,7 +25,7 @@ export const AvailabilityStats: React.FC<AvailabilityStatsProps> = ({
     },
     {
       title: "Weekly Hours",
-      value: `${stats.weeklyHours}h`,
+      value: `${stats.weeklyHours.toFixed(1)}h`,
       description: "Total hours per week",
       icon: Clock,
       colorTheme: "green",

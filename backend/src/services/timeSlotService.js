@@ -67,6 +67,8 @@ class TimeSlotService {
     const endTime = new Date(`2000-01-01 ${availability.endTime}`);
     const duration = availability.consultationDuration || 30; // Default 30 minutes
 
+    console.log(`Generating slots for ${dateString}: ${availability.startTime}-${availability.endTime}, duration: ${duration}min`);
+
     let currentTime = new Date(startTime);
 
     while (currentTime < endTime) {
@@ -93,10 +95,18 @@ class TimeSlotService {
    */
   async createTimeSlots(slots) {
     try {
+      console.log(`Attempting to create ${slots.length} time slots in database`);
+      
+      if (slots.length === 0) {
+        console.log('No slots to create');
+        return [];
+      }
+      
       const createdSlots = await TimeSlot.bulkCreate(slots, {
         ignoreDuplicates: true,
       });
 
+      console.log(`Successfully created ${createdSlots.length} time slots in database`);
       return createdSlots;
     } catch (error) {
       console.error("Error creating time slots:", error);
@@ -242,12 +252,54 @@ class TimeSlotService {
   }
 
   /**
+   * Generate time slots for a specific availability only
+   */
+  async generateTimeSlotsForAvailability(availabilityId, startDate, endDate) {
+    try {
+      // Get the specific availability
+      const availability = await DoctorAvailability.findByPk(availabilityId);
+      if (!availability) {
+        throw new Error("Availability not found");
+      }
+
+      const generatedSlots = [];
+      const currentDate = new Date(startDate);
+      const endDateTime = new Date(endDate);
+
+      while (currentDate <= endDateTime) {
+        const dayOfWeek = currentDate.getDay();
+
+        // Fix: Use local date formatting instead of toISOString() to avoid timezone issues
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+        const day = String(currentDate.getDate()).padStart(2, "0");
+        const dateString = `${year}-${month}-${day}`;
+
+        // Only generate slots if this day matches the availability's day of week
+        if (availability.dayOfWeek === dayOfWeek) {
+          const slots = this.generateSlotsForDay(availability, dateString);
+          generatedSlots.push(...slots);
+        }
+
+        // Move to next day
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      return generatedSlots;
+    } catch (error) {
+      console.error("Error generating time slots for availability:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Regenerate time slots for a specific availability
    */
   async regenerateSlotsForAvailability(availabilityId, startDate, endDate) {
     try {
+      
       // Delete existing slots for this availability in the date range
-      await TimeSlot.destroy({
+      const deletedCount = await TimeSlot.destroy({
         where: {
           doctorAvailabilityId: availabilityId,
           date: {
@@ -255,26 +307,25 @@ class TimeSlotService {
           },
         },
       });
+      
 
       // Get the availability
       const availability = await DoctorAvailability.findByPk(availabilityId);
       if (!availability) {
         throw new Error("Availability not found");
       }
+      
 
-      // Generate new slots
-      const slots = await this.generateTimeSlots(
-        availability.doctorId,
+      // Generate new slots for this specific availability only
+      const slots = await this.generateTimeSlotsForAvailability(
+        availabilityId,
         startDate,
         endDate
       );
-      const filteredSlots = slots.filter(
-        (slot) => slot.doctorAvailabilityId === availabilityId
-      );
+      
 
       // Create new slots
-      const createdSlots = await this.createTimeSlots(filteredSlots);
-
+      const createdSlots = await this.createTimeSlots(slots);
       return createdSlots;
     } catch (error) {
       console.error("Error regenerating slots:", error);

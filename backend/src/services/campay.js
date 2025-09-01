@@ -54,6 +54,10 @@ class CampayService {
         },
       });
 
+      console.log("\n\nThe payment has been initiated successfully");
+      console.log("Campay response:", response.data);
+
+
       return response.data;
     } catch (error) {
       logger.error(

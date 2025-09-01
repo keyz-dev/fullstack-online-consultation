@@ -56,6 +56,18 @@ router.put(
 );
 
 /**
+ * @route   DELETE /api/doctor-availability/:id
+ * @desc    Delete an availability (only if no active bookings)
+ * @access  Private (Doctor only)
+ */
+router.delete(
+  "/:id",
+  authenticate,
+  authorizeRoles(["doctor"]),
+  doctorAvailabilityController.deleteAvailability
+);
+
+/**
  * @route   PATCH /api/doctor-availability/:id/invalidate
  * @desc    Invalidate an availability (soft delete)
  * @access  Private (Doctor only)
@@ -77,6 +89,30 @@ router.patch(
   authenticate,
   authorizeRoles(["doctor"]),
   doctorAvailabilityController.reactivateAvailability
+);
+
+/**
+ * @route   POST /api/doctor-availability/:id/regenerate-slots
+ * @desc    Manually regenerate time slots for an availability
+ * @access  Private (Doctor only)
+ */
+router.post(
+  "/:id/regenerate-slots",
+  authenticate,
+  authorizeRoles(["doctor"]),
+  doctorAvailabilityController.regenerateTimeSlots
+);
+
+/**
+ * @route   POST /api/doctor-availability/:id/test-slots
+ * @desc    Test time slot generation for debugging
+ * @access  Private (Doctor only)
+ */
+router.post(
+  "/:id/test-slots",
+  authenticate,
+  authorizeRoles(["doctor"]),
+  doctorAvailabilityController.testTimeSlotGeneration
 );
 
 // ==================== PATIENT ROUTES ====================

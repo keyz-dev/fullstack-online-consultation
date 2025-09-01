@@ -3,5 +3,6 @@ export { AvailabilityHeader } from "./AvailabilityHeader";
 export { AvailabilityStats } from "./AvailabilityStats";
 export { AvailabilityOverview } from "./AvailabilityOverview";
 export { WeeklyCalendar } from "./WeeklyCalendar";
-export { AvailabilityWizard } from "./AvailabilityWizard";
+export * from "./AvailabilityWizard";
 export { TimeSessionBuilder } from "./TimeSessionBuilder";
+export { TimeSlotsModal } from "./TimeSlotsModal";

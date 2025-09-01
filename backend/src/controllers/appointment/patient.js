@@ -158,12 +158,6 @@ exports.createAppointment = async (req, res, next) => {
       }
     );
 
-    // Send notification to patient
-    await appointmentNotificationService.notifyAppointmentCreated(
-      appointmentWithAssociations,
-      { userId: req.authUser.id, ...req.authUser.patient }
-    );
-
     res.status(201).json({
       success: true,
       message:

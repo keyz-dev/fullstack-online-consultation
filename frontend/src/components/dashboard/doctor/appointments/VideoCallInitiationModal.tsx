@@ -84,6 +84,11 @@ const VideoCallInitiationModal: React.FC<VideoCallInitiationModalProps> = ({
     if (!currentConsultation?.id || !patientPresence?.isOnline) return;
 
     try {
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("MediaDevices API not available");
+      }
+      
       // Request camera/microphone permissions BEFORE initiating call
       console.log('🎥 Requesting camera/microphone permissions...');
       const stream = await navigator.mediaDevices.getUserMedia({

@@ -84,6 +84,7 @@ const extractImagePaths = (instance) => {
   if (instance.agencyImages) paths.push(instance.agencyImages);
   if (instance.stationImages) paths.push(instance.stationImages);
   if (instance.document) paths.push(instance.document);
+  if (instance.imageUrl) paths.push(instance.imageUrl);
 
   // Handle array of images
   if (Array.isArray(instance.images)) {

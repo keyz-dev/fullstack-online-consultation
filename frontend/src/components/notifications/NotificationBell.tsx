@@ -190,9 +190,9 @@ const NotificationBell: React.FC = () => {
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {notifications.map((notification) => (
+                {notifications.map((notification, index) => (
                   <div
-                    key={notification.id}
+                    key={index}
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
                       !notification.isRead

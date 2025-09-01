@@ -73,14 +73,17 @@ router.post(
 );
 
 /**
- * @desc    Reset a consultation (for stuck consultations)
- * @route   POST /api/v1/consultations/:id/reset
- * @access  Private (Doctor)
+ * @desc    Get messages for a consultation
+ * @route   GET /api/v1/consultations/:id/messages
+ * @access  Private
  */
-router.post(
-  "/:id/reset",
-  authorizeRoles("doctor"),
-  consultationController.resetConsultation
-);
+router.get("/:id/messages", consultationController.getMessages);
+
+/**
+ * @desc    Send a message in a consultation
+ * @route   POST /api/v1/consultations/:id/messages
+ * @access  Private
+ */
+router.post("/:id/messages", consultationController.sendMessage);
 
 module.exports = router;

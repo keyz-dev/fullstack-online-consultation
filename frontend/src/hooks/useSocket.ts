@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "react-toastify";
@@ -40,6 +40,8 @@ interface VideoCallData {
 export const useSocket = () => {
   const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Notification events are now handled directly in NotificationContext
 
@@ -64,12 +66,24 @@ export const useSocket = () => {
       transports: ["websocket", "polling"],
     });
 
+    // Expose immediately so consumers re-run effects
+    setSocket(socketRef.current);
+    setIsConnected(!!socketRef.current.connected);
+
     // Connection events
     socketRef.current.on("connect", () => {
+      setIsConnected(true);
+      // Keep state socket in sync
+      setSocket(socketRef.current);
       // Explicitly join user notification room
       if (socketRef.current) {
         socketRef.current.emit("join-user-room", { userId: user.id });
       }
+    });
+
+    socketRef.current.on("disconnect", () => {
+      setIsConnected(false);
+      setSocket(null);
     });
 
     // Handle notification events directly (NotificationContext approach had issues)
@@ -138,6 +152,7 @@ export const useSocket = () => {
       console.log("Video call ended:", data);
       // Handle call end
     });
+    // to avoid duplicate event listeners. Only keeping WebRTC signaling events here.
   }, [user]);
 
   const disconnect = useCallback(() => {
@@ -145,6 +160,8 @@ export const useSocket = () => {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
+    setIsConnected(false);
+    setSocket(null);
   }, []);
 
   const emit = useCallback((event: string, data: any) => {
@@ -168,7 +185,8 @@ export const useSocket = () => {
   }, [user, connect, disconnect]);
 
   return {
-    socket: socketRef.current,
+    socket,
+    isConnected,
     emit,
     connect,
     disconnect,

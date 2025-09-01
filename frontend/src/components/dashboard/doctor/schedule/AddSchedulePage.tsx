@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Card, Button } from "@/components/ui";
 import {
   DaySelectionStep,
@@ -29,6 +29,19 @@ export const AddSchedulePage: React.FC<AddSchedulePageProps> = ({
     {}
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check if a specific day was pre-selected
+  useEffect(() => {
+    const preSelectedDay = localStorage.getItem("selectedDay");
+    if (preSelectedDay) {
+      const dayOfWeek = parseInt(preSelectedDay);
+      setSelectedDays([dayOfWeek]);
+      localStorage.removeItem("selectedDay"); // Clear after use
+      
+      // Skip to sessions step if only one day is selected
+      setCurrentStep("duration");
+    }
+  }, []);
 
   // Step navigation
   const steps: { key: WizardStep; title: string; description: string }[] = [

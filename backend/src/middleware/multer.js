@@ -55,6 +55,10 @@ function getUploadSubDir(fieldname) {
       return "pharmacies/logos";
     case "pharmacyImage":
       return "pharmacies/images";
+    case "medicationImage":
+      return "medications/images";
+    case "medicationFile":
+      return "medications/files";
     default:
       return "misc";
   }
@@ -97,7 +101,7 @@ const fileFilter = (req, file, cb) => {
   const documentExtensions = /\.(pdf|doc|docx|txt|jpg|jpeg|png|webp)$/;
 
   if (
-    ["patientDocument", "doctorDocument", "pharmacyDocument", "consultationFile"].includes(
+    ["patientDocument", "doctorDocument", "pharmacyDocument", "consultationFile", "medicationFile"].includes(
       file.fieldname
     )
   ) {

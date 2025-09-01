@@ -48,6 +48,15 @@ export const useDoctorCallStatus = () => {
     setCallData(data);
     setIsCallStatusVisible(true);
     
+    // CRITICAL: Doctor must join the room to receive patient responses
+    if (socket.socket) {
+      socket.socket.emit("video:join-room", {
+        roomId: data.roomId,
+        consultationId: data.consultationId
+      });
+      console.log("🏠 Doctor joined room for call status:", data.roomId);
+    }
+    
     if (!patientOnline) {
       setCallStatus('patient_offline');
     } else {
@@ -57,12 +66,12 @@ export const useDoctorCallStatus = () => {
         setCallStatus('ringing');
       }, 1000);
     }
-  }, []);
+  }, [socket]);
 
   // Cancel call
   const cancelCall = useCallback(() => {
     if (callData && socket.socket) {
-      socket.socket.emit("call_cancelled", {
+      socket.socket.emit("video:call-cancelled", {
         roomId: callData.roomId,
         consultationId: callData.consultationId
       });
@@ -96,49 +105,63 @@ export const useDoctorCallStatus = () => {
   useEffect(() => {
     if (!socket.socket) return;
 
-    // Patient is ringing
-    socket.socket.on("video_call_ringing", (data) => {
-      console.log("📱 Patient is ringing:", data);
-      if (callData && data.consultationId === callData.consultationId) {
-        setCallStatus('ringing');
-      }
-    });
-
     // Patient accepted call
-    socket.socket.on("video_call_accepted", (data) => {
+    socket.socket.on("video:call-accepted", (data) => {
       console.log("✅ Patient accepted call:", data);
-      if (callData && data.consultationId === callData.consultationId) {
+      console.log("🔍 Current callData:", callData);
+      const receivedId = String(data.consultationId);
+      const expectedId = String(callData?.consultationId || "");
+      if (callData && receivedId === expectedId) {
+        console.log("✅ Consultation IDs match, setting status to accepted");
         setCallStatus('accepted');
         
         // Navigate to video room after brief delay
         setTimeout(() => {
           setIsCallStatusVisible(false);
-          router.push(`/doctor/consultation/${data.consultationId}/video?roomId=${data.roomId}`);
+          router.push(`/doctor/consultation/${receivedId}/video?roomId=${data.roomId}`);
         }, 2000);
+      } else {
+        console.log("❌ Consultation IDs don't match or no callData:", {
+          hasCallData: !!callData,
+          receivedId,
+          expectedId
+        });
       }
     });
 
     // Patient rejected call
-    socket.socket.on("video_call_rejected", (data) => {
+    socket.socket.on("video:call-rejected", (data) => {
       console.log("❌ Patient rejected call:", data);
-      if (callData && data.consultationId === callData.consultationId) {
+      console.log("🔍 Current callData:", callData);
+      const receivedId = String(data.consultationId);
+      const expectedId = String(callData?.consultationId || "");
+      if (callData && receivedId === expectedId) {
+        console.log("❌ Consultation IDs match, setting status to declined");
         setCallStatus('declined');
+      } else {
+        console.log("❌ Consultation IDs don't match or no callData:", {
+          hasCallData: !!callData,
+          receivedId,
+          expectedId
+        });
       }
     });
 
     // Call cancelled (by patient or system)
-    socket.socket.on("call_cancelled", (data) => {
+    socket.socket.on("video:call-cancelled", (data) => {
       console.log("📞 Call was cancelled:", data);
-      if (callData && data.consultationId === callData.consultationId) {
+      const receivedId = String(data.consultationId);
+      const expectedId = String(callData?.consultationId || "");
+      if (callData && receivedId === expectedId) {
         closeStatus();
       }
     });
 
     return () => {
-      socket.socket?.off("video_call_ringing");
-      socket.socket?.off("video_call_accepted");
-      socket.socket?.off("video_call_rejected");
-      socket.socket?.off("call_cancelled");
+      // socket.socket?.off("video:call-ringing");
+      socket.socket?.off("video:call-accepted");
+      socket.socket?.off("video:call-rejected");
+      socket.socket?.off("video:call-cancelled");
     };
   }, [socket.socket, callData, router, closeStatus]);
 

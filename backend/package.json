@@ -6,6 +6,7 @@
     "test": "jest",
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "dev:network": "nodemon src/app.js --host 0.0.0.0",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -61,7 +62,8 @@
     "uuid": "^11.1.0",
     "validator": "^13.12.0",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "eslint": "^9.22.0",

@@ -6,6 +6,7 @@ import { AvailabilityHeader } from "./AvailabilityHeader";
 import { AvailabilityStats } from "./AvailabilityStats";
 import { AvailabilityOverview } from "./AvailabilityOverview";
 import { WeeklyCalendar } from "./WeeklyCalendar";
+import { TimeSlotsModal } from "./TimeSlotsModal";
 
 import { availabilityApi } from "@/api/availability";
 import { scheduleUtils, timeUtils } from "@/utils/availabilityHelpers";
@@ -31,6 +32,8 @@ export const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [timeSlotsModalOpen, setTimeSlotsModalOpen] = useState(false);
+  const [selectedAvailability, setSelectedAvailability] = useState<Availability | null>(null);
 
   // Load availabilities
   const loadAvailabilities = useCallback(async () => {
@@ -68,19 +71,44 @@ export const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({
     }
   }, []);
 
-  // Handle delete availability (invalidate)
+  // Handle delete availability (smart delete/invalidate)
   const handleDeleteAvailability = useCallback(
     async (availability: Availability) => {
+      if (!availability.id) {
+        toast.error("Invalid availability");
+        return;
+      }
+
       try {
-        await availabilityApi.invalidateAvailability(
-          availability.id!,
-          "Deleted by user"
-        );
+        // First try to delete (hard delete if no bookings)
+        await availabilityApi.deleteAvailability(availability.id);
         toast.success("Availability session deleted successfully");
         await loadAvailabilities();
-      } catch (error) {
-        console.error("Failed to delete availability:", error);
-        toast.error("Failed to delete availability session");
+      } catch (error: any) {
+        console.error("Delete failed, checking if invalidation is needed:", error);
+        
+        // If delete failed due to bookings, offer invalidation
+        if (error?.response?.status === 409) {
+          const shouldInvalidate = confirm(
+            "This session has active bookings and cannot be deleted. Would you like to invalidate it instead? This will notify patients and mark their bookings as cancelled."
+          );
+          
+          if (shouldInvalidate) {
+            const reason = prompt("Please provide a reason for invalidating this session:");
+            if (reason) {
+              try {
+                await availabilityApi.invalidateAvailability(availability.id, reason);
+                toast.success("Availability session invalidated successfully");
+                await loadAvailabilities();
+              } catch (invalidateError) {
+                console.error("Failed to invalidate availability:", invalidateError);
+                toast.error("Failed to invalidate availability session");
+              }
+            }
+          }
+        } else {
+          toast.error("Failed to delete availability session");
+        }
       }
     },
     [loadAvailabilities]
@@ -90,9 +118,7 @@ export const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({
   const handleInvalidateAvailability = useCallback(
     async (availability: Availability, reason: string) => {
       try {
-        await availabilityApi.invalidateAvailability(availability.id!, {
-          reason,
-        });
+        await availabilityApi.invalidateAvailability(availability.id!, reason);
         toast.success("Availability session invalidated successfully");
         await loadAvailabilities();
       } catch (error) {
@@ -101,6 +127,25 @@ export const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({
       }
     },
     [loadAvailabilities]
+  );
+
+  // Handle adding session to specific day
+  const handleAddSessionToDay = useCallback(
+    (dayOfWeek: number) => {
+      // Store the selected day and switch to add view
+      localStorage.setItem("selectedDay", dayOfWeek.toString());
+      setView("add");
+    },
+    [setView]
+  );
+
+  // Handle viewing time slots for a session
+  const handleViewTimeSlots = useCallback(
+    (availability: Availability) => {
+      setSelectedAvailability(availability);
+      setTimeSlotsModalOpen(true);
+    },
+    []
   );
 
   // Load data on mount
@@ -144,6 +189,8 @@ export const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({
             availabilities={availabilities}
             onDeleteSession={handleDeleteAvailability}
             onInvalidateSession={handleInvalidateAvailability}
+            onAddSessionToDay={handleAddSessionToDay}
+            onViewTimeSlots={handleViewTimeSlots}
           />
         </TabsContent>
 
@@ -163,6 +210,16 @@ export const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({
           </div>
         </div>
       )}
+
+      {/* Time Slots Modal */}
+      <TimeSlotsModal
+        isOpen={timeSlotsModalOpen}
+        onClose={() => {
+          setTimeSlotsModalOpen(false);
+          setSelectedAvailability(null);
+        }}
+        availability={selectedAvailability}
+      />
     </div>
   );
 };

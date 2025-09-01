@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "./useSocket";
+import { shouldShowNotification } from "@/utils/notificationDeduplicator";
 
 interface PaymentStatus {
   reference: string;
@@ -98,7 +98,7 @@ export const useAppointmentPaymentTracker = (): AppointmentPaymentTracker => {
       updatePaymentStatus(data.reference, data);
 
       // Only dispatch event if not a duplicate
-      const { shouldShowNotification } = require("@/utils/notificationDeduplicator");
+
       const shouldDispatch = shouldShowNotification(
         'payment_tracker',
         data.message || '',
