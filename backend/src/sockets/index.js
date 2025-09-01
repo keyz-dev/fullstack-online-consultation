@@ -239,11 +239,33 @@ const initializeSocket = (server) => {
       const { roomId, consultationId } = data;
       console.log(`📞 Simple Peer call ended by ${socket.userId} in room ${roomId}`);
       
-      // Notify all users in room that call ended
+      // Prevent endless loops by only notifying others, not the sender
       socket.to(roomId).emit("video:call-ended", {
         from: socket.userId,
         roomId,
         consultationId
+      });
+      
+      // Leave the room to prevent further events
+      socket.leave(roomId);
+      console.log(`🚪 User ${socket.userId} left room ${roomId} after ending call`);
+    });
+
+    // Handle Simple Peer video chat messages
+    socket.on("video:simple-peer-chat", (data) => {
+      const { roomId, consultationId, message, timestamp, senderRole } = data;
+      console.log(`💬 Simple Peer chat from ${socket.userId} in room ${roomId}: ${message}`);
+      
+      // Relay message to others in the room
+      socket.to(roomId).emit("video:simple-peer-chat", {
+        roomId,
+        consultationId,
+        message,
+        timestamp,
+        senderRole,
+        fromUserId: socket.userId,
+        fromName: socket.user?.name || 'Unknown User',
+        sent: false
       });
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useSimplePeerWebRTC } from "@/hooks/useSimplePeerWebRTC";
 import VideoDisplay from "./VideoDisplay";
 import VideoControls from "./VideoControls";
@@ -35,6 +35,21 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
   }>>([]);
   const [newMessage, setNewMessage] = useState("");
 
+  // Handle incoming chat messages
+  const handleChatMessage = useCallback((data: {
+    roomId: string;
+    consultationId: string;
+    message: string;
+    timestamp: string;
+    senderRole: string;
+    fromUserId: number;
+    fromName: string;
+    sent: boolean;
+  }) => {
+    console.log('💬 Received chat message:', data);
+    setChatMessages(prev => [...prev, data]);
+  }, []);
+
   // Use Simple Peer WebRTC hook
   const {
     stream,
@@ -51,12 +66,14 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
     answerCall,
     leaveCall,
     toggleVideo,
-    toggleAudio
+    toggleAudio,
+    sendChatMessage
   } = useSimplePeerWebRTC({
     roomId,
     consultationId,
     userRole,
-    onCallEnd
+    onCallEnd,
+    onChatMessage: handleChatMessage
   });
 
   console.log('🔍 Simple Peer Video Call Room State:', {
@@ -69,7 +86,7 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
     userRole
   });
 
-  // Send chat message (simplified for now)
+  // Send chat message
   const sendMessage = () => {
     if (!newMessage.trim()) return;
 
@@ -82,9 +99,13 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
       sent: true,
     };
 
+    // Add to local chat first
     setChatMessages(prev => [...prev, message]);
+    
+    // Send via socket
+    sendChatMessage(newMessage);
+    
     setNewMessage("");
-    // TODO: Implement chat via socket if needed
   };
 
   // Handle call actions
