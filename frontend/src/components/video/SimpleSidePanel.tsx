@@ -25,6 +25,7 @@ interface SimpleSidePanelProps {
   setNotes: (notes: string) => void;
   setShowNotes: (show: boolean) => void;
   setShowChat: (show: boolean) => void;
+  onSaveNotes?: () => void;
 }
 
 const SimpleSidePanel: React.FC<SimpleSidePanelProps> = ({
@@ -39,6 +40,7 @@ const SimpleSidePanel: React.FC<SimpleSidePanelProps> = ({
   setNotes,
   setShowNotes,
   setShowChat,
+  onSaveNotes,
 }) => {
   const showSidePanel = showNotes || showChat;
 
@@ -83,18 +85,31 @@ const SimpleSidePanel: React.FC<SimpleSidePanelProps> = ({
       {/* Notes Panel */}
       {showNotes && userRole === "doctor" && (
         <div className="flex-1 p-4 flex flex-col">
-          <h3 className="font-medium text-gray-900 dark:text-white mb-3">
-            Consultation Notes
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-gray-900 dark:text-white">
+              Consultation Notes
+            </h3>
+            {onSaveNotes && (
+              <button
+                onClick={onSaveNotes}
+                className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-md transition-colors"
+              >
+                Save Notes
+              </button>
+            )}
+          </div>
           <div className="flex-1">
             <TextArea
               value={notes}
               onChangeHandler={(e) => setNotes(e.target.value)}
-              placeholder="Enter consultation notes here..."
+              placeholder="Enter consultation notes, diagnosis, treatment plans..."
               additionalClasses="h-full min-h-[300px] resize-none border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required={false}
             />
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Notes are auto-saved every 30 seconds and when the call ends
+          </p>
         </div>
       )}
 

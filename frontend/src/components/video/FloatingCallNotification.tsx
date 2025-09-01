@@ -55,12 +55,10 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
         
         // Set up success handler
         audio.addEventListener('canplaythrough', () => {
-          console.log('🔔 Ringtone audio loaded successfully');
           setAudioStatus('ready');
         });
         
         audio.addEventListener('loadeddata', () => {
-          console.log('🔔 Audio data loaded');
         });
         
         // Configure audio
@@ -85,7 +83,6 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
     // Create a simple beep tone as fallback
     const createBeepTone = () => {
       try {
-        console.log('🔔 Creating fallback beep tone...');
         // Create a simple beep using Web Audio API
         const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         

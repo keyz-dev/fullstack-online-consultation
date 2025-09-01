@@ -16,6 +16,7 @@ const {
   BadRequestError,
 } = require("../utils/errors");
 const { formatImageUrl } = require("../utils/imageUtils");
+const ConsultationSessionService = require("../services/consultationSessionService");
 
 class ConsultationController {
   /**
@@ -82,8 +83,8 @@ class ConsultationController {
       // Save file message to database (file.path is already formatted by multer middleware)
       const savedMessage = await ConsultationMessage.create({
         consultationId: parseInt(id),
-        senderId: req.user.id,
-        senderType: req.user.role === 'doctor' ? 'doctor' : 'patient',
+        senderId: req.authUser.id,
+        senderType: req.authUser.role === 'doctor' ? 'doctor' : 'patient',
         type: file.mimetype.startsWith('image/') ? 'image' : 'file',
         content: `Shared ${file.originalname}`,
         fileUrl: file.path, // Use the path from multer (already formatted)
@@ -113,8 +114,8 @@ class ConsultationController {
         fileUrl: formattedFileUrl,
         fileSize: file.size,
         mimeType: file.mimetype,
-        uploadedBy: req.user.name,
-        uploadedByType: req.user.role,
+        uploadedBy: req.authUser.name,
+        uploadedByType: req.authUser.role,
         timestamp: savedMessage.createdAt,
         consultationId: id
       });
@@ -385,8 +386,8 @@ class ConsultationController {
       const offset = (page - 1) * limit;
 
       const whereClause = {};
-      if (status) whereClause.status = status;
-      if (type) whereClause.type = type;
+      if (status && status !== 'all') whereClause.status = status;
+      if (type && type !== 'all') whereClause.type = type;
 
       // Build appointment filter based on user role
       let appointmentWhere = {};
@@ -461,10 +462,38 @@ class ConsultationController {
         order: [["createdAt", "DESC"]],
       });
 
+      // Transform consultations to flatten patient/doctor data
+      const transformedConsultations = consultations.map(consultation => {
+        const consultationData = consultation.toJSON();
+        
+        if (!consultationData.appointment?.patient?.user || !consultationData.appointment?.doctor?.user) {
+          console.error('❌ Incomplete consultation data for ID:', consultation.id);
+          return null;
+        }
+
+        return {
+          ...consultationData,
+          patient: {
+            id: consultationData.appointment.patient.id,
+            name: consultationData.appointment.patient.user.name,
+            email: consultationData.appointment.patient.user.email,
+            phone: consultationData.appointment.patient.user.phone,
+            avatar: consultationData.appointment.patient.user.avatar,
+          },
+          doctor: {
+            id: consultationData.appointment.doctor.id,
+            name: consultationData.appointment.doctor.user.name,
+            email: consultationData.appointment.doctor.user.email,
+            specialty: consultationData.appointment.doctor.specialty,
+            avatar: consultationData.appointment.doctor.user.avatar,
+          }
+        };
+      }).filter(Boolean);
+
       res.status(200).json({
         success: true,
         data: {
-          consultations,
+          consultations: transformedConsultations,
           pagination: {
             currentPage: parseInt(page),
             totalPages: Math.ceil(count / limit),
@@ -705,6 +734,120 @@ class ConsultationController {
       res.status(201).json({
         success: true,
         data: messageWithSender,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @desc    Get active consultations for a user
+   * @route   GET /api/v1/consultations/active
+   * @access  Private (Doctor/Patient)
+   */
+  async getActiveConsultations(req, res, next) {
+    try {
+      const userId = req.authUser.id;
+      const userRole = req.authUser.role;
+
+      // Get active consultations based on user role
+      const activeConsultations = await ConsultationSessionService.getActiveConsultationsForUser(userId, userRole);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          activeConsultations,
+          count: activeConsultations.length
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error getting active consultations:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * @desc    Join consultation session
+   * @route   POST /api/v1/consultations/:id/join
+   * @access  Private (Doctor/Patient)
+   */
+  async joinConsultationSession(req, res, next) {
+    try {
+      const consultationId = req.params.id;
+      const userId = req.authUser.id;
+      const userRole = req.authUser.role;
+
+      const sessionData = await ConsultationSessionService.joinSession(consultationId, userId, userRole);
+
+      res.status(200).json({
+        success: true,
+        message: "Successfully joined consultation session",
+        data: sessionData
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @desc    Leave consultation session
+   * @route   POST /api/v1/consultations/:id/leave
+   * @access  Private (Doctor/Patient)
+   */
+  async leaveConsultationSession(req, res, next) {
+    try {
+      const consultationId = req.params.id;
+      const userId = req.authUser.id;
+      const userRole = req.authUser.role;
+
+      await ConsultationSessionService.leaveSession(consultationId, userId, userRole);
+
+      res.status(200).json({
+        success: true,
+        message: "Successfully left consultation session"
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @desc    Get consultation session status
+   * @route   GET /api/v1/consultations/:id/session-status
+   * @access  Private (Doctor/Patient)
+   */
+  async getConsultationSessionStatus(req, res, next) {
+    try {
+      const consultationId = req.params.id;
+      const userId = req.authUser.id;
+
+      const sessionStatus = await ConsultationSessionService.getSessionStatus(consultationId, userId);
+
+      res.status(200).json({
+        success: true,
+        data: sessionStatus
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @desc    Update consultation session heartbeat
+   * @route   POST /api/v1/consultations/:id/heartbeat
+   * @access  Private (Doctor/Patient)
+   */
+  async updateSessionHeartbeat(req, res, next) {
+    try {
+      const consultationId = req.params.id;
+      const userId = req.authUser.id;
+      const userRole = req.authUser.role;
+
+      await ConsultationSessionService.updateHeartbeat(consultationId, userId, userRole);
+
+      res.status(200).json({
+        success: true,
+        message: "Heartbeat updated"
       });
     } catch (error) {
       next(error);

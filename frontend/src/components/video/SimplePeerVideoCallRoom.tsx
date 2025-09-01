@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useSimplePeerWebRTC } from "@/hooks/useSimplePeerWebRTC";
+import { consultationsAPI } from "@/api/consultations";
 import VideoDisplay from "./VideoDisplay";
 import VideoControls from "./VideoControls";
 import SimpleSidePanel from "./SimpleSidePanel";
@@ -76,6 +77,74 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
     onChatMessage: handleChatMessage
   });
 
+  // Load existing consultation notes when call starts
+  useEffect(() => {
+    if (callAccepted && userRole === 'doctor' && !notes) {
+      const loadExistingNotes = async () => {
+        try {
+          const consultation = await consultationsAPI.getConsultation(consultationId);
+          if (consultation.data.consultations[0]?.notes) {
+            setNotes(consultation.data.consultations[0].notes);
+            console.log('📝 Loaded existing consultation notes');
+          }
+        } catch (error) {
+          console.error('❌ Failed to load existing notes:', error);
+        }
+      };
+      loadExistingNotes();
+    }
+  }, [callAccepted, userRole, consultationId, notes]);
+
+  // Session tracking
+  useEffect(() => {
+    let heartbeatInterval: NodeJS.Timeout;
+
+    const startSessionTracking = async () => {
+      try {
+        // Join consultation session when call is accepted
+        if (callAccepted && !callEnded) {
+          console.log('🔗 Joining consultation session for tracking');
+          await consultationsAPI.joinConsultationSession(consultationId);
+          
+          // Start heartbeat to keep session alive
+          heartbeatInterval = setInterval(async () => {
+            try {
+              await consultationsAPI.updateHeartbeat(consultationId);
+              console.log('💓 Session heartbeat updated');
+            } catch (error) {
+              console.error('❌ Heartbeat failed:', error);
+            }
+          }, 30000); // Every 30 seconds
+        }
+      } catch (error) {
+        console.error('❌ Failed to join consultation session:', error);
+      }
+    };
+
+    startSessionTracking();
+
+    return () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+    };
+  }, [callAccepted, callEnded, consultationId]);
+
+  // Leave session when call ends
+  useEffect(() => {
+    if (callEnded) {
+      const leaveSession = async () => {
+        try {
+          console.log('🚪 Leaving consultation session');
+          await consultationsAPI.leaveConsultationSession(consultationId);
+        } catch (error) {
+          console.error('❌ Failed to leave consultation session:', error);
+        }
+      };
+      leaveSession();
+    }
+  }, [callEnded, consultationId]);
+
   console.log('🔍 Simple Peer Video Call Room State:', {
     hasStream: !!stream,
     calling: call.calling,
@@ -107,6 +176,38 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
     
     setNewMessage("");
   };
+
+  // Save consultation notes (for doctors)
+  const saveNotes = useCallback(async () => {
+    if (userRole !== 'doctor' || !notes.trim()) return;
+
+    try {
+      console.log('💾 Saving consultation notes...');
+      await consultationsAPI.updateConsultationNotes(consultationId, notes);
+      console.log('✅ Notes saved successfully');
+      // Don't show toast here to avoid spam, just log success
+    } catch (error) {
+      console.error('❌ Failed to save notes:', error);
+    }
+  }, [consultationId, notes, userRole]);
+
+  // Auto-save notes every 30 seconds when typing
+  useEffect(() => {
+    if (userRole !== 'doctor' || !notes.trim()) return;
+
+    const autoSaveTimeout = setTimeout(() => {
+      saveNotes();
+    }, 30000); // Auto-save after 30 seconds of no typing
+
+    return () => clearTimeout(autoSaveTimeout);
+  }, [notes, saveNotes, userRole]);
+
+  // Save notes when call ends
+  useEffect(() => {
+    if (callEnded && userRole === 'doctor' && notes.trim()) {
+      saveNotes();
+    }
+  }, [callEnded, saveNotes, notes, userRole]);
 
   // Handle call actions
   const handleAnswer = () => {
@@ -206,6 +307,7 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
         setNotes={setNotes}
         setShowNotes={setShowNotes}
         setShowChat={setShowChat}
+        onSaveNotes={userRole === 'doctor' ? saveNotes : undefined}
       />
     </div>
   );

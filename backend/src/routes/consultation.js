@@ -23,6 +23,13 @@ router.use(authenticateUser);
 router.get("/", consultationController.getConsultations);
 
 /**
+ * @desc    Get active consultations for user
+ * @route   GET /api/v1/consultations/active
+ * @access  Private (Doctor/Patient)
+ */
+router.get("/active", consultationController.getActiveConsultations);
+
+/**
  * @desc    Get single consultation by ID
  * @route   GET /api/v1/consultations/:id
  * @access  Private
@@ -85,5 +92,33 @@ router.get("/:id/messages", consultationController.getMessages);
  * @access  Private
  */
 router.post("/:id/messages", consultationController.sendMessage);
+
+/**
+ * @desc    Join consultation session
+ * @route   POST /api/v1/consultations/:id/join
+ * @access  Private (Doctor/Patient)
+ */
+router.post("/:id/join", consultationController.joinConsultationSession);
+
+/**
+ * @desc    Leave consultation session
+ * @route   POST /api/v1/consultations/:id/leave
+ * @access  Private (Doctor/Patient)
+ */
+router.post("/:id/leave", consultationController.leaveConsultationSession);
+
+/**
+ * @desc    Get consultation session status
+ * @route   GET /api/v1/consultations/:id/session-status
+ * @access  Private (Doctor/Patient)
+ */
+router.get("/:id/session-status", consultationController.getConsultationSessionStatus);
+
+/**
+ * @desc    Update consultation session heartbeat
+ * @route   POST /api/v1/consultations/:id/heartbeat
+ * @access  Private (Doctor/Patient)
+ */
+router.post("/:id/heartbeat", consultationController.updateSessionHeartbeat);
 
 module.exports = router;

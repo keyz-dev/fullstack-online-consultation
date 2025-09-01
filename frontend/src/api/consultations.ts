@@ -138,4 +138,44 @@ export const consultationsAPI = {
     });
     return response.data;
   },
+
+  /**
+   * Get active consultations for current user
+   */
+  async getActiveConsultations(): Promise<{ activeConsultations: Consultation[]; count: number }> {
+    const response = await api.get('/consultation/active');
+    return response.data.data;
+  },
+
+  /**
+   * Join consultation session
+   */
+  async joinConsultationSession(consultationId: string): Promise<any> {
+    const response = await api.post(`/consultation/${consultationId}/join`);
+    return response.data;
+  },
+
+  /**
+   * Leave consultation session
+   */
+  async leaveConsultationSession(consultationId: string): Promise<any> {
+    const response = await api.post(`/consultation/${consultationId}/leave`);
+    return response.data;
+  },
+
+  /**
+   * Get consultation session status
+   */
+  async getSessionStatus(consultationId: string): Promise<any> {
+    const response = await api.get(`/consultation/${consultationId}/session-status`);
+    return response.data;
+  },
+
+  /**
+   * Update session heartbeat
+   */
+  async updateHeartbeat(consultationId: string): Promise<any> {
+    const response = await api.post(`/consultation/${consultationId}/heartbeat`);
+    return response.data;
+  },
 };

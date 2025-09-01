@@ -1,6 +1,7 @@
 "use client";
 
 import { PatientAppointmentProvider } from "@/contexts";
+import { PatientConsultationProvider } from "@/contexts/PatientConsultationContext";
 import RouteProtection from "@/components/auth/RouteProtection";
 import IncomingCallWrapper from "@/components/dashboard/patient/IncomingCallWrapper";
 
@@ -24,9 +25,11 @@ export default function PatientLayout({
       redirectTo="/login"
     >
       <PatientAppointmentProvider>
-        <IncomingCallWrapper>
-          {children}
-        </IncomingCallWrapper>
+        <PatientConsultationProvider>
+          <IncomingCallWrapper>
+            {children}
+          </IncomingCallWrapper>
+        </PatientConsultationProvider>
       </PatientAppointmentProvider>
     </RouteProtection>
   );
