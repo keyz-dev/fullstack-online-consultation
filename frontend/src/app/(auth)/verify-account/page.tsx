@@ -56,13 +56,20 @@ const VerifyAccountPage = () => {
     idx: number
   ) => {
     const val = e.target.value.replace(/[^0-9]/g, "");
-    if (!val) return;
     const newCode = [...code];
-    newCode[idx] = val[0];
+    
+    // Allow clearing the input (empty string) or setting a single digit
+    if (val === "") {
+      newCode[idx] = "";
+    } else {
+      newCode[idx] = val[0]; // Take only the first digit
+    }
+    
     setCode(newCode);
     setIsValid(null); // Reset validation state on new input
-    // Move to next input
-    if (idx < CODE_LENGTH - 1 && val) {
+    
+    // Move to next input only if we have a value and not at the last input
+    if (val && idx < CODE_LENGTH - 1) {
       const nextInput = document.getElementById(
         `code-input-${idx + 1}`
       ) as HTMLInputElement;

@@ -273,6 +273,7 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
           localVideoRef={localVideoRef}
           remoteVideoRef={remoteVideoRef}
           isConnected={isConnected}
+          startedAt={callAccepted ? new Date() : null}
         >
           {/* Video Controls - only show when call is active */}
           {(callAccepted || (stream && !call.calling)) && (

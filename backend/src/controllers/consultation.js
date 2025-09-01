@@ -227,7 +227,7 @@ class ConsultationController {
       }
 
       // Allow re-initiation for in_progress consultations (in case of disconnection)
-      if (consultation.status !== "not_started" && consultation.status !== "in_progress") {
+      if (consultation.status == "no_show") {
         return next(
           new BadRequestError(
             `Cannot initiate call for a consultation with status '${consultation.status}'.`

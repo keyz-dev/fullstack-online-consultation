@@ -147,6 +147,54 @@ const initializeSocket = (server) => {
       io.to(`user-${doctorId}`).emit("video:call-rejected", { roomId, consultationId, patientId: socket.userId });
     });
 
+    // Patient declines the call (marks consultation as cancelled)
+    socket.on("video:decline-call", async (data) => {
+      const { doctorId, consultationId, roomId, reason } = data;
+      console.log(`📞 Patient ${socket.userId} declined call for consultation ${consultationId}`);
+      
+      try {
+        const { Consultation, Appointment } = require("../db/models");
+        
+        const consultation = await Consultation.findByPk(consultationId, {
+          include: [{
+            model: Appointment,
+            as: 'appointment'
+          }]
+        });
+        
+        if (consultation && consultation.status === 'not_started') {
+          const currentHistory = consultation.declineHistory || [];
+          
+          await consultation.update({
+            status: 'cancelled',
+            endedAt: new Date(),
+            notes: 'Patient declined the call',
+            declineHistory: [
+              ...currentHistory,
+              {
+                timestamp: new Date(),
+                reason: reason || 'No reason provided',
+                patientId: consultation.appointment.patientId
+              }
+            ]
+          });
+          
+          console.log(`✅ Consultation ${consultationId} marked as cancelled due to patient decline`);
+        }
+        
+        // Notify doctor that patient has declined
+        io.to(`user-${doctorId}`).emit("video:call-declined", { 
+          roomId, 
+          consultationId, 
+          patientId: socket.userId,
+          reason: reason || 'No reason provided'
+        });
+        
+      } catch (error) {
+        console.error('Error handling call decline:', error);
+      }
+    });
+
     // Doctor cancels the call
     socket.on("video:call-cancelled", (data) => {
       const { roomId, consultationId } = data;

@@ -154,6 +154,7 @@ const VideoCallRoom: React.FC<VideoCallRoomProps> = ({
         localVideoRef={localVideoRef}
         remoteVideoRef={remoteVideoRef}
         isConnected={isConnected}
+        startedAt={isConnected ? new Date() : null}
       >
         {/* Video Controls */}
         <VideoControls

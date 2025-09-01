@@ -133,12 +133,16 @@ class ConsultationSessionService {
         joinedAt: new Date()
       };
 
+      // Only set in_progress when BOTH parties have joined
+      const bothJoined = currentParticipantStatus.doctor.connected && 
+                         currentParticipantStatus.patient.connected;
+
       // Update consultation
       await consultation.update({
         participantStatus: currentParticipantStatus,
         lastActivity: new Date(),
-        status: consultation.status === 'not_started' ? 'in_progress' : consultation.status,
-        startedAt: consultation.startedAt || new Date()
+        status: bothJoined ? 'in_progress' : consultation.status,
+        startedAt: bothJoined ? (consultation.startedAt || new Date()) : consultation.startedAt
       });
 
       logger.info(`User ${userId} (${userRole}) joined consultation session ${consultationId}`);

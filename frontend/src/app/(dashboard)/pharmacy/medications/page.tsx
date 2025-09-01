@@ -1,23 +1,20 @@
 "use client";
 
-import { Upcoming } from "@/components/ui";
+import React, { useState } from 'react';
+import { MainView, BulkInsertView } from '@/components/dashboard/pharmacy/medications';
 
-export default function PharmacyMedicationsPage() {
+const PharmacyMedicationsPage = () => {
+  const [view, setView] = useState('main');
+
   return (
-    <Upcoming
-      title="Medications Management"
-      description="Comprehensive medication management system for pharmacies to manage their medication inventory and catalog."
-      expectedDate="March 2024"
-      colorTheme="orange"
-      progressPercentage={75}
-      features={[
-        "Medication catalog",
-        "Inventory tracking",
-        "Pricing management",
-        "Medication information",
-        "Stock alerts",
-        "Supplier management",
-      ]}
-    />
+    <section className=''>
+      {view === 'bulk' ? (
+        <BulkInsertView setView={() => setView('main')} />
+      ) : (
+        <MainView setView={() => setView('bulk')} />
+      )}
+    </section>
   );
-}
+};
+
+export default PharmacyMedicationsPage;

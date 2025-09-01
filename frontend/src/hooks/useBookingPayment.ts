@@ -126,21 +126,21 @@ export const useBookingPayment = () => {
       payload: "Payment successful! Your appointment has been confirmed.",
     });
 
-    // Show toast only if not a duplicate
-    const shouldShow = shouldShowNotification(
-      'payment_success',
-      'Payment successful! Your appointment has been confirmed.',
-      state.paymentReference || '',
-      user?.id?.toString()
-    );
+    // // Show toast only if not a duplicate
+    // const shouldShow = shouldShowNotification(
+    //   'payment_success',
+    //   'Payment successful! Your appointment has been confirmed.',
+    //   state.paymentReference || '',
+    //   user?.id?.toString()
+    // );
 
-    if (shouldShow) {
-      toast.success("Payment successful! Your appointment has been confirmed.", {
-        toastId: `payment-success-${state.paymentReference}`, // Prevent duplicate toasts
-        position: "top-right",
-        autoClose: 5000,
-      });
-    }
+    // if (shouldShow) {
+    //   toast.success("Payment successful! Your appointment has been confirmed.", {
+    //     toastId: `payment-success-${state.paymentReference}`, // Prevent duplicate toasts
+    //     position: "top-right",
+    //     autoClose: 5000,
+    //   });
+    // }
 
     // Reset loading state
     dispatch({ type: "SET_LOADING", payload: false });
@@ -160,7 +160,7 @@ export const useBookingPayment = () => {
     setTimeout(() => {
       router.push("/patient/appointments");
     }, 2000);
-  }, [dispatch, state.paymentReference, stopTrackingPayment, router, user]);
+  }, [dispatch, state.paymentReference, stopTrackingPayment, router]);
 
   const handlePaymentFailure = useCallback(() => {
     dispatch({ type: "SET_PAYMENT_STATUS", payload: "failed" });
@@ -169,21 +169,21 @@ export const useBookingPayment = () => {
       payload: "Payment failed. Please try again or return to dashboard.",
     });
 
-    // Show toast only if not a duplicate
-    const shouldShow = shouldShowNotification(
-      'payment_failure',
-      'Payment failed. Please try again or return to dashboard.',
-      state.paymentReference || '',
-      user?.id?.toString()
-    );
+    // // Show toast only if not a duplicate
+    // const shouldShow = shouldShowNotification(
+    //   'payment_failure',
+    //   'Payment failed. Please try again or return to dashboard.',
+    //   state.paymentReference || '',
+    //   user?.id?.toString()
+    // );
 
-    if (shouldShow) {
-      toast.error("Payment failed. Please try again.", {
-        toastId: `payment-failed-${state.paymentReference}`, // Prevent duplicate toasts
-        position: "top-right",
-        autoClose: 8000,
-      });
-    }
+    // if (shouldShow) {
+    //   toast.error("Payment failed. Please try again.", {
+    //     toastId: `payment-failed-${state.paymentReference}`, // Prevent duplicate toasts
+    //     position: "top-right",
+    //     autoClose: 8000,
+    //   });
+    // }
 
     // Reset loading state
     dispatch({ type: "SET_LOADING", payload: false });
@@ -192,7 +192,7 @@ export const useBookingPayment = () => {
     if (state.paymentReference) {
       stopTrackingPayment(state.paymentReference);
     }
-  }, [dispatch, state.paymentReference, stopTrackingPayment, user]);
+  }, [dispatch, state.paymentReference, stopTrackingPayment]);
 
   const cancelPayment = useCallback(() => {
     if (state.paymentReference) {

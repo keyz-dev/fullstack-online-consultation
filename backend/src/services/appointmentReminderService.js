@@ -6,6 +6,7 @@ const {
   Doctor,
   TimeSlot,
   Notification,
+  Consultation,
 } = require("../db/models");
 const emailService = require("./emailService");
 const smsService = require("./smsService"); // We'll need to create this
@@ -36,6 +37,7 @@ class AppointmentReminderService {
       "reminder-check",
       cron.schedule("*/2 * * * *", () => {
         this.checkAndSendReminders();
+        this.checkForNoShows(); // Add no-show detection
       })
     );
 
@@ -56,6 +58,61 @@ class AppointmentReminderService {
     );
 
     logger.info("Appointment reminder service started successfully");
+  }
+
+  /**
+   * Check for consultations that should be marked as no-show
+   */
+  async checkForNoShows() {
+    try {
+      const now = new Date();    
+      
+      // Find consultations that are past their end time but still not_started
+      const overdueConsultations = await Consultation.findAll({
+        where: {
+          status: 'not_started'
+        },
+        include: [{
+          model: Appointment,
+          as: 'appointment',
+          include: [{
+            model: TimeSlot,
+            as: 'timeSlot'
+          }]
+        }]
+      });
+
+      // Filter consultations that are actually overdue
+      const actuallyOverdue = overdueConsultations.filter(consultation => {
+        if (!consultation.appointment?.timeSlot) return false;
+        
+        const timeSlot = consultation.appointment.timeSlot;
+        const appointmentDate = timeSlot.date; // "2025-09-01"
+        const endTime = timeSlot.endTime; // "14:50:00"
+        
+        // Create full datetime for comparison
+        const appointmentEndDateTime = new Date(`${appointmentDate} ${endTime}`);
+        
+        return now > appointmentEndDateTime;
+      });
+      
+      logger.info(`Found ${overdueConsultations.length} consultations with status 'not_started'`);
+      logger.info(`Found ${actuallyOverdue.length} consultations that are actually overdue`);
+      
+      // Mark them as no_show
+      for (const consultation of actuallyOverdue) {
+        await consultation.update({
+          status: 'no_show',
+          endedAt: new Date(),
+          notes: 'Automatically marked as no-show - consultation time expired'
+        });
+        
+        logger.info(`✅ Consultation ${consultation.id} marked as no-show`);
+      }
+      
+    } catch (error) {
+      logger.error('Error checking for no-shows:', error);
+    }
   }
 
   /**

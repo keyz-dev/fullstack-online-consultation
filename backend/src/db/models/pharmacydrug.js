@@ -127,7 +127,7 @@ module.exports = (sequelize, DataTypes) => {
       currency: {
         type: DataTypes.STRING(3),
         allowNull: false,
-        defaultValue: "USD",
+        defaultValue: "XAF",
         validate: {
           len: [3, 3],
         },

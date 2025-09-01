@@ -7,6 +7,7 @@ interface VideoDisplayProps {
   localVideoRef: React.RefObject<HTMLVideoElement | null>;
   remoteVideoRef: React.RefObject<HTMLVideoElement | null>;
   isConnected: boolean;
+  startedAt?: Date | string | null;
   children?: React.ReactNode;
 }
 
@@ -14,6 +15,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
   localVideoRef,
   remoteVideoRef,
   isConnected,
+  startedAt,
   children,
 }) => {
   // Debug video streams
@@ -81,7 +83,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
       </div>
 
       {/* Connection Status */}
-      <ConnectionStatus isConnected={isConnected} />
+      <ConnectionStatus isConnected={isConnected} startedAt={startedAt} />
 
       {/* Render any overlay controls */}
       {children}

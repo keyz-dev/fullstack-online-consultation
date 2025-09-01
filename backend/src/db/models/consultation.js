@@ -178,6 +178,12 @@ module.exports = (sequelize, DataTypes) => {
           len: [0, 1000],
         },
       },
+      declineHistory: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: [],
+        comment: 'Array of decline records: [{timestamp, reason, patientId}]',
+      },
     },
     {
       sequelize,

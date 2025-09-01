@@ -178,7 +178,6 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
       try {
         const response = await consultationsAPI.initiateCall(consultationId);
         if (response.success && response.data) {
-          toast.success("Video call initiated successfully!");
           return {
             roomId: response.data.roomId,
             consultationId: consultationId,
