@@ -1,16 +1,19 @@
 "use client";
 
 import React from "react";
+import { ConnectionStatus } from "./ConnectionStatus";
 
 interface VideoDisplayProps {
   localVideoRef: React.RefObject<HTMLVideoElement | null>;
   remoteVideoRef: React.RefObject<HTMLVideoElement | null>;
+  isConnected: boolean;
   children?: React.ReactNode;
 }
 
 const VideoDisplay: React.FC<VideoDisplayProps> = ({
   localVideoRef,
   remoteVideoRef,
+  isConnected,
   children,
 }) => {
   return (
@@ -33,6 +36,9 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
           className="w-full h-full object-cover"
         />
       </div>
+
+      {/* Connection Status */}
+      <ConnectionStatus isConnected={isConnected} />
 
       {/* Render any overlay controls */}
       {children}

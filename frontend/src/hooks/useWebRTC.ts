@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSocketContext } from "@/contexts";
 
 interface UseWebRTCProps {
@@ -9,10 +9,12 @@ interface UseWebRTCProps {
 }
 
 export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWebRTCProps) => {
+  // Video/Audio states
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [remoteUserId, setRemoteUserId] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [remoteUserId, setRemoteUserId] = useState<number | null>(null);
 
   // WebRTC refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -26,16 +28,18 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
   // Initialize WebRTC
   const initializeWebRTC = useCallback(async () => {
     try {
-      // Get user media
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      console.log("🎥 Initializing WebRTC...");
+      
+      // Use MediaStreamManager for proper device management
+      const { mediaStreamManager } = await import('../utils/mediaStreamManager');
+      const stream = await mediaStreamManager.getMediaStream(roomId);
       
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
+
+      console.log("🎥 Local stream obtained and set");
 
       // Create peer connection
       const peerConnection = new RTCPeerConnection({
@@ -52,50 +56,65 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
         peerConnection.addTrack(track, stream);
       });
 
+      console.log("🎥 Local tracks added to peer connection");
+
       // Handle remote stream
       peerConnection.ontrack = (event) => {
+        console.log("🎥 Remote stream received");
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
 
-      // Handle ICE candidates
+      // Handle ICE candidates - removed remoteUserId dependency
       peerConnection.onicecandidate = (event) => {
-        if (event.candidate && socket && remoteUserId) {
-          socket.emit("video:ice-candidate", {
-            roomId,
-            candidate: event.candidate,
-            toUserId: remoteUserId,
-          });
+        if (event.candidate && socket) {
+          console.log("🧊 ICE candidate generated");
+          // We'll send this when we know the remote user ID
+          if (remoteUserId) {
+            socket.emit("video:ice-candidate", {
+              roomId,
+              candidate: event.candidate,
+              toUserId: remoteUserId,
+            });
+          }
+        }
+      };
+
+      // Handle connection state changes
+      peerConnection.onconnectionstatechange = () => {
+        console.log("🔗 Connection state:", peerConnection.connectionState);
+        if (peerConnection.connectionState === 'connected') {
+          setIsConnected(true);
+        } else if (peerConnection.connectionState === 'disconnected' || 
+                   peerConnection.connectionState === 'failed') {
+          setIsConnected(false);
         }
       };
 
       // Join room
       if (socket) {
         socket.emit("video:join-room", { roomId, consultationId });
+        console.log("🏠 Joined room:", roomId);
       }
 
     } catch (error) {
-      console.error("Error initializing WebRTC:", error);
+      console.error("❌ Error initializing WebRTC:", error);
     }
-  }, [roomId, consultationId, socket, remoteUserId]);
+  }, [roomId, consultationId, socket]);
 
   // Create offer (for call initiator)
-  const createOffer = useCallback(async (targetUserId: string) => {
-    if (!peerConnectionRef.current || !socket) return;
+  const createOffer = useCallback(async () => {
+    if (!peerConnectionRef.current || !socket || !remoteUserId) return;
 
     try {
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
-      socket.emit("video:offer", { 
-        roomId, 
-        offer, 
-        toUserId: targetUserId 
-      });
+      socket.emit("video:offer", { roomId, toUserId: remoteUserId, offer });
     } catch (error) {
       console.error("Error creating offer:", error);
     }
-  }, [roomId, socket]);
+  }, [roomId, socket, remoteUserId]);
 
   // Toggle video
   const toggleVideo = useCallback(() => {
@@ -126,11 +145,14 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
     try {
       if (!isScreenSharing) {
         // Start screen sharing
+        console.log("🖥️ Requesting screen share permission...");
+        
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: true,
         });
         
+        console.log("🖥️ Screen share permission granted");
         screenStreamRef.current = screenStream;
         
         // Replace video track with screen share
@@ -140,19 +162,37 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
           
         if (videoSender) {
           await videoSender.replaceTrack(screenStream.getVideoTracks()[0]);
+          console.log("🖥️ Video track replaced with screen share");
         }
         
         setIsScreenSharing(true);
         
         // Handle screen share end
         screenStream.getVideoTracks()[0].onended = () => {
+          console.log("🖥️ Screen share ended by user");
           stopScreenShare();
         };
       } else {
         stopScreenShare();
       }
     } catch (error) {
-      console.error("Error toggling screen share:", error);
+      console.error("❌ Error toggling screen share:", error);
+      
+      // Handle specific permission errors
+      const err = error as Error;
+      if (err.name === 'NotAllowedError') {
+        console.log("🚫 Screen share permission denied by user");
+        // Don't show error to user - this is expected when they cancel
+      } else if (err.name === 'NotSupportedError') {
+        console.error("❌ Screen sharing not supported in this browser");
+        alert("Screen sharing is not supported in this browser");
+      } else if (err.name === 'NotFoundError') {
+        console.error("❌ No screen sharing source found");
+        alert("No screen available for sharing");
+      } else {
+        console.error("❌ Unexpected screen sharing error:", error);
+        alert("Failed to start screen sharing. Please try again.");
+      }
     }
   }, [isScreenSharing]);
 
@@ -185,25 +225,23 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
   }, []);
 
   // End call
-  const handleEndCall = useCallback(() => {
-    console.log("🔚 useWebRTC: Ending call - cleaning up resources...");
+  const handleEndCall = useCallback(async () => {
+    console.log("🔚 Ending call - cleaning up resources...");
     
-    // Stop all streams safely
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        if (track.readyState !== 'ended') {
-          track.stop();
-          console.log(`🎥 useWebRTC: Stopped ${track.kind} track`);
-        }
-      });
-      localStreamRef.current = null;
+    // Use MediaStreamManager for proper cleanup
+    try {
+      const { mediaStreamManager } = await import('../utils/mediaStreamManager');
+      mediaStreamManager.releaseMediaStream(roomId);
+    } catch (error) {
+      console.error("Error releasing media stream:", error);
     }
     
+    // Stop screen sharing stream
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach(track => {
         if (track.readyState !== 'ended') {
           track.stop();
-          console.log(`🖥️ useWebRTC: Stopped screen share ${track.kind} track`);
+          console.log(`🖥️ Stopped screen share ${track.kind} track`);
         }
       });
       screenStreamRef.current = null;
@@ -213,7 +251,7 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
-      console.log("🔗 useWebRTC: Closed peer connection");
+      console.log("🔗 Closed peer connection");
     }
 
     // Clear video elements
@@ -224,137 +262,74 @@ export const useWebRTC = ({ roomId, consultationId, userRole, onCallEnd }: UseWe
       remoteVideoRef.current.srcObject = null;
     }
 
-    // Emit call end event (only if not already ending)
+    // Clear refs
+    localStreamRef.current = null;
+
+    // Emit call end event
     if (socket) {
-      socket.emit("video:end-call", { roomId });
+      socket.emit("video:end-call", { roomId, consultationId });
     }
 
     onCallEnd();
-  }, [roomId, socket, onCallEnd]);
+  }, [roomId, consultationId, socket, onCallEnd]);
 
-  // Socket event listeners
-  useEffect(() => {
-    if (!socket) return;
-
-    // Track remote user and handle user joined
-    socket.on("video:user-joined", (data: any) => {
-      console.log("User joined:", data);
-      if (data.userId !== socket.id) {
-        setRemoteUserId(data.userId);
-        // If this is the second person to join, create an offer
-        if (userRole === "doctor") {
-          setTimeout(() => createOffer(data.userId), 1000);
-        }
-      }
-    });
-
-    // WebRTC signaling
-    socket.on("video:offer", async (data: any) => {
-      if (peerConnectionRef.current) {
-        setRemoteUserId(data.fromUserId);
-        await peerConnectionRef.current.setRemoteDescription(data.offer);
-        const answer = await peerConnectionRef.current.createAnswer();
-        await peerConnectionRef.current.setLocalDescription(answer);
-        socket.emit("video:answer", { 
-          roomId, 
-          answer, 
-          toUserId: data.fromUserId 
-        });
-      }
-    });
-
-    socket.on("video:answer", async (data: any) => {
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(data.answer);
-      }
-    });
-
-    socket.on("video:ice-candidate", async (data: any) => {
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(data.candidate);
-      }
-    });
-
-    // Call ended by other party - don't call handleEndCall to avoid loop
-    socket.on("video:call-ended", () => {
-      console.log("📞 useWebRTC: Call ended by other party");
-      
-      // Stop all streams safely
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => {
-          if (track.readyState !== 'ended') {
-            track.stop();
-            console.log(`🎥 useWebRTC: Stopped ${track.kind} track (remote end)`);
-          }
-        });
-        localStreamRef.current = null;
-      }
-      
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach(track => {
-          if (track.readyState !== 'ended') {
-            track.stop();
-            console.log(`🖥️ useWebRTC: Stopped screen share ${track.kind} track (remote end)`);
-          }
-        });
-        screenStreamRef.current = null;
-      }
-
-      // Close peer connection
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
-        peerConnectionRef.current = null;
-        console.log("🔗 useWebRTC: Closed peer connection (remote end)");
-      }
-
-      // Clear video elements
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = null;
-      }
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = null;
-      }
-
-      // Just call onCallEnd without emitting another socket event
-      onCallEnd();
-    });
-
-    return () => {
-      socket.off("video:user-joined");
-      socket.off("video:offer");
-      socket.off("video:answer");
-      socket.off("video:ice-candidate");
-      socket.off("video:call-ended");
-    };
-  }, [socket, roomId, onCallEnd, createOffer, userRole]);
-
-  // Initialize on mount
-  useEffect(() => {
-    initializeWebRTC();
+  // Cleanup function
+  const cleanup = useCallback(async () => {
+    console.log("🧹 Cleaning up WebRTC resources...");
     
-    return () => {
-      // Cleanup on unmount
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
-      }
-    };
-  }, [initializeWebRTC]);
+    // Use MediaStreamManager for proper cleanup
+    try {
+      const { mediaStreamManager } = await import('../utils/mediaStreamManager');
+      mediaStreamManager.releaseMediaStream(roomId);
+    } catch (error) {
+      console.error("Error releasing media stream:", error);
+    }
+    
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+    }
+    
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+
+    // Clear video elements
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+
+    localStreamRef.current = null;
+  }, [roomId]);
 
   return {
-    localVideoRef,
-    remoteVideoRef,
+    // States
     isVideoEnabled,
     isAudioEnabled,
     isScreenSharing,
+    isConnected,
+    remoteUserId,
+    
+    // Refs
+    localVideoRef,
+    remoteVideoRef,
+    peerConnectionRef,
+    
+    // Functions
+    initializeWebRTC,
+    createOffer,
     toggleVideo,
     toggleAudio,
     toggleScreenShare,
     handleEndCall,
+    cleanup,
+    
+    // Setters for socket events
+    setRemoteUserId,
+    setIsConnected,
   };
 };

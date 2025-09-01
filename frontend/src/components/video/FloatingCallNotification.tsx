@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Phone, PhoneOff, User, Clock, Video, Stethoscope } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
@@ -29,6 +29,60 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
   onDecline,
 }) => {
   const [ringDuration, setRingDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize ringtone audio
+  useEffect(() => {
+    // Create audio element for ringtone
+    audioRef.current = new Audio("/sounds/incoming-call.mp3");
+    audioRef.current.loop = true;
+    audioRef.current.volume = 0.7;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const stopRingtone = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, []);
+
+  // Handle ringtone when call comes in
+  useEffect(() => {
+    if (isVisible && callData) {
+      // Start ringtone with user interaction fallback
+      if (audioRef.current) {
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            console.log('🔔 Ringtone autoplay prevented:', error.message);
+            // Fallback: Try to play on user interaction
+            const playOnInteraction = () => {
+              if (audioRef.current) {
+                audioRef.current.play().catch(console.error);
+              }
+              document.removeEventListener('click', playOnInteraction);
+              document.removeEventListener('keydown', playOnInteraction);
+            };
+            document.addEventListener('click', playOnInteraction, { once: true });
+            document.addEventListener('keydown', playOnInteraction, { once: true });
+          });
+        }
+      }
+    } else {
+      stopRingtone();
+    }
+
+    return () => {
+      stopRingtone();
+    };
+  }, [isVisible, callData, stopRingtone]);
 
   // Ring timer
   useEffect(() => {
@@ -47,9 +101,23 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
   // Auto-decline after 60 seconds
   useEffect(() => {
     if (ringDuration >= 60) {
+      stopRingtone();
       onDecline();
     }
-  }, [ringDuration, onDecline]);
+  }, [ringDuration, onDecline, stopRingtone]);
+
+  // Handle accept with ringtone stop
+  const handleAccept = useCallback(() => {
+    if (!callData) return;
+    stopRingtone();
+    onAccept(callData.roomId, callData.consultationId);
+  }, [callData, onAccept, stopRingtone]);
+
+  // Handle decline with ringtone stop
+  const handleDecline = useCallback(() => {
+    stopRingtone();
+    onDecline();
+  }, [onDecline, stopRingtone]);
 
   const formatRingTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -117,7 +185,7 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
               {/* Action Buttons */}
               <div className="flex space-x-2">
                 <Button
-                  onClickHandler={() => onAccept(callData.roomId, callData.consultationId)}
+                  onClickHandler={handleAccept}
                   additionalClasses="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 text-sm font-medium"
                 >
                   <Phone className="w-4 h-4" />
@@ -125,7 +193,7 @@ export const FloatingCallNotification: React.FC<FloatingCallNotificationProps> =
                 </Button>
                 
                 <Button
-                  onClickHandler={onDecline}
+                  onClickHandler={handleDecline}
                   additionalClasses="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 text-sm font-medium"
                 >
                   <PhoneOff className="w-4 h-4" />
