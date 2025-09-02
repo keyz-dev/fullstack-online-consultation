@@ -23,14 +23,9 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
     const checkStreams = () => {
       if (localVideoRef.current?.srcObject) {
         const stream = localVideoRef.current.srcObject as MediaStream;
-        console.log("🎥 Local video has stream:", stream.getTracks().length, "tracks");
-      } else {
-        console.log("❌ Local video has no stream");
       }
-
       if (remoteVideoRef.current?.srcObject) {
         const stream = remoteVideoRef.current.srcObject as MediaStream;
-        console.log("🎥 Remote video has stream:", stream.getTracks().length, "tracks");
       } else {
         console.log("❌ Remote video has no stream");
       }
@@ -42,18 +37,29 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
     return () => clearInterval(interval);
   }, [localVideoRef, remoteVideoRef]);
 
+  // Cleanup video elements when connection status changes
+  useEffect(() => {
+    if (!isConnected) {
+      
+      // Clear remote video when disconnected
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+      
+      // Note: Don't clear local video here as it might still be needed for reconnection
+      // Local video cleanup is handled in the useSimplePeerWebRTC hook
+    }
+  }, [isConnected, remoteVideoRef]);
+
   return (
-    <div className="flex-1 relative">
+    <div className="flex-1 relative h-full">
       {/* Remote Video */}
       <video
         ref={remoteVideoRef}
         autoPlay
         playsInline
         className="w-full h-full object-cover bg-gray-800"
-        onLoadedMetadata={() => console.log("🎥 Remote video metadata loaded")}
-        onCanPlay={() => console.log("🎥 Remote video can play")}
         onError={(e) => {
-          console.error("❌ Remote video error:", e);
           const video = e.target as HTMLVideoElement;
           console.error("❌ Video error details:", {
             error: video.error,
@@ -63,10 +69,6 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
             srcObject: video.srcObject
           });
         }}
-        onLoadStart={() => console.log("🎥 Remote video load started")}
-        onWaiting={() => console.log("⏳ Remote video waiting for data")}
-        onPlaying={() => console.log("▶️ Remote video playing")}
-        onPause={() => console.log("⏸️ Remote video paused")}
       />
       
       {/* Local Video (Picture-in-Picture) */}
@@ -77,8 +79,6 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
           playsInline
           muted
           className="w-full h-full object-cover"
-          onLoadedMetadata={() => console.log("🎥 Local video metadata loaded")}
-          onCanPlay={() => console.log("🎥 Local video can play")}
         />
       </div>
 

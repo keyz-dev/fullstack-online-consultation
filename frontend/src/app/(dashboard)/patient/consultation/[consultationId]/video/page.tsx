@@ -38,7 +38,7 @@ export default function PatientVideoCallPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="h-[87vh] overflow-hidden">
       <SimplePeerVideoCallRoom
         roomId={roomId}
         consultationId={consultationId}

@@ -62,14 +62,17 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
   const loadAppointments = async () => {
     try {
       setLoading(true);
-      const response = await consultationsAPI.getConsultations({
-        page: pagination.currentPage,
-        limit: maxItems || pagination.itemsPerPage,
-        filters: {
-          ...filters,
-          search: searchQuery || undefined,
-        },
-      });
+      const response = await consultationsAPI.getConsultations(
+        user?.role as "doctor" | "patient",
+        {
+          page: pagination.currentPage,
+          limit: maxItems || pagination.itemsPerPage,
+          filters: {
+            ...filters,
+            search: searchQuery || undefined,
+          },
+        }
+      );
       setAppointments(response.consultations);
       setPagination(response.pagination);
     } catch (error) {
@@ -266,9 +269,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            Table is supposed to be here
-          </div>
+          <div className="overflow-x-auto">Table is supposed to be here</div>
         )}
 
         {/* Pagination */}

@@ -13,7 +13,7 @@ interface SimplePeerVideoCallRoomProps {
   roomId: string;
   consultationId: string;
   userRole: "doctor" | "patient";
-  onCallEnd: () => void;
+  onCallEnd: (notes?: string) => void;
 }
 
 const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
@@ -26,30 +26,34 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
   const [showNotes, setShowNotes] = useState(userRole === "doctor");
   const [showChat, setShowChat] = useState(false);
   const [notes, setNotes] = useState("");
-  const [chatMessages, setChatMessages] = useState<Array<{
-    roomId: string;
-    consultationId: string;
-    message: string;
-    timestamp: string;
-    senderRole: string;
-    sent: boolean;
-  }>>([]);
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      roomId: string;
+      consultationId: string;
+      message: string;
+      timestamp: string;
+      senderRole: string;
+      sent: boolean;
+    }>
+  >([]);
   const [newMessage, setNewMessage] = useState("");
 
   // Handle incoming chat messages
-  const handleChatMessage = useCallback((data: {
-    roomId: string;
-    consultationId: string;
-    message: string;
-    timestamp: string;
-    senderRole: string;
-    fromUserId: number;
-    fromName: string;
-    sent: boolean;
-  }) => {
-    console.log('💬 Received chat message:', data);
-    setChatMessages(prev => [...prev, data]);
-  }, []);
+  const handleChatMessage = useCallback(
+    (data: {
+      roomId: string;
+      consultationId: string;
+      message: string;
+      timestamp: string;
+      senderRole: string;
+      fromUserId: number;
+      fromName: string;
+      sent: boolean;
+    }) => {
+      setChatMessages((prev) => [...prev, data]);
+    },
+    []
+  );
 
   // Use Simple Peer WebRTC hook
   const {
@@ -68,27 +72,30 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
     leaveCall,
     toggleVideo,
     toggleAudio,
-    sendChatMessage
+    sendChatMessage,
   } = useSimplePeerWebRTC({
     roomId,
     consultationId,
     userRole,
     onCallEnd,
-    onChatMessage: handleChatMessage
+    notes,
+    onChatMessage: handleChatMessage,
   });
 
   // Load existing consultation notes when call starts
   useEffect(() => {
-    if (callAccepted && userRole === 'doctor' && !notes) {
+    if (callAccepted && userRole === "doctor" && !notes) {
       const loadExistingNotes = async () => {
         try {
-          const consultation = await consultationsAPI.getConsultation(consultationId);
-          if (consultation.data.consultations[0]?.notes) {
-            setNotes(consultation.data.consultations[0].notes);
-            console.log('📝 Loaded existing consultation notes');
+          const consultation = await consultationsAPI.getConsultation(
+            userRole,
+            consultationId
+          );
+          if (consultation?.data?.notes) {
+            setNotes(consultation.data.notes);
           }
         } catch (error) {
-          console.error('❌ Failed to load existing notes:', error);
+          console.error("❌ Failed to load existing notes:", error);
         }
       };
       loadExistingNotes();
@@ -103,21 +110,19 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
       try {
         // Join consultation session when call is accepted
         if (callAccepted && !callEnded) {
-          console.log('🔗 Joining consultation session for tracking');
           await consultationsAPI.joinConsultationSession(consultationId);
-          
+
           // Start heartbeat to keep session alive
           heartbeatInterval = setInterval(async () => {
             try {
               await consultationsAPI.updateHeartbeat(consultationId);
-              console.log('💓 Session heartbeat updated');
             } catch (error) {
-              console.error('❌ Heartbeat failed:', error);
+              console.error("❌ Heartbeat failed:", error);
             }
           }, 30000); // Every 30 seconds
         }
       } catch (error) {
-        console.error('❌ Failed to join consultation session:', error);
+        console.error("❌ Failed to join consultation session:", error);
       }
     };
 
@@ -135,25 +140,14 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
     if (callEnded) {
       const leaveSession = async () => {
         try {
-          console.log('🚪 Leaving consultation session');
           await consultationsAPI.leaveConsultationSession(consultationId);
         } catch (error) {
-          console.error('❌ Failed to leave consultation session:', error);
+          console.error("❌ Failed to leave consultation session:", error);
         }
       };
       leaveSession();
     }
   }, [callEnded, consultationId]);
-
-  console.log('🔍 Simple Peer Video Call Room State:', {
-    hasStream: !!stream,
-    calling: call.calling,
-    callAccepted,
-    callEnded,
-    isConnected,
-    remoteUserId,
-    userRole
-  });
 
   // Send chat message
   const sendMessage = () => {
@@ -169,31 +163,30 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
     };
 
     // Add to local chat first
-    setChatMessages(prev => [...prev, message]);
-    
+    setChatMessages((prev) => [...prev, message]);
+
     // Send via socket
     sendChatMessage(newMessage);
-    
+
     setNewMessage("");
   };
 
   // Save consultation notes (for doctors)
   const saveNotes = useCallback(async () => {
-    if (userRole !== 'doctor' || !notes.trim()) return;
+    if (userRole !== "doctor" || !notes.trim()) return;
 
     try {
-      console.log('💾 Saving consultation notes...');
       await consultationsAPI.updateConsultationNotes(consultationId, notes);
-      console.log('✅ Notes saved successfully');
+      console.log("✅ Notes saved successfully");
       // Don't show toast here to avoid spam, just log success
     } catch (error) {
-      console.error('❌ Failed to save notes:', error);
+      console.error("❌ Failed to save notes:", error);
     }
   }, [consultationId, notes, userRole]);
 
   // Auto-save notes every 30 seconds when typing
   useEffect(() => {
-    if (userRole !== 'doctor' || !notes.trim()) return;
+    if (userRole !== "doctor" || !notes.trim()) return;
 
     const autoSaveTimeout = setTimeout(() => {
       saveNotes();
@@ -204,26 +197,10 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
 
   // Save notes when call ends
   useEffect(() => {
-    if (callEnded && userRole === 'doctor' && notes.trim()) {
+    if (callEnded && userRole === "doctor" && notes.trim()) {
       saveNotes();
     }
   }, [callEnded, saveNotes, notes, userRole]);
-
-  // Handle call actions
-  const handleAnswer = () => {
-    console.log('📞 Patient answering call');
-    answerCall();
-  };
-
-  const handleDecline = () => {
-    console.log('📞 Declining call');
-    leaveCall();
-  };
-
-  const handleEndCall = () => {
-    console.log('📞 Ending call');
-    leaveCall();
-  };
 
   return (
     <div className="flex h-full bg-gray-900">
@@ -234,18 +211,18 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
           <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 text-center">
               <h3 className="text-lg font-semibold mb-4">
-                Incoming call from {call.name || 'Doctor'}
+                Incoming call from {call.name || "Doctor"}
               </h3>
               <div className="flex space-x-4">
                 <Button
-                  onClickHandler={handleAnswer}
+                  onClickHandler={answerCall}
                   additionalClasses="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
                 >
                   <Phone className="w-4 h-4" />
                   <span>Answer</span>
                 </Button>
                 <Button
-                  onClickHandler={handleDecline}
+                  onClickHandler={leaveCall}
                   additionalClasses="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
                 >
                   <PhoneOff className="w-4 h-4" />
@@ -261,7 +238,7 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
           <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40">
             <div className="bg-white rounded-lg p-6 text-center">
               <h3 className="text-lg font-semibold mb-4">
-                Calling {call.name || 'Patient'}...
+                Calling {call.name || "Patient"}...
               </h3>
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             </div>
@@ -289,7 +266,7 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
               onToggleScreenShare={() => {}} // Disabled for Simple Peer
               onToggleChat={() => setShowChat(!showChat)}
               onToggleNotes={() => setShowNotes(!showNotes)}
-              onEndCall={handleEndCall}
+              onEndCall={leaveCall}
             />
           )}
         </VideoDisplay>
@@ -308,7 +285,7 @@ const SimplePeerVideoCallRoom: React.FC<SimplePeerVideoCallRoomProps> = ({
         setNotes={setNotes}
         setShowNotes={setShowNotes}
         setShowChat={setShowChat}
-        onSaveNotes={userRole === 'doctor' ? saveNotes : undefined}
+        onSaveNotes={userRole === "doctor" ? saveNotes : undefined}
       />
     </div>
   );

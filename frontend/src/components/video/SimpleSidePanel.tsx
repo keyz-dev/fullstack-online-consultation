@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Button, TextArea } from "@/components/ui";
-import { MessageSquare, FileText } from "lucide-react";
+import { Button, TextArea, Input } from "@/components/ui";
+import { MessageSquare, FileText, Send } from "lucide-react";
 
 interface ChatMessage {
   roomId: string;
@@ -150,13 +150,13 @@ const SimpleSidePanel: React.FC<SimpleSidePanelProps> = ({
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && sendMessage()}
                 placeholder="Type a message..."
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xs outline-none text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <Button
                 onClickHandler={sendMessage}
                 isDisabled={!newMessage.trim()}
-                additionalClasses="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-                text="Send"
+                additionalClasses="primarybtn min-h-fit min-w-fit"
+                leadingIcon={<Send className="w-5 h-5" />}
               />
             </div>
           </div>

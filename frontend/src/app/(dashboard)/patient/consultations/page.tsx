@@ -24,7 +24,8 @@ import { Video, MessageSquare, Calendar, Stethoscope } from "lucide-react";
 
 const PatientConsultationsPage: React.FC = () => {
   const router = useRouter();
-  const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
+  const [selectedConsultation, setSelectedConsultation] =
+    useState<Consultation | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
@@ -39,10 +40,15 @@ const PatientConsultationsPage: React.FC = () => {
     actions,
   } = usePatientConsultations();
 
+  console.log("consultations: ", consultations);
+  console.log("activeConsultations: ", activeConsultations);
+
   // Combine active and regular consultations, with active ones first
   const allConsultations = [
     ...activeConsultations,
-    ...consultations.filter(c => !activeConsultations.some(ac => ac.id === c.id))
+    ...consultations.filter(
+      (c) => !activeConsultations.some((ac) => ac.id === c.id)
+    ),
   ];
 
   // Filter configurations
@@ -99,7 +105,9 @@ const PatientConsultationsPage: React.FC = () => {
 
   const handleJoinConsultation = (consultation: Consultation) => {
     if (consultation.roomId) {
-      router.push(`/patient/consultation/${consultation.id}/video?roomId=${consultation.roomId}`);
+      router.push(
+        `/patient/consultation/${consultation.id}/video?roomId=${consultation.roomId}`
+      );
     }
   };
 
@@ -164,7 +172,7 @@ const PatientConsultationsPage: React.FC = () => {
                   icon="search"
                   action={
                     <button
-                      onClick={() => router.push('/booking')}
+                      onClick={() => router.push("/booking")}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Book Appointment
@@ -187,7 +195,9 @@ const PatientConsultationsPage: React.FC = () => {
                     <div className="flex justify-center mt-6">
                       <Pagination
                         currentPage={pagination.page}
-                        totalPages={Math.ceil(pagination.total / pagination.limit)}
+                        totalPages={Math.ceil(
+                          pagination.total / pagination.limit
+                        )}
                         onPageChange={handlePageChange}
                         showPageInfo={true}
                         totalItems={pagination.total}

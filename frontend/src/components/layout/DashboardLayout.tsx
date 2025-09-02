@@ -3,8 +3,10 @@
 import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useBaseDashboard } from "../../contexts/BaseDashboardContext";
+import { useAuth } from "@/contexts/AuthContext";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardHeader from "./DashboardHeader";
+import { useRouter } from "next/navigation";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -12,17 +14,23 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const {
-    user,
     roleConfig,
     updateActiveNavFromPath,
     sidebarCollapsed,
     setSidebarCollapsed,
   } = useBaseDashboard();
   const pathname = usePathname();
+  const router = useRouter();
+
+  const { user, loading: userLoading } = useAuth();
 
   useEffect(() => {
     updateActiveNavFromPath(pathname);
   }, [pathname, updateActiveNavFromPath]);
+
+  if (!user && !userLoading) {
+    router.push("/login");
+  }
 
   // Show loading state until client-side hydration is complete
   if (!user || !roleConfig) {

@@ -24,54 +24,81 @@ export interface User {
   updatedAt: string;
 }
 
-export interface Patient extends User {
-  role: "patient";
-  patient?: {
+export interface Patient {
+  id: string;
+  userId: string;
+  bloodGroup?: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  allergies?: string[];
+  emergencyContact?: {
+    name: string;
+    relationship?: string;
+    phone: string;
+    email?: string;
+  };
+  contactInfo?: {
+    address?: string;
+    emergencyPhone?: string;
+  };
+  medicalHistory?: string;
+  currentMedications?: string;
+  insuranceInfo?: {
+    provider?: string;
+    policyNumber?: string;
+    groupNumber?: string;
+    expiryDate?: string;
+  };
+  preferredLanguage?: string;
+  createdAt: string;
+  updatedAt: string;
+  
+  user: {
     id: string;
-    bloodGroup?: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
-    allergies?: string[];
-    emergencyContact?: {
-      name: string;
-      phone: string;
-      relationship?: string;
-    };
-    contactInfo?: ContactInfo[];
-    medicalDocuments?: string[];
-    insuranceInfo?: {
-      provider?: string;
-      policyNumber?: string;
-      groupNumber?: string;
-      expiryDate?: string;
-    };
-    preferredLanguage?: string;
+    name: string;
+    email: string;
+    phoneNumber?: string;
+    gender?: "male" | "female" | "other";
+    dob?: string;
+    avatar?: string;
   };
 }
 
-export interface Doctor extends User {
-  role: "doctor" | "pending_doctor";
-  doctor?: {
-    id: string;
-    licenseNumber: string;
-    experience: number;
-    bio?: string;
-    education?: Array<{
-      degree: string;
-      institution: string;
-      year: string;
-    }>;
-    languages?: string[];
-    specialties?: Specialty[]; // Many-to-many relationship
-    clinicAddress?: Address;
-    operationalHospital?: string;
-    contactInfo?: ContactInfo[];
-    consultationFee: number;
-    consultationDuration: number;
-    paymentMethods?: string[]; // Array of payment method strings
-    isVerified: boolean;
-    isActive: boolean;
-    averageRating?: number;
-    totalReviews: number;
+export interface Doctor {
+  id: string;
+  userId: string;
+  licenseNumber: string;
+  experience: number;
+  bio?: string;
+  education?: string[];
+  languages?: string[];
+  clinicAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
   };
+  operationalHospital?: string;
+  contactInfo?: {
+    phone?: string;
+    email?: string;
+  };
+  consultationFee?: string;
+  consultationDuration?: number;
+  paymentMethods?: string[];
+  isVerified: boolean;
+  isActive: boolean;
+  averageRating?: number;
+  totalReviews: number;
+  createdAt: string;
+  updatedAt: string;
+  
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  
+  specialties: Specialty[];
 }
 
 export interface Pharmacy extends User {
@@ -127,29 +154,64 @@ export interface TimeSlot {
 
 export interface Consultation {
   id: string;
-  patientId: string;
-  doctorId: string;
-  status: "scheduled" | "in_progress" | "completed" | "cancelled" | "no_show";
+  appointmentId: string;
+  roomId?: string;
+  status: "not_started" | "in_progress" | "completed" | "cancelled" | "no_show";
   type: "video_call" | "voice_call" | "chat" | "in_person";
-  scheduledAt: string;
   startedAt?: string;
   endedAt?: string;
   duration?: number; // in minutes
-  symptoms?: string[];
   diagnosis?: string;
   notes?: string;
-  prescription?: any;
   followUpDate?: string;
   followUpNotes?: string;
   rating?: number;
   review?: string;
-  cancellationReason?: string;
-  cancelledBy?: "patient" | "doctor" | "system";
+  declineHistory?: Array<{
+    timestamp: string;
+    reason: string;
+    patientId: string;
+  }>;
+  participantStatus?: {
+    doctor: { connected: boolean; lastSeen?: string; joinedAt?: string };
+    patient: { connected: boolean; lastSeen?: string; joinedAt?: string };
+  };
+  lastActivity?: string;
   createdAt: string;
   updatedAt: string;
+  
+  // Patient and doctor at top level
   patient: Patient;
   doctor: Doctor;
-  messages: ConsultationMessage[];
+  
+  // Appointment data
+  appointment: {
+    id: string;
+    timeSlotId: string;
+    doctorId: string;
+    patientId: string;
+    status: string;
+    consultationType: string;
+    symptomIds?: number[];
+    notes?: string;
+    cancellationReason?: string;
+    cancelledBy?: string;
+    cancelledAt?: string;
+    paymentStatus: string;
+    paymentAmount?: string;
+    campayTransactionId?: string;
+    createdAt: string;
+    updatedAt: string;
+    timeSlot?: {
+      id: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      isBooked: boolean;
+    };
+  };
+  
+  messages?: ConsultationMessage[];
 }
 
 export interface ConsultationMessage {

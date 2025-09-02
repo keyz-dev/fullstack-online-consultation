@@ -88,13 +88,16 @@ function doctorConsultationReducer(state: typeof initialState, action: any) {
     case DOCTOR_CONSULTATION_ACTIONS.SET_FILTERS:
       return { ...state, filters: { ...state.filters, ...action.payload } };
     case DOCTOR_CONSULTATION_ACTIONS.SET_PAGINATION:
-      return { ...state, pagination: { ...state.pagination, ...action.payload } };
+      return {
+        ...state,
+        pagination: { ...state.pagination, ...action.payload },
+      };
     case DOCTOR_CONSULTATION_ACTIONS.SET_STATS:
       return { ...state, stats: action.payload };
     case DOCTOR_CONSULTATION_ACTIONS.UPDATE_CONSULTATION:
       return {
         ...state,
-        consultations: state.consultations.map(consultation =>
+        consultations: state.consultations.map((consultation) =>
           consultation.id === action.payload.id ? action.payload : consultation
         ),
       };
@@ -135,33 +138,39 @@ export const DoctorConsultationProvider: React.FC<{
   // Fetch consultations
   const refreshConsultations = useCallback(async () => {
     try {
-      dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_LOADING, payload: true });
-      
-      console.log('🔄 Fetching consultations with filters:', state.filters);
-      
-      const response = await consultationsAPI.getConsultations({
+      dispatch({
+        type: DOCTOR_CONSULTATION_ACTIONS.SET_LOADING,
+        payload: true,
+      });
+
+      const response = await consultationsAPI.getConsultations("doctor", {
         page: state.pagination.page,
         limit: state.pagination.limit,
         filters: state.filters,
       });
 
-      console.log('📊 Consultations API response:', response);
-
-      dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_CONSULTATIONS, payload: response.consultations || [] });
-      dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_PAGINATION, payload: {
-        total: response.pagination?.totalItems || 0
-      }});
+      dispatch({
+        type: DOCTOR_CONSULTATION_ACTIONS.SET_CONSULTATIONS,
+        payload: response.consultations || [],
+      });
+      dispatch({
+        type: DOCTOR_CONSULTATION_ACTIONS.SET_PAGINATION,
+        payload: {
+          total: response.pagination?.totalItems || 0,
+        },
+      });
 
       // Calculate stats from consultations
       const stats = calculateStats(response.consultations || []);
       dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_STATS, payload: stats });
-
     } catch (error) {
       const errorMessage = extractErrorMessage(error);
-      dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_ERROR, payload: errorMessage });
-      console.error('❌ Failed to fetch consultations:', error);
+      dispatch({
+        type: DOCTOR_CONSULTATION_ACTIONS.SET_ERROR,
+        payload: errorMessage,
+      });
       // Don't show toast for empty data, only for actual errors
-      if (!errorMessage.includes('No consultations found')) {
+      if (!errorMessage.includes("No consultations found")) {
         toast.error(`Failed to fetch consultations: ${errorMessage}`);
       }
     }
@@ -170,47 +179,70 @@ export const DoctorConsultationProvider: React.FC<{
   // Fetch active consultations
   const refreshActiveConsultations = useCallback(async () => {
     try {
-      const { activeConsultations } = await consultationsAPI.getActiveConsultations();
-      dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_ACTIVE_CONSULTATIONS, payload: activeConsultations });
+      const { activeConsultations } =
+        await consultationsAPI.getActiveConsultations("doctor");
+      dispatch({
+        type: DOCTOR_CONSULTATION_ACTIONS.SET_ACTIVE_CONSULTATIONS,
+        payload: activeConsultations,
+      });
     } catch (error) {
+      // Handle error silently for active consultations
       console.error("Failed to fetch active consultations:", error);
     }
   }, []);
 
   // Join consultation
-  const joinConsultation = useCallback(async (consultationId: string) => {
-    try {
-      await consultationsAPI.joinConsultationSession(consultationId);
-      await refreshActiveConsultations();
-      toast.success("Joined consultation successfully");
-    } catch (error) {
-      const errorMessage = extractErrorMessage(error);
-      toast.error(`Failed to join consultation: ${errorMessage}`);
-    }
-  }, [refreshActiveConsultations]);
+  const joinConsultation = useCallback(
+    async (consultationId: string) => {
+      try {
+        await consultationsAPI.joinConsultationSession(consultationId);
+        await refreshActiveConsultations();
+        toast.success("Joined consultation successfully");
+      } catch (error) {
+        const errorMessage = extractErrorMessage(error);
+        toast.error(`Failed to join consultation: ${errorMessage}`);
+      }
+    },
+    [refreshActiveConsultations]
+  );
 
   // End consultation
-  const endConsultation = useCallback(async (consultationId: string) => {
-    try {
-      await consultationsAPI.leaveConsultationSession(consultationId);
-      await refreshConsultations();
-      await refreshActiveConsultations();
-      toast.success("Consultation ended successfully");
-    } catch (error) {
-      const errorMessage = extractErrorMessage(error);
-      toast.error(`Failed to end consultation: ${errorMessage}`);
-    }
-  }, [refreshConsultations, refreshActiveConsultations]);
+  const endConsultation = useCallback(
+    async (consultationId: string) => {
+      try {
+        await consultationsAPI.leaveConsultationSession(consultationId);
+        await refreshConsultations();
+        await refreshActiveConsultations();
+        toast.success("Consultation ended successfully");
+      } catch (error) {
+        const errorMessage = extractErrorMessage(error);
+        toast.error(`Failed to end consultation: ${errorMessage}`);
+      }
+    },
+    [refreshConsultations, refreshActiveConsultations]
+  );
 
   // Set filters
-  const setFilters = useCallback((newFilters: Partial<DoctorConsultationFilters>) => {
-    dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_FILTERS, payload: newFilters });
-  }, []);
+  const setFilters = useCallback(
+    (newFilters: Partial<DoctorConsultationFilters>) => {
+      dispatch({
+        type: DOCTOR_CONSULTATION_ACTIONS.SET_FILTERS,
+        payload: newFilters,
+      });
+    },
+    []
+  );
 
   // Set pagination
-  const setPagination = useCallback((newPagination: Partial<DoctorConsultationPagination>) => {
-    dispatch({ type: DOCTOR_CONSULTATION_ACTIONS.SET_PAGINATION, payload: newPagination });
-  }, []);
+  const setPagination = useCallback(
+    (newPagination: Partial<DoctorConsultationPagination>) => {
+      dispatch({
+        type: DOCTOR_CONSULTATION_ACTIONS.SET_PAGINATION,
+        payload: newPagination,
+      });
+    },
+    []
+  );
 
   // Clear error
   const clearError = useCallback(() => {
@@ -222,7 +254,6 @@ export const DoctorConsultationProvider: React.FC<{
     if (!socket) return;
 
     const handleConsultationUpdate = (data: any) => {
-      console.log("📊 Consultation updated via socket:", data);
       refreshConsultations();
       refreshActiveConsultations();
     };
@@ -241,16 +272,16 @@ export const DoctorConsultationProvider: React.FC<{
   // Initial load - only call once on mount
   useEffect(() => {
     let isMounted = true;
-    
+
     const initialLoad = async () => {
       if (isMounted) {
         await refreshConsultations();
         await refreshActiveConsultations();
       }
     };
-    
+
     initialLoad();
-    
+
     return () => {
       isMounted = false;
     };
@@ -259,15 +290,15 @@ export const DoctorConsultationProvider: React.FC<{
   // Refresh when filters/pagination change
   useEffect(() => {
     let isMounted = true;
-    
+
     const filterLoad = async () => {
       if (isMounted) {
         await refreshConsultations();
       }
     };
-    
+
     filterLoad();
-    
+
     return () => {
       isMounted = false;
     };
@@ -303,32 +334,40 @@ export const DoctorConsultationProvider: React.FC<{
 export const useDoctorConsultations = () => {
   const context = useContext(DoctorConsultationContext);
   if (!context) {
-    throw new Error("useDoctorConsultations must be used within DoctorConsultationProvider");
+    throw new Error(
+      "useDoctorConsultations must be used within DoctorConsultationProvider"
+    );
   }
   return context;
 };
 
 // Helper function to calculate stats
-function calculateStats(consultations: Consultation[]): DoctorConsultationStats {
-  const stats = consultations.reduce((acc, consultation) => {
-    acc.total++;
-    
-    if (consultation.status === "in_progress") acc.active++;
-    if (consultation.status === "completed") acc.completed++;
-    
-    if (consultation.duration && consultation.status === "completed") {
-      acc.totalDuration += consultation.duration;
-    }
-    
-    return acc;
-  }, {
-    total: 0,
-    active: 0,
-    completed: 0,
-    totalDuration: 0,
-  });
+function calculateStats(
+  consultations: Consultation[]
+): DoctorConsultationStats {
+  const stats = consultations.reduce(
+    (acc, consultation) => {
+      acc.total++;
 
-  const avgDuration = stats.completed > 0 ? Math.round(stats.totalDuration / stats.completed) : 0;
+      if (consultation.status === "in_progress") acc.active++;
+      if (consultation.status === "completed") acc.completed++;
+
+      if (consultation.duration && consultation.status === "completed") {
+        acc.totalDuration += consultation.duration;
+      }
+
+      return acc;
+    },
+    {
+      total: 0,
+      active: 0,
+      completed: 0,
+      totalDuration: 0,
+    }
+  );
+
+  const avgDuration =
+    stats.completed > 0 ? Math.round(stats.totalDuration / stats.completed) : 0;
 
   return {
     total: stats.total,

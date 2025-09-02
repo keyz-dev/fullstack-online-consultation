@@ -7,6 +7,7 @@ const {
   User,
   Doctor,
   Patient,
+  Specialty,
 } = require("../db/models");
 const crypto = require("crypto");
 const { getIO } = require("../sockets");
@@ -16,7 +17,12 @@ const {
   BadRequestError,
 } = require("../utils/errors");
 const { formatImageUrl } = require("../utils/imageUtils");
+const {
+  formatConsultationData,
+  formatConsultationListResponse,
+} = require("../utils/returnFormats/consultationData");
 const ConsultationSessionService = require("../services/consultationSessionService");
+const consultationSessionService = require("../services/consultationSessionService");
 
 class ConsultationController {
   /**
@@ -27,7 +33,6 @@ class ConsultationController {
   async getConsultationMessages(req, res, next) {
     try {
       const { id } = req.params;
-      
 
       const messages = await ConsultationMessage.findAll({
         where: { consultationId: id },
@@ -35,16 +40,16 @@ class ConsultationController {
           {
             model: User,
             as: "sender",
-            attributes: ["id", "name", "avatar"]
-          }
+            attributes: ["id", "name", "avatar"],
+          },
         ],
-        order: [["createdAt", "ASC"]]
+        order: [["createdAt", "ASC"]],
       });
 
       res.status(200).json({
         success: true,
         data: {
-          messages: messages.map(msg => ({
+          messages: messages.map((msg) => ({
             id: msg.id,
             content: msg.content,
             sender: msg.sender.name,
@@ -54,9 +59,9 @@ class ConsultationController {
             fileUrl: msg.fileUrl ? formatImageUrl(msg.fileUrl) : null,
             fileName: msg.fileName,
             fileSize: msg.fileSize,
-            mimeType: msg.mimeType
-          }))
-        }
+            mimeType: msg.mimeType,
+          })),
+        },
       });
     } catch (error) {
       console.error("Error fetching consultation messages:", error);
@@ -72,8 +77,7 @@ class ConsultationController {
   async uploadConsultationFile(req, res, next) {
     try {
       const { id } = req.params;
-      
-      
+
       if (!req.file) {
         return next(new BadRequestError("No file uploaded"));
       }
@@ -84,16 +88,16 @@ class ConsultationController {
       const savedMessage = await ConsultationMessage.create({
         consultationId: parseInt(id),
         senderId: req.authUser.id,
-        senderType: req.authUser.role === 'doctor' ? 'doctor' : 'patient',
-        type: file.mimetype.startsWith('image/') ? 'image' : 'file',
+        senderType: req.authUser.role === "doctor" ? "doctor" : "patient",
+        type: file.mimetype.startsWith("image/") ? "image" : "file",
         content: `Shared ${file.originalname}`,
         fileUrl: file.path, // Use the path from multer (already formatted)
         fileName: file.originalname,
         fileSize: file.size,
         mimeType: file.mimetype,
         metadata: {
-          uploadedAt: new Date().toISOString()
-        }
+          uploadedAt: new Date().toISOString(),
+        },
       });
 
       // Get consultation for room info
@@ -117,7 +121,7 @@ class ConsultationController {
         uploadedBy: req.authUser.name,
         uploadedByType: req.authUser.role,
         timestamp: savedMessage.createdAt,
-        consultationId: id
+        consultationId: id,
       });
 
       res.status(200).json({
@@ -128,10 +132,9 @@ class ConsultationController {
           fileUrl: formattedFileUrl,
           fileSize: file.size,
           mimeType: file.mimetype,
-          message: "File uploaded successfully"
-        }
+          message: "File uploaded successfully",
+        },
       });
-
     } catch (error) {
       console.error("Error uploading consultation file:", error);
       return next(new Error("Failed to upload file"));
@@ -165,10 +168,9 @@ class ConsultationController {
           id: consultation.id,
           notes: consultation.notes,
           diagnosis: consultation.diagnosis,
-          message: "Consultation updated successfully"
-        }
+          message: "Consultation updated successfully",
+        },
       });
-
     } catch (error) {
       console.error("Error updating consultation:", error);
       return next(new Error("Failed to update consultation"));
@@ -209,6 +211,11 @@ class ConsultationController {
                     model: User,
                     as: "user",
                     attributes: ["id", "name", "avatar"],
+                  },
+                  {
+                    model: Specialty,
+                    as: "specialties",
+                    through: { attributes: [] }, // Exclude junction table attributes
                   },
                 ],
               },
@@ -261,14 +268,18 @@ class ConsultationController {
         consultation.status = "in_progress";
         consultation.startedAt = new Date();
         await consultation.save();
-      } 
+      }
 
       const callData = {
         consultationId: consultation.id,
         roomId: consultation.roomId,
         doctorUserId: consultation.appointment.doctor.user.id,
         doctorName: consultation.appointment.doctor.user.name,
-        doctorSpecialty: "General Practice", // TODO: Get from doctor specialty
+        doctorSpecialty:
+          consultation.appointment.doctor.specialties &&
+          consultation.appointment.doctor.specialties.length > 0
+            ? consultation.appointment.doctor.specialties[0].name
+            : "General Practice",
         appointmentDate: consultation.appointment.timeSlot.date,
         appointmentTime: `${consultation.appointment.timeSlot.startTime} - ${consultation.appointment.timeSlot.endTime}`,
         patientName: consultation.appointment.patient.user.name,
@@ -386,8 +397,8 @@ class ConsultationController {
       const offset = (page - 1) * limit;
 
       const whereClause = {};
-      if (status && status !== 'all') whereClause.status = status;
-      if (type && type !== 'all') whereClause.type = type;
+      if (status && status !== "all") whereClause.status = status;
+      if (type && type !== "all") whereClause.type = type;
 
       // Build appointment filter based on user role
       let appointmentWhere = {};
@@ -397,110 +408,24 @@ class ConsultationController {
         };
       }
 
-      // Count total consultations
-      const count = await Consultation.count({
-        where: {
-          ...whereClause,
-          ...appointmentWhere,
-        },
-        include: [
+      console.log("Appointment where: ", appointmentWhere);
+      const formattedConsultations =
+        await consultationSessionService.getAllUserConsultations(
+          whereClause,
+          appointmentWhere,
+          page,
+          limit,
+          offset,
           {
-            model: Appointment,
-            as: "appointment",
-            include: [
-              {
-                model: Patient,
-                as: "patient",
-              },
-              {
-                model: Doctor,
-                as: "doctor",
-              },
-            ],
-          },
-        ],
-      });
-
-      // Find consultations with full data
-      const consultations = await Consultation.findAll({
-        where: {
-          ...whereClause,
-          ...appointmentWhere,
-        },
-        include: [
-          {
-            model: Appointment,
-            as: "appointment",
-            include: [
-              {
-                model: Patient,
-                as: "patient",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "email", "avatar"],
-                  },
-                ],
-              },
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "avatar"],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        order: [["createdAt", "DESC"]],
-      });
-
-      // Transform consultations to flatten patient/doctor data
-      const transformedConsultations = consultations.map(consultation => {
-        const consultationData = consultation.toJSON();
-        
-        if (!consultationData.appointment?.patient?.user || !consultationData.appointment?.doctor?.user) {
-          console.error('❌ Incomplete consultation data for ID:', consultation.id);
-          return null;
-        }
-
-        return {
-          ...consultationData,
-          patient: {
-            id: consultationData.appointment.patient.id,
-            name: consultationData.appointment.patient.user.name,
-            email: consultationData.appointment.patient.user.email,
-            phone: consultationData.appointment.patient.user.phone,
-            avatar: consultationData.appointment.patient.user.avatar,
-          },
-          doctor: {
-            id: consultationData.appointment.doctor.id,
-            name: consultationData.appointment.doctor.user.name,
-            email: consultationData.appointment.doctor.user.email,
-            specialty: consultationData.appointment.doctor.specialty,
-            avatar: consultationData.appointment.doctor.user.avatar,
+            includeAppointment: true,
+            includePatient: true,
+            includeDoctor: true,
           }
-        };
-      }).filter(Boolean);
+        );
 
       res.status(200).json({
         success: true,
-        data: {
-          consultations: transformedConsultations,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(count / limit),
-            totalItems: count,
-            itemsPerPage: parseInt(limit),
-          },
-        },
+        data: formattedConsultations,
       });
     } catch (error) {
       next(error);
@@ -542,6 +467,11 @@ class ConsultationController {
                     as: "user",
                     attributes: ["id", "name", "avatar"],
                   },
+                  {
+                    model: Specialty,
+                    as: "specialties",
+                    through: { attributes: [] }, // Exclude junction table attributes
+                  },
                 ],
               },
             ],
@@ -565,9 +495,16 @@ class ConsultationController {
         );
       }
 
+      // Format consultation data using the utility
+      const formattedConsultation = formatConsultationData(consultation, {
+        includeAppointment: true,
+        includePatient: true,
+        includeDoctor: true,
+      });
+
       res.status(200).json({
         success: true,
-        data: consultation,
+        data: formattedConsultation,
       });
     } catch (error) {
       next(error);
@@ -599,7 +536,7 @@ class ConsultationController {
               },
               {
                 model: Doctor,
-                as: "doctor", 
+                as: "doctor",
                 include: [{ model: User, as: "user", attributes: ["id"] }],
               },
             ],
@@ -612,8 +549,10 @@ class ConsultationController {
       }
 
       // Check authorization
-      const isDoctor = consultation.appointment.doctor.user.id === req.authUser.id;
-      const isPatient = consultation.appointment.patient.user.id === req.authUser.id;
+      const isDoctor =
+        consultation.appointment.doctor.user.id === req.authUser.id;
+      const isPatient =
+        consultation.appointment.patient.user.id === req.authUser.id;
 
       if (!isDoctor && !isPatient) {
         return next(
@@ -695,12 +634,16 @@ class ConsultationController {
       }
 
       // Check authorization
-      const isDoctor = consultation.appointment.doctor.user.id === req.authUser.id;
-      const isPatient = consultation.appointment.patient.user.id === req.authUser.id;
+      const isDoctor =
+        consultation.appointment.doctor.user.id === req.authUser.id;
+      const isPatient =
+        consultation.appointment.patient.user.id === req.authUser.id;
 
       if (!isDoctor && !isPatient) {
         return next(
-          new ForbiddenError("You are not authorized to send messages in this consultation")
+          new ForbiddenError(
+            "You are not authorized to send messages in this consultation"
+          )
         );
       }
 
@@ -741,32 +684,6 @@ class ConsultationController {
   }
 
   /**
-   * @desc    Get active consultations for a user
-   * @route   GET /api/v1/consultations/active
-   * @access  Private (Doctor/Patient)
-   */
-  async getActiveConsultations(req, res, next) {
-    try {
-      const userId = req.authUser.id;
-      const userRole = req.authUser.role;
-
-      // Get active consultations based on user role
-      const activeConsultations = await ConsultationSessionService.getActiveConsultationsForUser(userId, userRole);
-
-      res.status(200).json({
-        success: true,
-        data: {
-          activeConsultations,
-          count: activeConsultations.length
-        }
-      });
-    } catch (error) {
-      console.error('❌ Error getting active consultations:', error);
-      next(error);
-    }
-  }
-
-  /**
    * @desc    Join consultation session
    * @route   POST /api/v1/consultations/:id/join
    * @access  Private (Doctor/Patient)
@@ -777,12 +694,16 @@ class ConsultationController {
       const userId = req.authUser.id;
       const userRole = req.authUser.role;
 
-      const sessionData = await ConsultationSessionService.joinSession(consultationId, userId, userRole);
+      const sessionData = await ConsultationSessionService.joinSession(
+        consultationId,
+        userId,
+        userRole
+      );
 
       res.status(200).json({
         success: true,
         message: "Successfully joined consultation session",
-        data: sessionData
+        data: sessionData,
       });
     } catch (error) {
       next(error);
@@ -800,11 +721,15 @@ class ConsultationController {
       const userId = req.authUser.id;
       const userRole = req.authUser.role;
 
-      await ConsultationSessionService.leaveSession(consultationId, userId, userRole);
+      await ConsultationSessionService.leaveSession(
+        consultationId,
+        userId,
+        userRole
+      );
 
       res.status(200).json({
         success: true,
-        message: "Successfully left consultation session"
+        message: "Successfully left consultation session",
       });
     } catch (error) {
       next(error);
@@ -821,11 +746,14 @@ class ConsultationController {
       const consultationId = req.params.id;
       const userId = req.authUser.id;
 
-      const sessionStatus = await ConsultationSessionService.getSessionStatus(consultationId, userId);
+      const sessionStatus = await ConsultationSessionService.getSessionStatus(
+        consultationId,
+        userId
+      );
 
       res.status(200).json({
         success: true,
-        data: sessionStatus
+        data: sessionStatus,
       });
     } catch (error) {
       next(error);
@@ -833,21 +761,86 @@ class ConsultationController {
   }
 
   /**
-   * @desc    Update consultation session heartbeat
+   * Update consultation session heartbeat
    * @route   POST /api/v1/consultations/:id/heartbeat
    * @access  Private (Doctor/Patient)
    */
   async updateSessionHeartbeat(req, res, next) {
     try {
-      const consultationId = req.params.id;
-      const userId = req.authUser.id;
-      const userRole = req.authUser.role;
+      const { id } = req.params;
+      const { isConnected } = req.body;
 
-      await ConsultationSessionService.updateHeartbeat(consultationId, userId, userRole);
+      // Update consultation session heartbeat
+      await ConsultationSessionService.updateSessionHeartbeat(
+        id,
+        req.authUser.id,
+        isConnected
+      );
 
       res.status(200).json({
         success: true,
-        message: "Heartbeat updated"
+        message: "Heartbeat updated successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Cancel a consultation
+   * @route   POST /api/v1/consultations/:id/cancel
+   * @access  Private (Doctor only)
+   */
+  async cancelConsultation(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      // Find the consultation
+      const consultation = await Consultation.findByPk(id, {
+        include: [
+          {
+            model: Appointment,
+            as: "appointment",
+            include: [
+              {
+                model: Doctor,
+                as: "doctor",
+                include: [{ model: User, as: "user", attributes: ["id"] }],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!consultation) {
+        return next(new NotFoundError("Consultation not found"));
+      }
+
+      // Check if the authenticated user is the doctor assigned to this consultation
+      if (consultation.appointment.doctor.user.id !== req.authUser.id) {
+        return next(
+          new ForbiddenError(
+            "You are not authorized to cancel this consultation"
+          )
+        );
+      }
+
+      // Update consultation status to cancelled
+      await consultation.update({
+        status: "cancelled",
+        endedAt: new Date(),
+        notes: reason ? `Cancelled: ${reason}` : "Cancelled by doctor",
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Consultation cancelled successfully",
+        data: {
+          consultationId: consultation.id,
+          status: consultation.status,
+          cancelledAt: consultation.endedAt,
+        },
       });
     } catch (error) {
       next(error);

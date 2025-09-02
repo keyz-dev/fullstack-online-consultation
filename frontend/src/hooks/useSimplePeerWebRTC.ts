@@ -6,7 +6,7 @@ interface UseSimplePeerWebRTCProps {
   roomId: string;
   consultationId: string;
   userRole: 'doctor' | 'patient';
-  onCallEnd: () => void;
+  onCallEnd: (notes?: string) => void;
   onChatMessage?: (data: {
     roomId: string;
     consultationId: string;
@@ -17,6 +17,7 @@ interface UseSimplePeerWebRTCProps {
     fromName: string;
     sent: boolean;
   }) => void;
+  notes?: string; // Add notes parameter
 }
 
 interface CallState {
@@ -32,7 +33,8 @@ export const useSimplePeerWebRTC = ({
   consultationId, 
   userRole, 
   onCallEnd,
-  onChatMessage
+  onChatMessage,
+  notes
 }: UseSimplePeerWebRTCProps) => {
   // States
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -57,7 +59,6 @@ export const useSimplePeerWebRTC = ({
   useEffect(() => {
     const getMediaStream = async () => {
       try {
-        console.log('🎥 Getting media stream...');
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1280, max: 1920 },
@@ -78,7 +79,6 @@ export const useSimplePeerWebRTC = ({
         
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = mediaStream;
-          console.log('✅ Local video stream set');
         }
         
       } catch (error) {
@@ -93,7 +93,6 @@ export const useSimplePeerWebRTC = ({
   useEffect(() => {
     if (!socket) return;
 
-    console.log('🔌 Setting up Simple Peer socket listeners...');
 
     // Handle incoming call
     const handleIncomingCall = (data: { 
@@ -103,7 +102,6 @@ export const useSimplePeerWebRTC = ({
       roomId: string;
       consultationId: string;
     }) => {
-      console.log('📞 Incoming call from:', data.from);
       setCall({
         calling: true,
         isInitiator: false,
@@ -116,7 +114,6 @@ export const useSimplePeerWebRTC = ({
 
     // Handle call accepted
     const handleCallAccepted = (data: { signal: any; from: number; name: string }) => {
-      console.log('✅ Call accepted by:', data.from);
       setCallAccepted(true);
       setIsConnected(true);
       
@@ -127,35 +124,23 @@ export const useSimplePeerWebRTC = ({
 
     // Handle call ended
     const handleCallEnded = () => {
-      console.log('📞 Call ended by remote user');
       leaveCall();
     };
 
     // Handle user joined room
     const handleUserJoined = (data: { userId: number; name: string; roomId: string }) => {
-      console.log('👥 User joined room:', data.userId, 'Current role:', userRole);
       setRemoteUserId(data.userId);
       
       // Only doctor initiates call, and only if not already calling
       if (userRole === 'doctor' && stream && !call.calling && !callAccepted) {
-        console.log('👨‍⚕️ Doctor initiating call to patient:', data.userId);
         setTimeout(() => {
           // Double check we're not already in a call
           if (!call.calling && !callAccepted) {
             callUser(data.userId, data.name);
           } else {
-            console.log('⚠️ Call already in progress, skipping initiation');
           }
         }, 1000);
-      } else {
-        console.log('ℹ️ Not initiating call:', {
-          isDoctor: userRole === 'doctor',
-          hasStream: !!stream,
-          alreadyCalling: call.calling,
-          callAccepted: callAccepted
-        });
-      }
-    };
+      }     };
 
     // Handle chat messages
     const handleChatMessage = (data: {
@@ -168,9 +153,6 @@ export const useSimplePeerWebRTC = ({
       fromName: string;
       sent: boolean;
     }) => {
-      console.log('💬 Chat message received:', data);
-      // This will be handled by the component that uses this hook
-      // We'll expose it through a callback
       if (onChatMessage) {
         onChatMessage(data);
       }
@@ -185,10 +167,8 @@ export const useSimplePeerWebRTC = ({
 
     // Join room
     socket.emit('video:join-room', { roomId, consultationId });
-    console.log('🏠 Joined room:', roomId);
 
     return () => {
-      console.log('🧹 Cleaning up socket listeners');
       socket.off('video:call-user', handleIncomingCall);
       socket.off('video:call-accepted', handleCallAccepted);
       socket.off('video:call-ended', handleCallEnded);
@@ -200,11 +180,9 @@ export const useSimplePeerWebRTC = ({
   // Call user function
   const callUser = useCallback((userId: number, userName: string) => {
     if (!stream) {
-      console.log('❌ No stream available to make call');
       return;
     }
 
-    console.log('📞 Calling user:', userId);
     setCall({ calling: true, isInitiator: true });
 
     const peer = new Peer({
@@ -214,7 +192,6 @@ export const useSimplePeerWebRTC = ({
     });
 
     peer.on('signal', (data) => {
-      console.log('📤 Sending call signal to:', userId);
       if (socket) {
         socket.emit('video:call-user', {
           userToCall: userId,
@@ -228,25 +205,20 @@ export const useSimplePeerWebRTC = ({
     });
 
     peer.on('stream', (remoteStream) => {
-      console.log('🎥 Received remote stream');
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
-        console.log('✅ Remote video stream set');
       }
     });
 
     peer.on('connect', () => {
-      console.log('✅ Peer connection established');
       setIsConnected(true);
     });
 
     peer.on('close', () => {
-      console.log('📞 Peer connection closed');
       setIsConnected(false);
     });
 
     peer.on('error', (error) => {
-      console.error('❌ Peer connection error:', error);
     });
 
     peerRef.current = peer;
@@ -255,11 +227,9 @@ export const useSimplePeerWebRTC = ({
   // Answer call function
   const answerCall = useCallback(() => {
     if (!stream || !call.signal) {
-      console.log('❌ Cannot answer call - no stream or signal');
       return;
     }
 
-    console.log('📞 Answering call from:', call.from);
     setCallAccepted(true);
 
     const peer = new Peer({
@@ -269,7 +239,6 @@ export const useSimplePeerWebRTC = ({
     });
 
     peer.on('signal', (data) => {
-      console.log('📤 Sending answer signal to:', call.from);
       if (socket && call.from) {
         socket.emit('video:answer-call', {
           signal: data,
@@ -282,25 +251,20 @@ export const useSimplePeerWebRTC = ({
     });
 
     peer.on('stream', (remoteStream) => {
-      console.log('🎥 Received remote stream');
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
-        console.log('✅ Remote video stream set');
       }
     });
 
     peer.on('connect', () => {
-      console.log('✅ Peer connection established');
       setIsConnected(true);
     });
 
     peer.on('close', () => {
-      console.log('📞 Peer connection closed');
       setIsConnected(false);
     });
 
     peer.on('error', (error) => {
-      console.error('❌ Peer connection error:', error);
     });
 
     peer.signal(call.signal);
@@ -309,11 +273,8 @@ export const useSimplePeerWebRTC = ({
 
   // Leave call function
   const leaveCall = useCallback(() => {
-    console.log('📞 Leaving call...');
-    
     // Prevent multiple calls to leaveCall
     if (callEnded) {
-      console.log('⚠️ Call already ended, skipping cleanup');
       return;
     }
     
@@ -322,6 +283,7 @@ export const useSimplePeerWebRTC = ({
     setIsConnected(false);
     setCall({ calling: false, isInitiator: false });
     
+    // Clean up peer connection
     if (peerRef.current) {
       peerRef.current.destroy();
       peerRef.current = null;
@@ -332,17 +294,29 @@ export const useSimplePeerWebRTC = ({
       remoteVideoRef.current.srcObject = null;
     }
 
+    // Clear local video
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+
+    // Stop all media tracks and clear stream
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
+      setStream(null);
+    }
+
     // Only emit end event if we haven't already ended
     if (socket && !callEnded) {
-      console.log('📤 Emitting call end event');
       socket.emit('video:end-call', { roomId, consultationId });
     }
 
     // Call onCallEnd only once
     setTimeout(() => {
-      onCallEnd();
+      onCallEnd(notes);
     }, 100);
-  }, [socket, roomId, consultationId, onCallEnd, callEnded]);
+  }, [socket, roomId, consultationId, onCallEnd, callEnded, notes, stream]);
 
   // Toggle video
   const toggleVideo = useCallback(() => {
@@ -351,7 +325,6 @@ export const useSimplePeerWebRTC = ({
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsVideoEnabled(videoTrack.enabled);
-        console.log('📹 Video toggled:', videoTrack.enabled);
       }
     }
   }, [stream]);
@@ -363,7 +336,6 @@ export const useSimplePeerWebRTC = ({
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsAudioEnabled(audioTrack.enabled);
-        console.log('🎤 Audio toggled:', audioTrack.enabled);
       }
     }
   }, [stream]);
@@ -380,14 +352,26 @@ export const useSimplePeerWebRTC = ({
       senderRole: userRole
     };
 
-    console.log('💬 Sending chat message:', chatData);
     socket.emit('video:simple-peer-chat', chatData);
   }, [socket, roomId, consultationId, userRole]);
+
+  // Cleanup when call ends
+  useEffect(() => {
+    if (callEnded) {
+      
+      // Clear video elements
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+      }
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+    }
+  }, [callEnded]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      console.log('🧹 Cleaning up Simple Peer WebRTC...');
       
       if (peerRef.current) {
         peerRef.current.destroy();
@@ -396,7 +380,6 @@ export const useSimplePeerWebRTC = ({
       if (stream) {
         stream.getTracks().forEach(track => {
           track.stop();
-          console.log(`🛑 Stopped ${track.kind} track`);
         });
       }
     };

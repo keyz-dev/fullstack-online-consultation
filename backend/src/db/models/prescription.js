@@ -194,6 +194,11 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
+      fileUrl: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'URL to the generated PDF prescription file'
+      },
     },
     {
       sequelize,

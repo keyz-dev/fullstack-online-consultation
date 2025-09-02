@@ -54,7 +54,6 @@ export const useDoctorCallStatus = () => {
         roomId: data.roomId,
         consultationId: data.consultationId
       });
-      console.log("🏠 Doctor joined room for call status:", data.roomId);
     }
     
     if (!patientOnline) {
@@ -107,12 +106,9 @@ export const useDoctorCallStatus = () => {
 
     // Patient accepted call
     socket.socket.on("video:call-accepted", (data) => {
-      console.log("✅ Patient accepted call:", data);
-      console.log("🔍 Current callData:", callData);
       const receivedId = String(data.consultationId);
       const expectedId = String(callData?.consultationId || "");
       if (callData && receivedId === expectedId) {
-        console.log("✅ Consultation IDs match, setting status to accepted");
         setCallStatus('accepted');
         
         // Navigate to video room after brief delay
@@ -120,36 +116,20 @@ export const useDoctorCallStatus = () => {
           setIsCallStatusVisible(false);
           router.push(`/doctor/consultation/${receivedId}/video?roomId=${data.roomId}`);
         }, 2000);
-      } else {
-        console.log("❌ Consultation IDs don't match or no callData:", {
-          hasCallData: !!callData,
-          receivedId,
-          expectedId
-        });
       }
     });
 
     // Patient rejected call
     socket.socket.on("video:call-rejected", (data) => {
-      console.log("❌ Patient rejected call:", data);
-      console.log("🔍 Current callData:", callData);
       const receivedId = String(data.consultationId);
       const expectedId = String(callData?.consultationId || "");
       if (callData && receivedId === expectedId) {
-        console.log("❌ Consultation IDs match, setting status to declined");
         setCallStatus('declined');
-      } else {
-        console.log("❌ Consultation IDs don't match or no callData:", {
-          hasCallData: !!callData,
-          receivedId,
-          expectedId
-        });
-      }
+      } 
     });
 
     // Call cancelled (by patient or system)
     socket.socket.on("video:call-cancelled", (data) => {
-      console.log("📞 Call was cancelled:", data);
       const receivedId = String(data.consultationId);
       const expectedId = String(callData?.consultationId || "");
       if (callData && receivedId === expectedId) {

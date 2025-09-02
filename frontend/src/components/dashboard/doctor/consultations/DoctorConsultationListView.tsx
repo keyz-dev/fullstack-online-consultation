@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { Table, StatusPill, DropdownMenu, Badge } from "@/components/ui";
+import {
+  Table,
+  StatusPill,
+  DropdownMenu,
+  Badge,
+  UserInfo,
+} from "@/components/ui";
 import { Consultation } from "@/types";
 import { format } from "date-fns";
 import {
@@ -87,91 +93,64 @@ const DoctorConsultationListView: React.FC<DoctorConsultationListViewProps> = ({
 
   const columns = [
     {
-      header: "Patient",
-      key: "patient",
-      render: (consultation: Consultation) => (
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <div className="font-medium text-gray-900 dark:text-white">
-              {consultation.patient?.name || 'Unknown Patient'}
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {consultation.patient?.email || 'No email'}
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: "Type",
-      key: "type",
-      render: (consultation: Consultation) => (
-        <div className="flex items-center space-x-2">
-          {getTypeIcon(consultation.type)}
-          <span className="text-sm font-medium">
-            {consultation.type.replace('_', ' ').toUpperCase()}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: "Date & Time",
-      key: "scheduledAt",
-      render: (consultation: Consultation) => (
-        <div>
-          <div className="text-sm font-medium text-gray-900 dark:text-white">
-            {formatDate(consultation.createdAt)}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {formatTime(consultation.createdAt)}
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: "Duration",
-      key: "duration",
-      render: (consultation: Consultation) => (
-        <div className="flex items-center space-x-1">
-          <Clock className="w-4 h-4 text-gray-400" />
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {formatDuration(consultation.duration)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: "Status",
-      key: "status",
-      render: (consultation: Consultation) => {
-        const isActive = consultation.status === "in_progress";
-        return (
-          <div className="flex items-center gap-2">
-            <StatusPill 
-              status={consultation.status} 
-              colorScheme={getStatusColor(consultation.status)} 
-            />
-            {isActive && (
-              <Badge variant="success" className="animate-pulse text-xs">
-                Live
-              </Badge>
-            )}
-          </div>
-        );
+      Header: "Patient",
+      accessor: "patient",
+      Cell: ({ row }) => {
+        return <UserInfo user={row.patient.user} />;
       },
     },
     {
-      header: "Rating",
-      key: "rating",
-      render: (consultation: Consultation) => (
+      Header: "Type",
+      accessor: "type",
+      Cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          {getTypeIcon(row.type)}
+          <span className="text-sm font-medium">
+            {row.type?.replace("_", " ").toUpperCase()}
+          </span>
+        </div>
+      ),
+    },
+    {
+      Header: "Date & Time",
+      accessor: "scheduledAt",
+      Cell: ({ row }) => (
+        <div>
+          <div className="text-sm font-medium text-gray-900 dark:text-white">
+            {formatDate(row.createdAt)}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {formatTime(row.createdAt)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      Header: "Duration",
+      accessor: "duration",
+      Cell: ({ row }) => (
         <div className="flex items-center space-x-1">
-          {consultation.rating ? (
+          <Clock className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {formatDuration(row.duration)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      Header: "Status",
+      accessor: "status",
+      Cell: ({ row }) => <StatusPill status={row.status} />,
+    },
+    {
+      Header: "Rating",
+      accessor: "rating",
+      Cell: ({ row }) => (
+        <div className="flex items-center space-x-1">
+          {row.rating ? (
             <>
               <Star className="w-4 h-4 text-yellow-400 fill-current" />
-              <span className="text-sm font-medium">{consultation.rating}</span>
+              <span className="text-sm font-medium">{row.rating}</span>
             </>
           ) : (
             <span className="text-sm text-gray-400">-</span>
@@ -180,33 +159,32 @@ const DoctorConsultationListView: React.FC<DoctorConsultationListViewProps> = ({
       ),
     },
     {
-      header: "Actions",
-      key: "actions",
-      render: (consultation: Consultation) => {
-        const isActive = consultation.status === "in_progress";
-        const canJoin = isActive && consultation.roomId;
-        
+      accessor: "actions",
+      Cell: ({ row }) => {
+        const isActive = row.status === "in_progress";
+        const canJoin = isActive && row.roomId;
+
         const actions = [
           {
             label: "View Details",
-            icon: Eye,
-            onClick: () => onViewConsultation?.(consultation),
+            icon: <Eye className="w-5 h-5" />,
+            onClick: () => onViewConsultation?.(row),
           },
         ];
 
         if (canJoin) {
           actions.unshift({
             label: "Join Call",
-            icon: Play,
-            onClick: () => onJoinConsultation?.(consultation),
+            icon: <Play className="w-5 h-5" />,
+            onClick: () => onJoinConsultation?.(row),
           });
         }
 
-        if (consultation.notes) {
+        if (row.notes) {
           actions.push({
             label: "View Notes",
-            icon: FileText,
-            onClick: () => onViewNotes?.(consultation),
+            icon: <FileText className="w-5 h-5" />,
+            onClick: () => onViewNotes?.(row),
           });
         }
 
@@ -214,22 +192,15 @@ const DoctorConsultationListView: React.FC<DoctorConsultationListViewProps> = ({
           <div className="flex items-center space-x-2">
             {canJoin && (
               <button
-                onClick={() => onJoinConsultation?.(consultation)}
+                onClick={() => onJoinConsultation?.(row)}
                 className="inline-flex items-center px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors"
               >
                 <Play className="w-3 h-3 mr-1" />
                 Join
               </button>
             )}
-            
-            <DropdownMenu
-              trigger={
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              }
-              items={actions}
-            />
+
+            <DropdownMenu items={actions} />
           </div>
         );
       },

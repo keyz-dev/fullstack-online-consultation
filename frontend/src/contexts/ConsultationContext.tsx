@@ -11,6 +11,7 @@ import { useSocketContext } from "./SocketProvider";
 import { consultationsAPI } from "@/api/consultations";
 import { toast } from "react-toastify";
 import { extractErrorMessage } from "@/utils/extractError";
+import { useAuth } from "./AuthContext";
 
 // Types
 interface ConsultationState {
@@ -99,6 +100,7 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
 }) => {
   const [state, dispatch] = useReducer(consultationReducer, initialState);
   const { socket } = useSocketContext();
+  const { user } = useAuth();
 
   // Get consultation by appointment ID
   const getConsultationByAppointment = useCallback(
@@ -107,16 +109,23 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
       dispatch({ type: CONSULTATION_ACTIONS.SET_ERROR, payload: null });
 
       try {
+        // Get user role from auth context - this should be passed in or available
+        const userRole = user?.role as "doctor" | "patient";
         const response = await consultationsAPI.getConsultationByAppointment(
+          userRole,
           appointmentId
         );
 
         if (response.success && response.data) {
-          dispatch({
-            type: CONSULTATION_ACTIONS.SET_CONSULTATION,
-            payload: response.data.consultations[0],
-          });
-          return response.data.consultations[0].id.toString();
+          // getConsultationByAppointment calls the list endpoint, so we need to get the first consultation
+          const consultation = response.data.consultations?.[0];
+          if (consultation) {
+            dispatch({
+              type: CONSULTATION_ACTIONS.SET_CONSULTATION,
+              payload: consultation,
+            });
+            return consultation.id.toString();
+          }
         }
         return null;
       } catch (error) {
@@ -148,8 +157,8 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
             payload: {
               isOnline: response.data.isOnline,
               lastSeen: response.data.lastSeen,
-              userName: response.data.userId || 'Unknown',
-              userEmail: 'Unknown',
+              userName: response.data.userId || "Unknown",
+              userEmail: "Unknown",
             },
           });
         }
@@ -200,13 +209,16 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
   );
 
   // Cancel video call
-  const cancelVideoCall = useCallback((roomId: string, consultationId: string) => {
-    if (socket) {
-      console.log('📞 Cancelling video call...', { roomId, consultationId });
-      socket.emit("call_cancelled", { roomId, consultationId });
-      toast.info("Video call cancelled");
-    }
-  }, [socket]);
+  const cancelVideoCall = useCallback(
+    (roomId: string, consultationId: string) => {
+      if (socket) {
+        console.log("📞 Cancelling video call...", { roomId, consultationId });
+        socket.emit("call_cancelled", { roomId, consultationId });
+        toast.info("Video call cancelled");
+      }
+    },
+    [socket]
+  );
 
   // Clear consultation state
   const clearConsultationState = useCallback(() => {

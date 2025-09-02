@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, UserInfo } from "@/components/ui";
+import { Badge, Button, UserInfo, StatusPill } from "@/components/ui";
 import { Consultation } from "@/types";
 import { format } from "date-fns";
 import {
@@ -21,7 +21,9 @@ interface PatientConsultationGridViewProps {
   onRateConsultation?: (consultation: Consultation) => void;
 }
 
-const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = ({
+const PatientConsultationGridView: React.FC<
+  PatientConsultationGridViewProps
+> = ({
   consultations,
   onViewConsultation,
   onJoinConsultation,
@@ -44,21 +46,6 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
     } catch (error) {
       console.error("Invalid time:", dateString);
       return "Invalid time";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "in_progress":
-        return "success";
-      case "completed":
-        return "primary";
-      case "cancelled":
-        return "danger";
-      case "no_show":
-        return "warning";
-      default:
-        return "secondary";
     }
   };
 
@@ -90,7 +77,7 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
       const now = new Date();
       const diffMs = now.getTime() - start.getTime();
       const minutes = Math.floor(diffMs / 60000);
-      
+
       if (minutes < 0) return "0m";
       if (minutes < 60) return `${minutes}m`;
       const hours = Math.floor(minutes / 60);
@@ -104,7 +91,7 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
 
   const renderRating = (rating: number | null) => {
     if (!rating) return null;
-    
+
     return (
       <div className="flex items-center gap-1">
         <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -118,14 +105,15 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
       {consultations.map((consultation) => {
         const isActive = consultation.status === "in_progress";
         const canJoin = isActive && consultation.roomId;
-        const canRate = consultation.status === "completed" && !consultation.rating;
+        const canRate =
+          consultation.status === "completed" && !consultation.rating;
 
         return (
           <div
             key={consultation.id}
             className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border transition-all hover:shadow-lg ${
-              isActive 
-                ? "border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-900/10 shadow-md" 
+              isActive
+                ? "border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-900/10 shadow-md"
                 : "border-gray-200 dark:border-gray-700"
             }`}
           >
@@ -135,15 +123,16 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
                 <div className="flex items-center gap-2">
                   {getTypeIcon(consultation.type)}
                   <span className="text-sm font-medium">
-                    {consultation.type.replace('_', ' ').toUpperCase()}
+                    {consultation.type.replace("_", " ").toUpperCase()}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={getStatusColor(consultation.status)}>
-                    {consultation.status.replace('_', ' ').toUpperCase()}
-                  </Badge>
+                  <StatusPill status={consultation.status} />
                   {isActive && (
-                    <Badge variant="success" className="animate-pulse text-xs">
+                    <Badge
+                      variant="default"
+                      className="animate-pulse text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                    >
                       Live
                     </Badge>
                   )}
@@ -160,10 +149,11 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 dark:text-white truncate">
-                    Dr. {consultation.doctor?.name || 'Unknown Doctor'}
+                    Dr. {consultation.doctor?.user?.name || "Unknown Doctor"}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {consultation.doctor?.specialty || 'General Practice'}
+                    {consultation.doctor?.specialties?.[0]?.name ||
+                      "General Practice"}
                   </p>
                 </div>
               </div>
@@ -180,10 +170,9 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Clock className="w-4 h-4" />
                 <span>
-                  {isActive && consultation.startedAt 
+                  {isActive && consultation.startedAt
                     ? `Live: ${formatDurationFromStart(consultation.startedAt)}`
-                    : formatDuration(consultation.duration)
-                  }
+                    : formatDuration(consultation.duration ?? null)}
                 </span>
               </div>
 
@@ -210,7 +199,7 @@ const PatientConsultationGridView: React.FC<PatientConsultationGridViewProps> = 
                   View Details
                 </Button>
               )}
-              
+
               {canRate && (
                 <Button
                   onClickHandler={() => onRateConsultation?.(consultation)}

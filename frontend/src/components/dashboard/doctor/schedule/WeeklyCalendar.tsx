@@ -52,12 +52,6 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
 }) => {
   const getAvailabilitiesForDay = (dayOfWeek: number) => {
     const dayAvailabilities = availabilities.filter((av) => av.dayOfWeek === dayOfWeek);
-    
-    // Debug: Log availabilities for this day
-    if (dayAvailabilities.length > 0) {
-      console.log(`Day ${dayOfWeek} has ${dayAvailabilities.length} availabilities:`, dayAvailabilities.map(av => ({ id: av.id, startTime: av.startTime, endTime: av.endTime })));
-    }
-    
     return dayAvailabilities;
   };
 

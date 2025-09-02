@@ -60,10 +60,10 @@ const ActiveConsultationCard: React.FC<ActiveConsultationCardProps> = ({
           </div>
           <div>
             <p className="font-medium text-gray-900 dark:text-white">
-              {consultation.patient?.name || 'Unknown Patient'}
+              {consultation.patient?.user?.name || 'Unknown Patient'}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {consultation.patient?.email || 'No email'}
+              {consultation.patient?.user?.email || 'No email'}
             </p>
           </div>
         </div>

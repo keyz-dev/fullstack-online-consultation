@@ -5,7 +5,6 @@ import { useAuth } from "./AuthContext";
 import { ROLE_CONFIGS } from "../config/userRoles";
 
 interface BaseDashboardContextType {
-  user: any;
   roleConfig: any;
   pageTitle: string;
   activeNavItem: string;
@@ -48,7 +47,6 @@ export const BaseDashboardProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const value: BaseDashboardContextType = {
-    user,
     roleConfig,
     pageTitle,
     activeNavItem,

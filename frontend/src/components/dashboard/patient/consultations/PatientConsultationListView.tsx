@@ -4,6 +4,7 @@ import React from "react";
 import { Table, StatusPill, DropdownMenu, Badge } from "@/components/ui";
 import { Consultation } from "@/types";
 import { format } from "date-fns";
+import Image from "next/image";
 import {
   MoreHorizontal,
   Video,
@@ -23,7 +24,9 @@ interface PatientConsultationListViewProps {
   onRateConsultation?: (consultation: Consultation) => void;
 }
 
-const PatientConsultationListView: React.FC<PatientConsultationListViewProps> = ({
+const PatientConsultationListView: React.FC<
+  PatientConsultationListViewProps
+> = ({
   consultations,
   onViewConsultation,
   onJoinConsultation,
@@ -86,8 +89,9 @@ const PatientConsultationListView: React.FC<PatientConsultationListViewProps> = 
   };
 
   const renderRating = (rating: number | null) => {
-    if (!rating) return <span className="text-sm text-gray-400">Not rated</span>;
-    
+    if (!rating)
+      return <span className="text-sm text-gray-400">Not rated</span>;
+
     return (
       <div className="flex items-center space-x-1">
         {[...Array(5)].map((_, i) => (
@@ -107,75 +111,89 @@ const PatientConsultationListView: React.FC<PatientConsultationListViewProps> = 
 
   const columns = [
     {
-      header: "Doctor",
-      key: "doctor",
-      render: (consultation: Consultation) => (
+      Header: "Doctor",
+      accessor: "doctor",
+      Cell: ({ row }) => (
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-            <Stethoscope className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            {row.doctor?.user?.avatar ? (
+              <Image
+                src={row.doctor?.user?.avatar}
+                alt={row.doctor?.user?.name}
+                height={40}
+                width={40}
+                className="object-cover rounded-full"
+              />
+            ) : (
+              <Stethoscope className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            )}
           </div>
           <div>
             <div className="font-medium text-gray-900 dark:text-white">
-              Dr. {consultation.doctor?.name || 'Unknown Doctor'}
+              Dr. {row.doctor?.user?.name || "Unknown Doctor"}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {consultation.doctor?.specialty || 'General Practice'}
+              {row.doctor?.specialties?.[0]?.name || "General"}
             </div>
           </div>
         </div>
       ),
     },
     {
-      header: "Type",
-      key: "type",
-      render: (consultation: Consultation) => (
-        <div className="flex items-center space-x-2">
-          {getTypeIcon(consultation.type)}
-          <span className="text-sm font-medium">
-            {consultation.type.replace('_', ' ').toUpperCase()}
-          </span>
-        </div>
-      ),
+      Header: "Type",
+      accessor: "type",
+      Cell: ({ row }) => {
+        console.log(row);
+
+        return (
+          <div className="flex items-center space-x-2">
+            {getTypeIcon(row.type)}
+            <span className="text-sm font-medium">
+              {row.type.replace("_", " ").toUpperCase()}
+            </span>
+          </div>
+        );
+      },
     },
     {
-      header: "Date & Time",
-      key: "scheduledAt",
-      render: (consultation: Consultation) => (
+      Header: "Date & Time",
+      accessor: "scheduledAt",
+      Cell: ({ row }) => (
         <div>
           <div className="text-sm font-medium text-gray-900 dark:text-white">
-            {formatDate(consultation.createdAt)}
+            {formatDate(row.createdAt)}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            {formatTime(consultation.createdAt)}
+            {formatTime(row.createdAt)}
           </div>
         </div>
       ),
     },
     {
-      header: "Duration",
-      key: "duration",
-      render: (consultation: Consultation) => (
+      Header: "Duration",
+      accessor: "duration",
+      Cell: ({ row }) => (
         <div className="flex items-center space-x-1">
           <Clock className="w-4 h-4 text-gray-400" />
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            {formatDuration(consultation.duration)}
+            {formatDuration(row.duration)}
           </span>
         </div>
       ),
     },
     {
-      header: "Status",
-      key: "status",
-      render: (consultation: Consultation) => {
-        const isActive = consultation.status === "in_progress";
+      Header: "Status",
+      accessor: "status",
+      Cell: ({ row }) => {
+        const isActive = row.status === "in_progress";
         return (
           <div className="flex items-center gap-2">
-            <StatusPill 
-              status={consultation.status} 
-              colorScheme={getStatusColor(consultation.status)} 
-            />
+            <StatusPill status={row.status} />
             {isActive && (
-              <Badge variant="success" className="animate-pulse text-xs">
+              <Badge
+                variant="default"
+                className="animate-pulse text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+              >
                 Live
               </Badge>
             )}
@@ -184,39 +202,39 @@ const PatientConsultationListView: React.FC<PatientConsultationListViewProps> = 
       },
     },
     {
-      header: "Rating",
-      key: "rating",
-      render: (consultation: Consultation) => renderRating(consultation.rating),
+      Header: "Rating",
+      accessor: "rating",
+      Cell: ({ row }) => renderRating(row.rating),
     },
     {
-      header: "Actions",
-      key: "actions",
-      render: (consultation: Consultation) => {
-        const isActive = consultation.status === "in_progress";
-        const canJoin = isActive && consultation.roomId;
-        const canRate = consultation.status === "completed" && !consultation.rating;
-        
+      Header: "Actions",
+      accessor: "actions",
+      Cell: ({ row }) => {
+        const isActive = row.status === "in_progress";
+        const canJoin = isActive && row.roomId;
+        const canRate = row.status === "completed" && !row.rating;
+
         const actions = [
           {
             label: "View Details",
-            icon: Eye,
-            onClick: () => onViewConsultation?.(consultation),
+            icon: <Eye className="w-4 h-4" />,
+            onClick: () => onViewConsultation?.(row),
           },
         ];
 
         if (canJoin) {
           actions.unshift({
             label: "Join Call",
-            icon: Play,
-            onClick: () => onJoinConsultation?.(consultation),
+            icon: <Play className="w-4 h-4" />,
+            onClick: () => onJoinConsultation?.(row),
           });
         }
 
         if (canRate) {
           actions.push({
-            label: "Rate Consultation",
-            icon: Star,
-            onClick: () => onRateConsultation?.(consultation),
+            label: "Rate",
+            icon: <Star className="w-4 h-4" />,
+            onClick: () => onRateConsultation?.(row),
           });
         }
 
@@ -224,22 +242,15 @@ const PatientConsultationListView: React.FC<PatientConsultationListViewProps> = 
           <div className="flex items-center space-x-2">
             {canJoin && (
               <button
-                onClick={() => onJoinConsultation?.(consultation)}
+                onClick={() => onJoinConsultation?.(row)}
                 className="inline-flex items-center px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors"
               >
                 <Play className="w-3 h-3 mr-1" />
                 Join
               </button>
             )}
-            
-            <DropdownMenu
-              trigger={
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              }
-              items={actions}
-            />
+
+            <DropdownMenu items={actions} />
           </div>
         );
       },

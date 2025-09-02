@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, UserInfo } from "@/components/ui";
+import { Badge, Button, UserInfo, StatusPill } from "@/components/ui";
 import { Consultation } from "@/types";
 import { format } from "date-fns";
 import {
@@ -49,21 +49,6 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "in_progress":
-        return "success";
-      case "completed":
-        return "primary";
-      case "cancelled":
-        return "danger";
-      case "no_show":
-        return "warning";
-      default:
-        return "secondary";
-    }
-  };
-
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "video_call":
@@ -92,7 +77,7 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
       const now = new Date();
       const diffMs = now.getTime() - start.getTime();
       const minutes = Math.floor(diffMs / 60000);
-      
+
       if (minutes < 0) return "0m";
       if (minutes < 60) return `${minutes}m`;
       const hours = Math.floor(minutes / 60);
@@ -114,8 +99,8 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
           <div
             key={consultation.id}
             className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border transition-all hover:shadow-lg ${
-              isActive 
-                ? "border-l-4 border-l-green-500 bg-green-50 dark:bg-green-900/10 shadow-md" 
+              isActive
+                ? "border-l-4 border-l-green-500 bg-green-50 dark:bg-green-900/10 shadow-md"
                 : "border-gray-200 dark:border-gray-700"
             }`}
           >
@@ -125,15 +110,16 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
                 <div className="flex items-center gap-2">
                   {getTypeIcon(consultation.type)}
                   <span className="text-sm font-medium">
-                    {consultation.type.replace('_', ' ').toUpperCase()}
+                    {consultation.type.replace("_", " ").toUpperCase()}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={getStatusColor(consultation.status)}>
-                    {consultation.status.replace('_', ' ').toUpperCase()}
-                  </Badge>
+                  <StatusPill status={consultation.status} />
                   {isActive && (
-                    <Badge variant="success" className="animate-pulse text-xs">
+                    <Badge
+                      variant="default"
+                      className="animate-pulse text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                    >
                       Live
                     </Badge>
                   )}
@@ -144,7 +130,7 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
             {/* Content */}
             <div className="p-5 space-y-4">
               {/* Patient Info */}
-              <UserInfo user={consultation.patient} />
+              <UserInfo user={consultation.patient.user} />
 
               {/* Date & Time */}
               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -158,10 +144,9 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Clock className="w-4 h-4" />
                 <span>
-                  {isActive && consultation.startedAt 
+                  {isActive && consultation.startedAt
                     ? `Live: ${formatDurationFromStart(consultation.startedAt)}`
-                    : formatDuration(consultation.duration)
-                  }
+                    : formatDuration(consultation.duration ?? 0)}
                 </span>
               </div>
 
@@ -169,7 +154,9 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
               {consultation.rating && (
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm font-medium">{consultation.rating}</span>
+                  <span className="text-sm font-medium">
+                    {consultation.rating}
+                  </span>
                 </div>
               )}
             </div>
@@ -193,7 +180,7 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
                   View Details
                 </Button>
               )}
-              
+
               {consultation.notes && (
                 <Button
                   onClickHandler={() => onViewNotes?.(consultation)}
