@@ -7,7 +7,7 @@ exports.createPrescription = async (req, res, next) => {
   try {
     const { consultationId, medications } = req.body;
 
-    const doctorId = req.authUser.doctor.id
+    const doctorId = req.authUser.doctor.id;
 
     // Validate required fields
     if (!consultationId) {
@@ -23,8 +23,8 @@ exports.createPrescription = async (req, res, next) => {
     }
 
     // Validate each medication has required fields
-    const invalidMedications = medications.filter(med => 
-      !med.name || !med.dosage || !med.frequency || !med.duration
+    const invalidMedications = medications.filter(
+      (med) => !med.name || !med.dosage || !med.frequency || !med.duration
     );
 
     if (invalidMedications.length > 0) {
@@ -34,11 +34,14 @@ exports.createPrescription = async (req, res, next) => {
     }
 
     // Log the prescription creation attempt
-    logger.info(`Prescription creation initiated for consultation ${consultationId}`, {
-      consultationId,
-      medicationCount: medications.length,
-      requestBody: req.body
-    });
+    logger.info(
+      `Prescription creation initiated for consultation ${consultationId}`,
+      {
+        consultationId,
+        medicationCount: medications.length,
+        requestBody: req.body,
+      }
+    );
 
     // Return immediately - full process will happen in background
     res.status(202).json({
@@ -47,74 +50,86 @@ exports.createPrescription = async (req, res, next) => {
       data: {
         status: "processing",
         consultationId: consultationId,
-        message: "Your prescription is being generated. You will be notified when it's ready.",
-        estimatedTime: "2-3 minutes"
+        message:
+          "Your prescription is being generated. You will be notified when it's ready.",
+        estimatedTime: "2-3 minutes",
       },
     });
 
     // Start complete prescription process in background (non-blocking)
     setImmediate(async () => {
       const startTime = Date.now();
-      
+
       try {
-        logger.info(`Starting background prescription creation for consultation ${consultationId}`);
-        
-        const prescription = await PrescriptionService.createPrescription({...req.body, doctorId});
-        
+        logger.info(
+          `Starting background prescription creation for consultation ${consultationId}`
+        );
+
+        const prescription = await PrescriptionService.createPrescription({
+          ...req.body,
+          doctorId,
+        });
+
         const processingTime = Date.now() - startTime;
         logger.info(`Prescription creation completed successfully`, {
           prescriptionId: prescription.id,
           consultationId: consultationId,
           processingTimeMs: processingTime,
-          processingTimeMinutes: Math.round(processingTime / 60000 * 100) / 100
+          processingTimeMinutes:
+            Math.round((processingTime / 60000) * 100) / 100,
         });
 
         // Emit real-time update to the doctor who created it (if socket.io is available)
-        if (global.io && req.user && req.user.id) {
-          global.io.to(`user-${req.user.id}`).emit("prescription:created", {
+        if (global.io && req.authUser && req.authUser.id) {
+          global.io.to(`user-${req.authUser.id}`).emit("prescription:created", {
             prescriptionId: prescription.id,
             consultationId: consultationId,
             status: "completed",
             message: "Prescription has been generated and sent to patient",
             fileUrl: prescription.fileUrl,
-            processingTime: processingTime
+            processingTime: processingTime,
           });
         }
-
       } catch (error) {
         const processingTime = Date.now() - startTime;
-        logger.error(`Prescription creation failed after ${processingTime}ms:`, {
-          error: error.message,
-          stack: error.stack,
-          consultationId: consultationId,
-          processingTimeMs: processingTime
-        });
+        logger.error(
+          `Prescription creation failed after ${processingTime}ms:`,
+          {
+            error: error.message,
+            stack: error.stack,
+            consultationId: consultationId,
+            processingTimeMs: processingTime,
+          }
+        );
 
         // Emit error to the doctor (if socket.io is available)
-        if (global.io && req.user && req.user.id) {
-          global.io.to(`user-${req.user.id}`).emit("prescription:error", {
+        if (global.io && req.authUser && req.authUser.id) {
+          global.io.to(`user-${req.authUser.id}`).emit("prescription:error", {
             consultationId: consultationId,
             status: "failed",
-            message: "Prescription generation encountered an error. Please try again or contact support.",
-            error: process.env.NODE_ENV === 'development' ? error.message : "Processing failed"
+            message:
+              "Prescription generation encountered an error. Please try again or contact support.",
+            error:
+              process.env.NODE_ENV === "development"
+                ? error.message
+                : "Processing failed",
           });
         }
 
         // Log to application monitoring/alerting system if available
         if (global.errorReporter) {
           global.errorReporter.report(error, {
-            context: 'prescription_creation',
+            context: "prescription_creation",
             consultationId: consultationId,
-            processingTime: processingTime
+            processingTime: processingTime,
           });
         }
       }
     });
-
   } catch (error) {
-    logger.error('Prescription creation request validation failed:', {
+    logger.error("Prescription creation request validation failed:", {
       error: error.message,
-      requestBody: req.body
+      requestBody: req.body,
     });
     next(error);
   }
@@ -129,7 +144,8 @@ exports.getPrescriptionById = async (req, res, next) => {
       throw new BadRequestError("Valid prescription ID is required");
     }
 
-    const prescription = await PrescriptionService.getPrescriptionById(prescriptionId);
+    const prescription =
+      await PrescriptionService.getPrescriptionById(prescriptionId);
 
     res.status(200).json({
       status: "success",
@@ -138,9 +154,9 @@ exports.getPrescriptionById = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('Error fetching prescription by ID:', {
+    logger.error("Error fetching prescription by ID:", {
       prescriptionId: req.params.prescriptionId,
-      error: error.message
+      error: error.message,
     });
     next(error);
   }
@@ -155,20 +171,21 @@ exports.getPrescriptionsByConsultation = async (req, res, next) => {
       throw new BadRequestError("Valid consultation ID is required");
     }
 
-    const prescriptions = await PrescriptionService.getPrescriptionsByConsultation(consultationId);
+    const prescriptions =
+      await PrescriptionService.getPrescriptionsByConsultation(consultationId);
 
     res.status(200).json({
       status: "success",
       data: {
         prescriptions,
         count: prescriptions.length,
-        consultationId: parseInt(consultationId)
+        consultationId: parseInt(consultationId),
       },
     });
   } catch (error) {
-    logger.error('Error fetching prescriptions by consultation:', {
+    logger.error("Error fetching prescriptions by consultation:", {
       consultationId: req.params.consultationId,
-      error: error.message
+      error: error.message,
     });
     next(error);
   }
@@ -190,11 +207,15 @@ exports.updatePrescription = async (req, res, next) => {
     }
 
     // Don't allow updating certain system fields
-    const restrictedFields = ['id', 'consultationId', 'createdAt', 'updatedAt'];
-    const hasRestrictedFields = restrictedFields.some(field => field in updateData);
-    
+    const restrictedFields = ["id", "consultationId", "createdAt", "updatedAt"];
+    const hasRestrictedFields = restrictedFields.some(
+      (field) => field in updateData
+    );
+
     if (hasRestrictedFields) {
-      throw new BadRequestError(`Cannot update restricted fields: ${restrictedFields.join(', ')}`);
+      throw new BadRequestError(
+        `Cannot update restricted fields: ${restrictedFields.join(", ")}`
+      );
     }
 
     const prescription = await PrescriptionService.updatePrescription(
@@ -202,10 +223,10 @@ exports.updatePrescription = async (req, res, next) => {
       updateData
     );
 
-    logger.info('Prescription updated successfully:', {
+    logger.info("Prescription updated successfully:", {
       prescriptionId: prescriptionId,
       updatedFields: Object.keys(updateData),
-      updatedBy: req.user?.id
+      updatedBy: req.authUser?.id,
     });
 
     res.status(200).json({
@@ -216,10 +237,10 @@ exports.updatePrescription = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('Error updating prescription:', {
+    logger.error("Error updating prescription:", {
       prescriptionId: req.params.prescriptionId,
       updateData: req.body,
-      error: error.message
+      error: error.message,
     });
     next(error);
   }
@@ -236,9 +257,9 @@ exports.deletePrescription = async (req, res, next) => {
 
     await PrescriptionService.deletePrescription(prescriptionId);
 
-    logger.info('Prescription deleted successfully:', {
+    logger.info("Prescription deleted successfully:", {
       prescriptionId: prescriptionId,
-      deletedBy: req.user?.id
+      deletedBy: req.authUser?.id,
     });
 
     res.status(200).json({
@@ -246,9 +267,9 @@ exports.deletePrescription = async (req, res, next) => {
       message: "Prescription deleted successfully",
     });
   } catch (error) {
-    logger.error('Error deleting prescription:', {
+    logger.error("Error deleting prescription:", {
       prescriptionId: req.params.prescriptionId,
-      error: error.message
+      error: error.message,
     });
     next(error);
   }
@@ -264,8 +285,9 @@ exports.generatePrescriptionPDF = async (req, res, next) => {
     }
 
     // Check if prescription exists and get its current status
-    const prescription = await PrescriptionService.getPrescriptionById(prescriptionId);
-    
+    const prescription =
+      await PrescriptionService.getPrescriptionById(prescriptionId);
+
     if (prescription.fileUrl) {
       // PDF already exists
       return res.status(200).json({
@@ -280,7 +302,9 @@ exports.generatePrescriptionPDF = async (req, res, next) => {
     }
 
     // PDF doesn't exist - this is unusual since PDFs are generated during creation
-    logger.warn(`PDF regeneration requested for prescription ${prescriptionId}`);
+    logger.warn(
+      `PDF regeneration requested for prescription ${prescriptionId}`
+    );
 
     res.status(202).json({
       status: "success",
@@ -288,7 +312,7 @@ exports.generatePrescriptionPDF = async (req, res, next) => {
       data: {
         prescriptionId: prescriptionId,
         status: "processing",
-        message: "PDF is being regenerated. You will be notified when ready."
+        message: "PDF is being regenerated. You will be notified when ready.",
       },
     });
 
@@ -296,16 +320,20 @@ exports.generatePrescriptionPDF = async (req, res, next) => {
     setImmediate(async () => {
       try {
         // This would need to be implemented if PDF regeneration is required
-        logger.info(`PDF regeneration completed for prescription ${prescriptionId}`);
+        logger.info(
+          `PDF regeneration completed for prescription ${prescriptionId}`
+        );
       } catch (error) {
-        logger.error(`PDF regeneration failed for prescription ${prescriptionId}:`, error);
+        logger.error(
+          `PDF regeneration failed for prescription ${prescriptionId}:`,
+          error
+        );
       }
     });
-
   } catch (error) {
-    logger.error('Error in PDF generation endpoint:', {
+    logger.error("Error in PDF generation endpoint:", {
       prescriptionId: req.params.prescriptionId,
-      error: error.message
+      error: error.message,
     });
     next(error);
   }
@@ -336,15 +364,15 @@ exports.getPrescriptionStats = async (req, res, next) => {
         stats,
         filters: {
           doctorId: doctorId ? parseInt(doctorId) : null,
-          patientId: patientId ? parseInt(patientId) : null
-        }
+          patientId: patientId ? parseInt(patientId) : null,
+        },
       },
     });
   } catch (error) {
-    logger.error('Error fetching prescription statistics:', {
+    logger.error("Error fetching prescription statistics:", {
       doctorId: req.query.doctorId,
       patientId: req.query.patientId,
-      error: error.message
+      error: error.message,
     });
     next(error);
   }
@@ -354,7 +382,7 @@ exports.getPrescriptionStats = async (req, res, next) => {
 exports.healthCheck = async (req, res, next) => {
   try {
     const stats = await PrescriptionService.getPrescriptionStats();
-    
+
     res.status(200).json({
       status: "success",
       message: "Prescription service is healthy",
@@ -364,15 +392,15 @@ exports.healthCheck = async (req, res, next) => {
         totalPrescriptions: stats.total,
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        version: process.env.npm_package_version || "1.0.0"
-      }
+        version: process.env.npm_package_version || "1.0.0",
+      },
     });
   } catch (error) {
-    logger.error('Prescription service health check failed:', error);
+    logger.error("Prescription service health check failed:", error);
     res.status(503).json({
       status: "error",
       message: "Prescription service is unhealthy",
-      error: error.message
+      error: error.message,
     });
   }
 };

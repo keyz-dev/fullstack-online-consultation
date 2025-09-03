@@ -151,12 +151,6 @@ export const PatientConsultationProvider: React.FC<{
         limit: state.pagination.limit,
         filters: state.filters,
       });
-
-      console.log(
-        "These are all the consultations from the context: ",
-        response.consultations
-      );
-
       dispatch({
         type: PATIENT_CONSULTATION_ACTIONS.SET_CONSULTATIONS,
         payload: response.consultations,
