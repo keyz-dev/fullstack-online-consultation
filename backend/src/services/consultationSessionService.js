@@ -13,6 +13,7 @@ const logger = require("../utils/logger");
 const {
   formatConsultationListResponse,
 } = require("../utils/returnFormats/consultationData");
+const { consultationIncludes } = require("../utils/consultationIncludes");
 
 class ConsultationSessionService {
   /**
@@ -21,7 +22,6 @@ class ConsultationSessionService {
 
   async getAllUserConsultations(
     whereClause = {},
-    appointmentWhere = {},
     page = 1,
     limit = 10,
     offset,
@@ -35,67 +35,16 @@ class ConsultationSessionService {
     const count = await Consultation.count({
       where: {
         ...whereClause,
-        ...appointmentWhere,
       },
-      include: [
-        {
-          model: Appointment,
-          as: "appointment",
-          include: [
-            {
-              model: Patient,
-              as: "patient",
-            },
-            {
-              model: Doctor,
-              as: "doctor",
-            },
-          ],
-        },
-      ],
+      include: consultationIncludes,
     });
 
     // Find consultations with full data
     const consultations = await Consultation.findAll({
       where: {
         ...whereClause,
-        ...appointmentWhere,
       },
-      include: [
-        {
-          model: Appointment,
-          as: "appointment",
-          include: [
-            {
-              model: Patient,
-              as: "patient",
-              include: [
-                {
-                  model: User,
-                  as: "user",
-                  attributes: ["id", "name", "email", "avatar"],
-                },
-              ],
-            },
-            {
-              model: Doctor,
-              as: "doctor",
-              include: [
-                {
-                  model: User,
-                  as: "user",
-                  attributes: ["id", "name", "avatar"],
-                },
-                {
-                  model: Specialty,
-                  as: "specialties",
-                  through: { attributes: [] }, // Exclude junction table attributes
-                },
-              ],
-            },
-          ],
-        },
-      ],
+      include: consultationIncludes,
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["createdAt", "DESC"]],

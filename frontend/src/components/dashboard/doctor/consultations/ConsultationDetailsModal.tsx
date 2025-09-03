@@ -1,10 +1,17 @@
-import React, { useState } from "react";
-import {
-  FadeInContainer,
-  ModalWrapper,
-} from "@/components/ui";
+import React, { useState, useEffect } from "react";
+import { FadeInContainer, ModalWrapper } from "@/components/ui";
 import { Consultation } from "@/types";
-import { X, Eye, User, FileText, MessageSquare, Star } from "lucide-react";
+import {
+  X,
+  Eye,
+  User,
+  FileText,
+  MessageSquare,
+  Star,
+  Pill,
+} from "lucide-react";
+import { usePrescriptions } from "@/hooks/usePrescriptions";
+import DocumentPreview from "@/components/ui/DocumentReview/DocumentPreview";
 
 interface ConsultationDetailsModalProps {
   consultation: Consultation | null;
@@ -18,6 +25,26 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [previewDocument, setPreviewDocument] = useState<{
+    id: string;
+    url: string;
+    name: string;
+    documentName: string;
+    fileType?: string;
+    size?: number;
+  } | null>(null);
+  const {
+    prescriptions,
+    getPrescriptionsByConsultation,
+    loading: prescriptionsLoading,
+  } = usePrescriptions();
+
+  // Fetch prescriptions when consultation changes
+  useEffect(() => {
+    if (consultation && consultation.id) {
+      getPrescriptionsByConsultation(parseInt(consultation.id));
+    }
+  }, [consultation, getPrescriptionsByConsultation]);
 
   if (!consultation || !isOpen) return null;
 
@@ -25,6 +52,7 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
     { id: "overview", label: "Overview", icon: Eye },
     { id: "patient", label: "Patient Info", icon: User },
     { id: "notes", label: "Notes & Diagnosis", icon: FileText },
+    { id: "prescriptions", label: "Prescriptions", icon: Pill },
     { id: "messages", label: "Chat History", icon: MessageSquare },
     { id: "rating", label: "Rating & Review", icon: Star },
   ];
@@ -60,7 +88,8 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
               Consultation Details
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {consultation.patient.name} • {formatDate(consultation.scheduledAt)}
+              {consultation.patient.name} •{" "}
+              {formatDate(consultation.scheduledAt)}
             </p>
           </div>
           <button
@@ -105,33 +134,55 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
                     </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Status:</span>
-                        <span className={`font-medium ${
-                          consultation.status === 'completed' ? 'text-green-600' :
-                          consultation.status === 'in_progress' ? 'text-blue-600' :
-                          'text-gray-600'
-                        }`}>
-                          {consultation.status.replace('_', ' ').toUpperCase()}
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Status:
+                        </span>
+                        <span
+                          className={`font-medium ${
+                            consultation.status === "completed"
+                              ? "text-green-600"
+                              : consultation.status === "in_progress"
+                              ? "text-blue-600"
+                              : "text-gray-600"
+                          }`}
+                        >
+                          {consultation.status.replace("_", " ").toUpperCase()}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Type:</span>
-                        <span className="font-medium">{consultation.type.replace('_', ' ').toUpperCase()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                        <span className="font-medium">{formatDuration(consultation.duration)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Started:</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Type:
+                        </span>
                         <span className="font-medium">
-                          {consultation.startedAt ? formatDate(consultation.startedAt) : 'Not started'}
+                          {consultation.type.replace("_", " ").toUpperCase()}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Ended:</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Duration:
+                        </span>
                         <span className="font-medium">
-                          {consultation.endedAt ? formatDate(consultation.endedAt) : 'Ongoing'}
+                          {formatDuration(consultation.duration)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Started:
+                        </span>
+                        <span className="font-medium">
+                          {consultation.startedAt
+                            ? formatDate(consultation.startedAt)
+                            : "Not started"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Ended:
+                        </span>
+                        <span className="font-medium">
+                          {consultation.endedAt
+                            ? formatDate(consultation.endedAt)
+                            : "Ongoing"}
                         </span>
                       </div>
                     </div>
@@ -143,16 +194,28 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
                     </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Name:</span>
-                        <span className="font-medium">{consultation.patient.name}</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Name:
+                        </span>
+                        <span className="font-medium">
+                          {consultation.patient.name}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Email:</span>
-                        <span className="font-medium">{consultation.patient.email}</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Email:
+                        </span>
+                        <span className="font-medium">
+                          {consultation.patient.email}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Phone:</span>
-                        <span className="font-medium">{consultation.patient.phone || 'Not provided'}</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Phone:
+                        </span>
+                        <span className="font-medium">
+                          {consultation.patient.phone || "Not provided"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -168,7 +231,8 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
                   </h3>
                   <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                     <p className="text-gray-700 dark:text-gray-300">
-                      {consultation.notes || 'No notes recorded for this consultation.'}
+                      {consultation.notes ||
+                        "No notes recorded for this consultation."}
                     </p>
                   </div>
                 </div>
@@ -212,7 +276,7 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Consultation Rating
                   </h3>
-                  
+
                   {consultation.rating ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-center space-x-1">
@@ -226,9 +290,11 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
                             }`}
                           />
                         ))}
-                        <span className="text-xl font-bold ml-2">{consultation.rating}/5</span>
+                        <span className="text-xl font-bold ml-2">
+                          {consultation.rating}/5
+                        </span>
                       </div>
-                      
+
                       {consultation.review && (
                         <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 max-w-md mx-auto">
                           <p className="text-gray-700 dark:text-gray-300 italic">
@@ -249,13 +315,17 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
             {/* Placeholder for other tabs */}
             {activeTab === "patient" && (
               <div className="p-6">
-                <p className="text-gray-500 dark:text-gray-400">Patient information tab - Coming soon</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Patient information tab - Coming soon
+                </p>
               </div>
             )}
 
             {activeTab === "messages" && (
               <div className="p-6">
-                <p className="text-gray-500 dark:text-gray-400">Chat history tab - Coming soon</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Chat history tab - Coming soon
+                </p>
               </div>
             )}
           </FadeInContainer>

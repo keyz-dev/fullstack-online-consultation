@@ -98,8 +98,9 @@ export const consultationsAPI = {
     userRole: "doctor" | "patient",
     id: string
   ): Promise<ConsultationDetailsResponse> {
-    const endpoint = userRole === "doctor" ? "/doctor" : "/patient";
-    const response = await api.get(`/consultation${endpoint}/${id}`);
+    const response = await api.get(`/consultation/${id}`);
+
+    console.log("Consultation details response: ", response.data);
     return response.data;
   },
 
@@ -111,12 +112,11 @@ export const consultationsAPI = {
   async getConsultationByAppointment(
     userRole: "doctor" | "patient",
     appointmentId: string
-  ): Promise<ConsultationListResponse> {
-    const endpoint = userRole === "doctor" ? "/doctor" : "/patient";
+  ): Promise<ConsultationDetailsResponse> {
     const response = await api.get(
-      `/consultation${endpoint}?appointmentId=${appointmentId}`
+      `/consultation/by-appointment?appointmentId=${appointmentId}`
     );
-    return response.data.data;
+    return response.data;
   },
 
   /**
@@ -126,9 +126,7 @@ export const consultationsAPI = {
   async checkPatientPresence(
     patientId: string
   ): Promise<PatientPresenceResponse> {
-    const response = await api.get(
-      `/consultation/patient/${patientId}/presence`
-    );
+    const response = await api.get(`/user/${patientId}/presence`);
     return response.data;
   },
 

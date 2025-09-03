@@ -50,7 +50,7 @@ export interface Patient {
   preferredLanguage?: string;
   createdAt: string;
   updatedAt: string;
-  
+
   user: {
     id: string;
     name: string;
@@ -59,6 +59,8 @@ export interface Patient {
     gender?: "male" | "female" | "other";
     dob?: string;
     avatar?: string;
+    address?: Address;
+    age?: number;
   };
 }
 
@@ -90,14 +92,16 @@ export interface Doctor {
   totalReviews: number;
   createdAt: string;
   updatedAt: string;
-  
+
   user: {
     id: string;
     name: string;
     email: string;
     avatar?: string;
+    address?: Address;
+    age?: number;
   };
-  
+
   specialties: Specialty[];
 }
 
@@ -179,11 +183,11 @@ export interface Consultation {
   lastActivity?: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Patient and doctor at top level
   patient: Patient;
   doctor: Doctor;
-  
+
   // Appointment data
   appointment: {
     id: string;
@@ -210,7 +214,7 @@ export interface Consultation {
       isBooked: boolean;
     };
   };
-  
+
   messages?: ConsultationMessage[];
 }
 

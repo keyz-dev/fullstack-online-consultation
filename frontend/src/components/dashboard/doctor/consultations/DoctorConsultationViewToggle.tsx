@@ -13,15 +13,19 @@ interface DoctorConsultationViewToggleProps {
   onViewConsultation?: (consultation: Consultation) => void;
   onJoinConsultation?: (consultation: Consultation) => void;
   onViewNotes?: (consultation: Consultation) => void;
+  onGeneratePrescription?: (consultation: Consultation) => void;
 }
 
-const DoctorConsultationViewToggle: React.FC<DoctorConsultationViewToggleProps> = ({
+const DoctorConsultationViewToggle: React.FC<
+  DoctorConsultationViewToggleProps
+> = ({
   consultations,
   viewMode,
   onViewModeChange,
   onViewConsultation,
   onJoinConsultation,
   onViewNotes,
+  onGeneratePrescription,
 }) => {
   return (
     <div className="space-y-4">
@@ -56,9 +60,10 @@ const DoctorConsultationViewToggle: React.FC<DoctorConsultationViewToggleProps> 
             </button>
           </div>
         </div>
-        
+
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          {consultations.length} consultation{consultations.length !== 1 ? 's' : ''}
+          {consultations.length} consultation
+          {consultations.length !== 1 ? "s" : ""}
         </div>
       </div>
 
@@ -69,6 +74,7 @@ const DoctorConsultationViewToggle: React.FC<DoctorConsultationViewToggleProps> 
           onViewConsultation={onViewConsultation}
           onJoinConsultation={onJoinConsultation}
           onViewNotes={onViewNotes}
+          onGeneratePrescription={onGeneratePrescription}
         />
       ) : (
         <DoctorConsultationGridView
@@ -76,6 +82,7 @@ const DoctorConsultationViewToggle: React.FC<DoctorConsultationViewToggleProps> 
           onViewConsultation={onViewConsultation}
           onJoinConsultation={onJoinConsultation}
           onViewNotes={onViewNotes}
+          onGeneratePrescription={onGeneratePrescription}
         />
       )}
     </div>

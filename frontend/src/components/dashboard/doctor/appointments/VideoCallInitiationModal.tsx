@@ -38,7 +38,6 @@ const VideoCallInitiationModal: React.FC<VideoCallInitiationModalProps> = ({
     getConsultationByAppointment,
     checkPatientPresence,
     initiateVideoCall,
-    cancelVideoCall,
     clearConsultationState,
   } = useConsultation();
 
@@ -88,17 +87,17 @@ const VideoCallInitiationModal: React.FC<VideoCallInitiationModalProps> = ({
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("MediaDevices API not available");
       }
-      
+
       // Request camera/microphone permissions BEFORE initiating call
-      console.log('🎥 Requesting camera/microphone permissions...');
+      console.log("🎥 Requesting camera/microphone permissions...");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true
+        audio: true,
       });
-      
+
       // Stop the stream immediately - we just needed permission
-      stream.getTracks().forEach(track => track.stop());
-      console.log('✅ Permissions granted, initiating call...');
+      stream.getTracks().forEach((track) => track.stop());
+      console.log("✅ Permissions granted, initiating call...");
 
       const result = await initiateVideoCall(currentConsultation.id.toString());
       if (result) {
@@ -106,19 +105,22 @@ const VideoCallInitiationModal: React.FC<VideoCallInitiationModalProps> = ({
         onClose();
       }
     } catch (error) {
-      console.error('❌ Permission denied or error:', error);
-      
+      console.error("❌ Permission denied or error:", error);
+
       let errorMessage = "Failed to access camera/microphone";
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
-          errorMessage = "Camera/microphone access denied. Please allow permissions and try again.";
+          errorMessage =
+            "Camera/microphone access denied. Please allow permissions and try again.";
         } else if (error.name === "NotFoundError") {
-          errorMessage = "No camera or microphone found. Please check your devices.";
+          errorMessage =
+            "No camera or microphone found. Please check your devices.";
         } else if (error.name === "NotReadableError") {
-          errorMessage = "Camera/microphone is already in use. Please close other video applications and try again.";
+          errorMessage =
+            "Camera/microphone is already in use. Please close other video applications and try again.";
         }
       }
-      
+
       alert(errorMessage);
     }
   };

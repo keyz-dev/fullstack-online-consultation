@@ -27,7 +27,7 @@ class PatientConsultationController {
 
       const consultations =
         await patientConsultationService.getPatientConsultations(
-          req.authUser.id,
+          req.authUser.patient.id,
           {
             page: parseInt(page),
             limit: parseInt(limit),
@@ -67,7 +67,7 @@ class PatientConsultationController {
 
       const consultations =
         await patientConsultationService.getPatientActiveConsultations(
-          req.authUser.id
+          req.authUser.patient.id
         );
 
       res.status(200).json({
@@ -103,63 +103,12 @@ class PatientConsultationController {
 
       const stats =
         await patientConsultationService.getPatientConsultationStats(
-          req.authUser.id
+          req.authUser.patient.id
         );
 
       res.status(200).json({
         success: true,
         data: stats,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * @desc    Get single consultation by ID (patient must be assigned to it)
-   * @route   GET /api/v1/consultations/patient/:id
-   * @access  Private (Patient only)
-   */
-  async getPatientConsultation(req, res, next) {
-    try {
-      // Ensure user is a patient
-      if (req.authUser.role !== "patient") {
-        return next(
-          new UnauthorizedError("Only patients can access this endpoint")
-        );
-      }
-
-      // Ensure patient profile exists
-      if (!req.authUser.patient) {
-        return next(new NotFoundError("Patient profile not found"));
-      }
-
-      const { id } = req.params;
-
-      // Get consultation and verify patient has access
-      const consultations =
-        await patientConsultationService.getPatientConsultations(
-          req.authUser.id,
-          {
-            appointmentId: id,
-            limit: 1,
-          }
-        );
-
-      if (
-        !consultations.consultations ||
-        consultations.consultations.length === 0
-      ) {
-        return next(
-          new NotFoundError("Consultation not found or access denied")
-        );
-      }
-
-      const consultation = consultations.consultations[0];
-
-      res.status(200).json({
-        success: true,
-        data: consultation,
       });
     } catch (error) {
       next(error);

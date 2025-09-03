@@ -8,6 +8,7 @@ import {
   DoctorConsultationStatSection,
   ConsultationDetailsModal,
 } from "@/components/dashboard/doctor/consultations";
+import PrescriptionGenerationModal from "@/components/dashboard/doctor/prescriptions/PrescriptionGenerationModal";
 import {
   Button,
   AdvancedFilters,
@@ -24,8 +25,10 @@ import { Video, MessageSquare, Plus, Filter } from "lucide-react";
 
 const DoctorConsultationsPage: React.FC = () => {
   const router = useRouter();
-  const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
+  const [selectedConsultation, setSelectedConsultation] =
+    useState<Consultation | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
   const {
@@ -42,7 +45,9 @@ const DoctorConsultationsPage: React.FC = () => {
   // Combine active and regular consultations, with active ones first
   const allConsultations = [
     ...activeConsultations,
-    ...consultations.filter(c => !activeConsultations.some(ac => ac.id === c.id))
+    ...consultations.filter(
+      (c) => !activeConsultations.some((ac) => ac.id === c.id)
+    ),
   ];
 
   // Filter configurations
@@ -99,12 +104,20 @@ const DoctorConsultationsPage: React.FC = () => {
 
   const handleJoinConsultation = (consultation: Consultation) => {
     if (consultation.roomId) {
-      router.push(`/doctor/consultation/${consultation.id}/video?roomId=${consultation.roomId}`);
+      router.push(
+        `/doctor/consultation/${consultation.id}/video?roomId=${consultation.roomId}`
+      );
     }
   };
 
   const handleViewNotes = (consultation: Consultation) => {
     router.push(`/doctor/consultations/${consultation.id}?tab=notes`);
+  };
+
+  // Handle prescription generation
+  const handleGeneratePrescription = (consultation: Consultation) => {
+    setSelectedConsultation(consultation);
+    setShowPrescriptionModal(true);
   };
 
   if (error) {
@@ -164,7 +177,7 @@ const DoctorConsultationsPage: React.FC = () => {
                   icon="search"
                   action={
                     <button
-                      onClick={() => router.push('/doctor/appointments')}
+                      onClick={() => router.push("/doctor/appointments")}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       View Appointments
@@ -180,6 +193,7 @@ const DoctorConsultationsPage: React.FC = () => {
                     onViewConsultation={handleViewConsultation}
                     onJoinConsultation={handleJoinConsultation}
                     onViewNotes={handleViewNotes}
+                    onGeneratePrescription={handleGeneratePrescription}
                   />
 
                   {/* Pagination */}
@@ -187,7 +201,9 @@ const DoctorConsultationsPage: React.FC = () => {
                     <div className="flex justify-center mt-6">
                       <Pagination
                         currentPage={pagination.page}
-                        totalPages={Math.ceil(pagination.total / pagination.limit)}
+                        totalPages={Math.ceil(
+                          pagination.total / pagination.limit
+                        )}
                         onPageChange={handlePageChange}
                         showPageInfo={true}
                         totalItems={pagination.total}
@@ -211,6 +227,26 @@ const DoctorConsultationsPage: React.FC = () => {
           setSelectedConsultation(null);
         }}
       />
+
+      {/* Prescription Generation Modal */}
+      {selectedConsultation && (
+        <PrescriptionGenerationModal
+          isOpen={showPrescriptionModal}
+          onClose={() => {
+            setShowPrescriptionModal(false);
+            setSelectedConsultation(null);
+          }}
+          consultationId={parseInt(selectedConsultation.id)}
+          patientInfo={{
+            name: selectedConsultation.patient?.user?.name || "",
+            age: selectedConsultation.patient?.age || 0,
+            gender: selectedConsultation.patient?.gender || "",
+            contactNumber:
+              selectedConsultation.patient?.user?.phoneNumber || "",
+          }}
+          consultationNotes={selectedConsultation.notes || ""}
+        />
+      )}
     </div>
   );
 };

@@ -19,7 +19,7 @@ export default function PatientVideoCallPage() {
   }, [roomId, router]);
 
   const handleCallEnd = () => {
-    router.push("/patient/appointments");
+    router.push("/patient/consultations");
   };
 
   if (!roomId) {

@@ -96,21 +96,6 @@ const Step4_Instructions: React.FC<Step4_InstructionsProps> = ({
           />
           <p className="text-sm text-gray-500 mt-1">Optional: Additional instructions for the patient</p>
         </div>
-
-        {/* Continue Button */}
-        <div className="text-center pt-4">
-          <button
-            onClick={handleContinue}
-            disabled={!canContinue}
-            className={`px-6 py-2 rounded-lg transition-colors ${
-              canContinue
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Continue to Review
-          </button>
-        </div>
       </div>
     </div>
   );

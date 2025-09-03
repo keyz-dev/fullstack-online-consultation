@@ -28,9 +28,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     updateActiveNavFromPath(pathname);
   }, [pathname, updateActiveNavFromPath]);
 
-  if (!user && !userLoading) {
-    router.push("/login");
-  }
+  // Handle navigation to login when user is not authenticated
+  useEffect(() => {
+    if (!user && !userLoading) {
+      router.push("/login");
+    }
+  }, [user, userLoading, router]);
 
   // Show loading state until client-side hydration is complete
   if (!user || !roleConfig) {

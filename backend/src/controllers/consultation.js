@@ -23,6 +23,7 @@ const {
 } = require("../utils/returnFormats/consultationData");
 const ConsultationSessionService = require("../services/consultationSessionService");
 const consultationSessionService = require("../services/consultationSessionService");
+const { consultationIncludes } = require("../utils/consultationIncludes");
 
 class ConsultationController {
   /**
@@ -400,19 +401,9 @@ class ConsultationController {
       if (status && status !== "all") whereClause.status = status;
       if (type && type !== "all") whereClause.type = type;
 
-      // Build appointment filter based on user role
-      let appointmentWhere = {};
-      if (appointmentId) {
-        appointmentWhere = {
-          "$appointment.id$": appointmentId,
-        };
-      }
-
-      console.log("Appointment where: ", appointmentWhere);
       const formattedConsultations =
         await consultationSessionService.getAllUserConsultations(
           whereClause,
-          appointmentWhere,
           page,
           limit,
           offset,
@@ -432,6 +423,32 @@ class ConsultationController {
     }
   }
 
+  async getConsultationByAppointment(req, res, next) {
+    try {
+      const { appointmentId } = req.query;
+
+      const consultation = await Consultation.findOne({
+        where: {
+          appointmentId,
+        },
+        include: consultationIncludes,
+      });
+
+      if (!consultation) {
+        return next(new NotFoundError("Consultation not found"));
+      }
+
+      const formattedConsultation = formatConsultationData(consultation);
+      res.status(200).json({
+        success: true,
+        data: formattedConsultation,
+      });
+    } catch (error) {
+      console.log("this is the error: ", error);
+      next(error);
+    }
+  }
+
   /**
    * @desc    Get single consultation by ID
    * @route   GET /api/v1/consultations/:id
@@ -442,41 +459,7 @@ class ConsultationController {
       const { id } = req.params;
 
       const consultation = await Consultation.findByPk(id, {
-        include: [
-          {
-            model: Appointment,
-            as: "appointment",
-            include: [
-              {
-                model: Patient,
-                as: "patient",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "email", "avatar"],
-                  },
-                ],
-              },
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "avatar"],
-                  },
-                  {
-                    model: Specialty,
-                    as: "specialties",
-                    through: { attributes: [] }, // Exclude junction table attributes
-                  },
-                ],
-              },
-            ],
-          },
-        ],
+        include: consultationIncludes,
       });
 
       if (!consultation) {
@@ -524,24 +507,7 @@ class ConsultationController {
 
       // First, get and verify the consultation
       const consultation = await Consultation.findByPk(id, {
-        include: [
-          {
-            model: Appointment,
-            as: "appointment",
-            include: [
-              {
-                model: Patient,
-                as: "patient",
-                include: [{ model: User, as: "user", attributes: ["id"] }],
-              },
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [{ model: User, as: "user", attributes: ["id"] }],
-              },
-            ],
-          },
-        ],
+        include: consultationIncludes,
       });
 
       if (!consultation) {
@@ -609,24 +575,7 @@ class ConsultationController {
 
       // Verify the consultation exists and user has access
       const consultation = await Consultation.findByPk(id, {
-        include: [
-          {
-            model: Appointment,
-            as: "appointment",
-            include: [
-              {
-                model: Patient,
-                as: "patient",
-                include: [{ model: User, as: "user", attributes: ["id"] }],
-              },
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [{ model: User, as: "user", attributes: ["id"] }],
-              },
-            ],
-          },
-        ],
+        include: consultationIncludes,
       });
 
       if (!consultation) {
@@ -771,7 +720,7 @@ class ConsultationController {
       const { isConnected } = req.body;
 
       // Update consultation session heartbeat
-      await ConsultationSessionService.updateSessionHeartbeat(
+      await ConsultationSessionService.updateHeartbeat(
         id,
         req.authUser.id,
         isConnected
@@ -798,19 +747,7 @@ class ConsultationController {
 
       // Find the consultation
       const consultation = await Consultation.findByPk(id, {
-        include: [
-          {
-            model: Appointment,
-            as: "appointment",
-            include: [
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [{ model: User, as: "user", attributes: ["id"] }],
-              },
-            ],
-          },
-        ],
+        include: consultationIncludes,
       });
 
       if (!consultation) {

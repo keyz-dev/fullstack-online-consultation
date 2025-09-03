@@ -1,6 +1,7 @@
-import React from 'react';
-import { Check, User, Stethoscope, Pill, Clock, FileText } from 'lucide-react';
-import { CreatePrescriptionData } from '../../../../../api/prescriptions';
+import React from "react";
+import { Check, User, Stethoscope, Pill, Clock, FileText } from "lucide-react";
+import { CreatePrescriptionData } from "../../../../../api/prescriptions";
+import { Button } from "@/components/ui";
 
 interface Step5_ReviewProps {
   prescriptionData: CreatePrescriptionData;
@@ -18,13 +19,17 @@ const Step5_Review: React.FC<Step5_ReviewProps> = ({
   prescriptionData,
   patientInfo,
   onGenerate,
-  loading
+  loading,
 }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Review Prescription</h3>
-        <p className="text-gray-600">Review all details before generating the prescription</p>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          Review Prescription
+        </h3>
+        <p className="text-gray-600">
+          Review all details before generating the prescription
+        </p>
       </div>
 
       <div className="space-y-6">
@@ -49,7 +54,9 @@ const Step5_Review: React.FC<Step5_ReviewProps> = ({
             </div>
             <div>
               <span className="text-gray-600">Contact:</span>
-              <span className="ml-2 font-medium">{patientInfo.contactNumber}</span>
+              <span className="ml-2 font-medium">
+                {patientInfo.contactNumber}
+              </span>
             </div>
           </div>
         </div>
@@ -73,36 +80,42 @@ const Step5_Review: React.FC<Step5_ReviewProps> = ({
         <div className="bg-purple-50 rounded-lg p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Pill className="w-5 h-5 text-purple-600" />
-            <h4 className="font-semibold text-gray-900">Medications ({prescriptionData.medications.length})</h4>
+            <h4 className="font-semibold text-gray-900">
+              Medications ({prescriptionData.medications.length})
+            </h4>
           </div>
           <div className="space-y-3">
-            {prescriptionData.medications.map((medication: any, index: number) => (
-              <div key={index} className="bg-white rounded-md p-4 border">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-900">{medication.name}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Dosage:</span>
-                    <span className="ml-1">{medication.dosage}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Frequency:</span>
-                    <span className="ml-1">{medication.frequency}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Duration:</span>
-                    <span className="ml-1">{medication.duration}</span>
-                  </div>
-                  {medication.instructions && (
-                    <div className="md:col-span-2">
-                      <span className="text-gray-600">Instructions:</span>
-                      <span className="ml-1">{medication.instructions}</span>
+            {prescriptionData.medications.map(
+              (medication: any, index: number) => (
+                <div key={index} className="bg-white rounded-md p-4 border">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-900">
+                        {medication.name}
+                      </span>
                     </div>
-                  )}
+                    <div>
+                      <span className="text-gray-600">Dosage:</span>
+                      <span className="ml-1">{medication.dosage}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Frequency:</span>
+                      <span className="ml-1">{medication.frequency}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Duration:</span>
+                      <span className="ml-1">{medication.duration}</span>
+                    </div>
+                    {medication.instructions && (
+                      <div className="md:col-span-2">
+                        <span className="text-gray-600">Instructions:</span>
+                        <span className="ml-1">{medication.instructions}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         </div>
 
@@ -115,37 +128,40 @@ const Step5_Review: React.FC<Step5_ReviewProps> = ({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-600">Duration:</span>
-              <span className="ml-2 font-medium">{prescriptionData.duration} days</span>
+              <span className="ml-2 font-medium">
+                {prescriptionData.duration} days
+              </span>
             </div>
             <div>
               <span className="text-gray-600">Refills:</span>
-              <span className="ml-2 font-medium">{prescriptionData.refills}</span>
+              <span className="ml-2 font-medium">
+                {prescriptionData.refills}
+              </span>
             </div>
           </div>
           {prescriptionData.instructions && (
             <div className="mt-3">
               <span className="text-gray-600">General Instructions:</span>
-              <p className="text-gray-700 mt-1">{prescriptionData.instructions}</p>
+              <p className="text-gray-700 mt-1">
+                {prescriptionData.instructions}
+              </p>
             </div>
           )}
         </div>
 
         {/* Generate Button */}
-        <div className="text-center pt-6">
-          <button
-            onClick={onGenerate}
-            disabled={loading}
-            className={`px-8 py-3 rounded-lg transition-colors flex items-center space-x-2 mx-auto ${
-              loading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700'
-            }`}
-          >
-            <FileText className="w-5 h-5" />
-            <span>{loading ? 'Generating...' : 'Generate Prescription'}</span>
-          </button>
+        <div className="flex w-full items-center justify-center flex-col pt-6">
+          <Button
+            onClickHandler={onGenerate}
+            isDisabled={loading}
+            isLoading={loading}
+            additionalClasses="bg-green-600 hover:bg-green-700 text-white"
+            leadingIcon={<FileText className="w-5 h-5" />}
+            text={loading ? "Generating..." : "Generate Prescription"}
+          />
           <p className="text-sm text-gray-500 mt-2">
-            The prescription will be generated as a PDF and both you and the patient will be notified
+            The prescription will be generated as a PDF and both you and the
+            patient will be notified
           </p>
         </div>
       </div>

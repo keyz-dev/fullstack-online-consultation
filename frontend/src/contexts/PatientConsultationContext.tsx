@@ -152,6 +152,11 @@ export const PatientConsultationProvider: React.FC<{
         filters: state.filters,
       });
 
+      console.log(
+        "These are all the consultations from the context: ",
+        response.consultations
+      );
+
       dispatch({
         type: PATIENT_CONSULTATION_ACTIONS.SET_CONSULTATIONS,
         payload: response.consultations,
@@ -182,8 +187,8 @@ export const PatientConsultationProvider: React.FC<{
   // Fetch active consultations
   const refreshActiveConsultations = useCallback(async () => {
     try {
-      const { activeConsultations } =
-        await consultationsAPI.getActiveConsultations("patient");
+      const response = await consultationsAPI.getActiveConsultations("patient");
+      const { activeConsultations } = response.data;
       dispatch({
         type: PATIENT_CONSULTATION_ACTIONS.SET_ACTIVE_CONSULTATIONS,
         payload: activeConsultations,

@@ -1,21 +1,314 @@
-const { Prescription, Consultation, Patient, Doctor, User, Notification, Appointment } = require("../db/models");
+const {
+  Prescription,
+  Appointment,
+  Consultation,
+  Patient,
+  Doctor,
+  User,
+  Notification,
+} = require("../db/models");
 const { BadRequestError, NotFoundError } = require("../utils/errors");
 const logger = require("../utils/logger");
 const { uploadToCloudinary } = require("../utils/cloudinary");
 const emailService = require("./emailService");
+const {
+  formatPrescriptionData,
+  formatPrescriptionsData,
+} = require("../utils/returnFormats/prescriptionData");
+const fs = require("fs").promises;
 const path = require("path");
-const fs = require("fs");
 
 class PrescriptionService {
-  // Create a new prescription
+  // Create a new prescription with PDF generation
   static async createPrescription(prescriptionData) {
+    let prescription = null;
+
     try {
-      const prescription = await Prescription.create(prescriptionData);
-      logger.info(`Prescription created successfully: ${prescription.id}`);
+      logger.info("Starting complete prescription creation process");
+
+      // Step 1: Generate PDF with multiple fallback methods
+      const pdfResult =
+        await this.generatePrescriptionPDFWithFallbacks(prescriptionData);
+      logger.info(
+        `PDF generated successfully using method: ${pdfResult.method}`
+      );
+
+      // Step 2: Upload PDF to storage (Cloudinary or local)
+      const fileUrl = await this.uploadPrescriptionFile(
+        pdfResult.buffer,
+        `prescription_${Date.now()}`,
+        pdfResult.contentType
+      );
+      logger.info(`PDF uploaded successfully: ${fileUrl}`);
+
+      // Step 3: Create prescription record with file URL
+      const prescriptionDataWithFile = {
+        ...prescriptionData,
+        fileUrl: fileUrl,
+        status: "active",
+        startDate: new Date(),
+      };
+
+      // Get the patientId from the consultation's appointment.
+      const consultation = await Consultation.findByPk(
+        prescriptionData.consultationId,
+        {
+          include: [
+            {
+              model: Appointment,
+              as: "appointment",
+            },
+          ],
+        }
+      );
+
+      prescription = await Prescription.create({
+        ...prescriptionDataWithFile,
+        patientId: consultation.appointment.patientId,
+        doctorId: consultation.appointment.doctorId,
+      });
+      logger.info(`Prescription record created: ${prescription.id}`);
+
+      // Step 4: Send notifications to both parties (NOW that PDF is ready)
+      await this.sendPrescriptionNotifications(prescription.id);
+      logger.info(`Notifications sent for prescription: ${prescription.id}`);
+
+      logger.info(`Complete prescription process finished: ${prescription.id}`);
       return prescription;
     } catch (error) {
-      logger.error("Error creating prescription:", error);
+      logger.error("Error in complete prescription creation process:", error);
+
+      // If prescription was created but other steps failed, update its status
+      if (prescription) {
+        try {
+          await prescription.update({
+            status: "active", // Keep as active since prescription exists
+            notes:
+              prescription.notes +
+              " (PDF generation encountered issues but prescription is valid)",
+          });
+          logger.info(
+            `Prescription ${prescription.id} marked as active despite PDF issues`
+          );
+        } catch (updateError) {
+          logger.error("Failed to update prescription status:", updateError);
+        }
+      }
+
       throw error;
+    }
+  }
+
+  // Enhanced PDF generation with multiple fallback methods
+  static async generatePrescriptionPDFWithFallbacks(prescriptionData) {
+    const methods = [
+      {
+        name: "puppeteer-optimized",
+        method: this.generatePDFWithOptimizedPuppeteer,
+      },
+      { name: "puppeteer-basic", method: this.generatePDFWithBasicPuppeteer },
+      { name: "html-pdf", method: this.generatePDFWithHtmlPdf },
+      { name: "html-buffer", method: this.generateHTMLBuffer },
+    ];
+
+    for (const { name, method } of methods) {
+      try {
+        logger.info(`Attempting PDF generation with method: ${name}`);
+        const result = await method.call(this, prescriptionData);
+        logger.info(`Successfully generated PDF with method: ${name}`);
+        return {
+          buffer: result,
+          method: name,
+          contentType: name === "html-buffer" ? "text/html" : "application/pdf",
+        };
+      } catch (error) {
+        logger.warn(`PDF generation method ${name} failed:`, error.message);
+        continue;
+      }
+    }
+
+    throw new Error("All PDF generation methods failed");
+  }
+
+  // Method 1: Optimized Puppeteer with better configuration
+  static async generatePDFWithOptimizedPuppeteer(prescriptionData) {
+    const puppeteer = require("puppeteer");
+    let browser = null;
+
+    try {
+      // Enhanced browser launch options for better stability
+      const launchOptions = {
+        headless: "new", // Use new headless mode
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--disable-gpu",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-renderer-backgrounding",
+          "--single-process", // This helps with Windows file locking issues
+        ],
+        timeout: 45000, // Increased timeout
+        ignoreDefaultArgs: ["--disable-extensions"], // Allow some default args
+      };
+
+      // Add Windows-specific options
+      if (process.platform === "win32") {
+        launchOptions.args.push("--disable-features=VizDisplayCompositor");
+      }
+
+      browser = await puppeteer.launch(launchOptions);
+      const page = await browser.newPage();
+
+      // Set page timeouts
+      page.setDefaultNavigationTimeout(30000);
+      page.setDefaultTimeout(30000);
+
+      const htmlContent =
+        this.generatePrescriptionHTMLFromData(prescriptionData);
+
+      await page.setContent(htmlContent, {
+        waitUntil: "networkidle0",
+        timeout: 30000,
+      });
+
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: "20mm",
+          right: "20mm",
+          bottom: "20mm",
+          left: "20mm",
+        },
+        timeout: 30000,
+      });
+
+      return pdfBuffer;
+    } finally {
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (closeError) {
+          logger.warn("Error closing browser:", closeError.message);
+        }
+      }
+    }
+  }
+
+  // Method 2: Basic Puppeteer with minimal options
+  static async generatePDFWithBasicPuppeteer(prescriptionData) {
+    const puppeteer = require("puppeteer");
+    let browser = null;
+
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox"],
+        timeout: 30000,
+      });
+
+      const page = await browser.newPage();
+      const htmlContent =
+        this.generatePrescriptionHTMLFromData(prescriptionData);
+
+      await page.setContent(htmlContent);
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+      });
+
+      return pdfBuffer;
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
+  }
+
+  // Method 3: Using html-pdf library as alternative
+  static async generatePDFWithHtmlPdf(prescriptionData) {
+    try {
+      const htmlPdf = require("html-pdf");
+      const htmlContent =
+        this.generatePrescriptionHTMLFromData(prescriptionData);
+
+      return new Promise((resolve, reject) => {
+        const options = {
+          format: "A4",
+          border: {
+            top: "20mm",
+            right: "20mm",
+            bottom: "20mm",
+            left: "20mm",
+          },
+          timeout: 30000,
+        };
+
+        htmlPdf.create(htmlContent, options).toBuffer((err, buffer) => {
+          if (err) reject(err);
+          else resolve(buffer);
+        });
+      });
+    } catch (error) {
+      throw new Error(`html-pdf generation failed: ${error.message}`);
+    }
+  }
+
+  // Method 4: HTML fallback (when PDF generation completely fails)
+  static async generateHTMLBuffer(prescriptionData) {
+    logger.info("Using HTML buffer as final fallback");
+    const htmlContent = this.generatePrescriptionHTMLFromData(prescriptionData);
+    return Buffer.from(htmlContent, "utf8");
+  }
+
+  // Enhanced file upload that handles both PDF and HTML
+  static async uploadPrescriptionFile(
+    fileBuffer,
+    fileName,
+    contentType = "application/pdf"
+  ) {
+    const inProduction = process.env.NODE_ENV === "production";
+
+    if (inProduction) {
+      // Upload to Cloudinary
+      const uploadOptions = {
+        folder: "prescriptions",
+        resource_type: contentType === "application/pdf" ? "raw" : "auto",
+        format: contentType === "application/pdf" ? "pdf" : "html",
+        public_id: fileName,
+      };
+
+      const result = await uploadToCloudinary(fileBuffer, uploadOptions);
+      return result.secure_url;
+    } else {
+      // Save to local uploads folder
+      const uploadsDir = path.join(
+        process.cwd(),
+        "src",
+        "uploads",
+        "prescriptions"
+      );
+
+      // Ensure directory exists
+      try {
+        await fs.access(uploadsDir);
+      } catch {
+        await fs.mkdir(uploadsDir, { recursive: true });
+      }
+
+      const fileExtension = contentType === "application/pdf" ? "pdf" : "html";
+      const filePath = path.join(uploadsDir, `${fileName}.${fileExtension}`);
+
+      await fs.writeFile(filePath, fileBuffer);
+
+      // Return the relative path for serving
+      return `/uploads/prescriptions/${fileName}.${fileExtension}`;
     }
   }
 
@@ -36,31 +329,39 @@ class PrescriptionService {
       }
 
       // Get the consultation with appointment details separately
-      const consultation = await Consultation.findByPk(prescription.consultationId, {
-        include: [
-          {
-            model: Appointment,
-            as: "appointment",
-            include: [
-              {
-                model: Patient,
-                as: "patient",
-                include: [{ model: User, as: "user" }],
-              },
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [{ model: User, as: "user" }],
-              },
-            ],
-          },
-        ],
-      });
+      const consultation = await Consultation.findByPk(
+        prescription.consultationId,
+        {
+          include: [
+            {
+              model: Appointment,
+              as: "appointment",
+              include: [
+                {
+                  model: Patient,
+                  as: "patient",
+                  include: [{ model: User, as: "user" }],
+                },
+                {
+                  model: Doctor,
+                  as: "doctor",
+                  include: [{ model: User, as: "user" }],
+                },
+              ],
+            },
+          ],
+        }
+      );
 
       // Attach the consultation with appointment details to the prescription
       prescription.consultation = consultation;
 
-      return prescription;
+      // Format the prescription data using the utility
+      return formatPrescriptionData(prescription, {
+        includeConsultation: true,
+        includePatient: true,
+        includeDoctor: true,
+      });
     } catch (error) {
       logger.error("Error fetching prescription:", error);
       throw error;
@@ -70,50 +371,45 @@ class PrescriptionService {
   // Get prescriptions by consultation ID
   static async getPrescriptionsByConsultation(consultationId) {
     try {
-      console.log("\n\nGetting prescriptions by consultation ID:", consultationId);
+      logger.info("Getting prescriptions by consultation ID:", consultationId);
 
-      // First, get the prescriptions with basic consultation info
-
-      const prescriptions = await Prescription.findAll()
-
-      // const prescriptions = await Prescription.findAll({
-      //   // where: { consultationId },
-      //   // include: [
-      //   //   {
-      //   //     model: Consultation,
-      //   //     as: "consultation",
-      //   //   },
-      //   // ],
-      //   // order: [["createdAt", "DESC"]],
-      // });
-
-      console.log(prescriptions)
-
-      process.exit(0);
+      const prescriptions = await Prescription.findAll({
+        where: { consultationId },
+        include: [
+          {
+            model: Consultation,
+            as: "consultation",
+          },
+        ],
+        order: [["createdAt", "DESC"]],
+      });
 
       // Then, for each prescription, get the appointment details separately
       const prescriptionsWithDetails = await Promise.all(
         prescriptions.map(async (prescription) => {
-          const consultation = await Consultation.findByPk(prescription.consultationId, {
-            include: [
-              {
-                model: Appointment,
-                as: "appointment",
-                include: [
-                  {
-                    model: Patient,
-                    as: "patient",
-                    include: [{ model: User, as: "user" }],
-                  },
-                  {
-                    model: Doctor,
-                    as: "doctor",
-                    include: [{ model: User, as: "user" }],
-                  },
-                ],
-              },
-            ],
-          });
+          const consultation = await Consultation.findByPk(
+            prescription.consultationId,
+            {
+              include: [
+                {
+                  model: Appointment,
+                  as: "appointment",
+                  include: [
+                    {
+                      model: Patient,
+                      as: "patient",
+                      include: [{ model: User, as: "user" }],
+                    },
+                    {
+                      model: Doctor,
+                      as: "doctor",
+                      include: [{ model: User, as: "user" }],
+                    },
+                  ],
+                },
+              ],
+            }
+          );
 
           // Attach the consultation with appointment details to the prescription
           prescription.consultation = consultation;
@@ -121,9 +417,17 @@ class PrescriptionService {
         })
       );
 
-      console.log("Prescriptions fetched successfully:", prescriptionsWithDetails);
+      logger.info(
+        "Prescriptions fetched successfully:",
+        prescriptionsWithDetails.length
+      );
 
-      return prescriptionsWithDetails;
+      // Format the prescriptions data using the utility
+      return formatPrescriptionsData(prescriptionsWithDetails, {
+        includeConsultation: true,
+        includePatient: true,
+        includeDoctor: true,
+      });
     } catch (error) {
       logger.error("Error fetching prescriptions by consultation:", error);
       throw error;
@@ -164,67 +468,171 @@ class PrescriptionService {
     }
   }
 
-  // Generate PDF prescription
-  static async generatePrescriptionPDF(prescriptionId) {
+  // Generate prescription statistics
+  static async getPrescriptionStats(doctorId = null, patientId = null) {
     try {
-      const prescription = await this.getPrescriptionById(prescriptionId);
-      
-      // Generate HTML template
-      const htmlContent = this.generatePrescriptionHTML(prescription);
-      
-      // Generate PDF using Puppeteer
-      const puppeteer = require('puppeteer');
-      const browser = await puppeteer.launch({ 
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      const page = await browser.newPage();
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-      
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '20mm',
-          bottom: '20mm',
-          left: '20mm'
+      let whereClause = {};
+
+      if (doctorId || patientId) {
+        const consultationWhere = {};
+        if (doctorId || patientId) {
+          consultationWhere.include = [
+            {
+              model: Appointment,
+              as: "appointment",
+              where: {
+                ...(doctorId && { doctorId }),
+                ...(patientId && { patientId }),
+              },
+            },
+          ];
         }
+
+        const consultations = await Consultation.findAll({
+          where: consultationWhere,
+          attributes: ["id"],
+        });
+
+        const consultationIds = consultations.map((c) => c.id);
+        whereClause.consultationId = {
+          [require("sequelize").Op.in]: consultationIds,
+        };
+      }
+
+      const totalPrescriptions = await Prescription.count({
+        where: whereClause,
       });
-      
-      await browser.close();
-      
-      // Upload to Cloudinary
-      const fileUrl = await this.uploadPrescriptionPDF(pdfBuffer, prescriptionId);
-      
-      // Update prescription with file URL
-      await this.updatePrescriptionFileUrl(prescriptionId, fileUrl);
-      
-      // Send notifications using existing service pattern
-      await this.sendPrescriptionNotifications(prescription);
-      
-      logger.info(`Prescription PDF generated successfully: ${prescriptionId}`);
-      return fileUrl;
-      
+
+      const activePrescriptions = await Prescription.count({
+        where: { ...whereClause, status: "active" },
+      });
+
+      const completedPrescriptions = await Prescription.count({
+        where: { ...whereClause, status: "completed" },
+      });
+
+      return {
+        total: totalPrescriptions,
+        active: activePrescriptions,
+        completed: completedPrescriptions,
+      };
     } catch (error) {
-      logger.error("Error generating prescription PDF:", error);
+      logger.error("Error fetching prescription statistics:", error);
       throw error;
     }
   }
 
-  // Generate prescription HTML template
-  static generatePrescriptionHTML(prescription) {
-    const consultation = prescription.consultation;
-    const appointment = consultation.appointment;
-    const patient = appointment.patient;
-    const doctor = appointment.doctor;
-    
+  // Send prescription notifications following system patterns
+  static async sendPrescriptionNotifications(prescriptionId) {
+    try {
+      const prescription = await this.getPrescriptionById(prescriptionId);
+      const consultation = prescription.consultation;
+      const appointment = consultation.appointment;
+      const patient = appointment.patient;
+      const doctor = appointment.doctor;
+
+      // Create notification for patient
+      const patientNotification = await Notification.create({
+        user_id: patient.userId,
+        type: "prescription_ready",
+        title: "Your Prescription is Ready",
+        message: `Your prescription has been generated by Dr. ${doctor.user.name} and is now available for download.`,
+        priority: "high",
+        data: {
+          prescriptionId: prescription.id,
+          consultationId: consultation.id,
+          category: "prescriptions",
+        },
+      });
+
+      // Emit real-time notification to patient
+      if (global.io) {
+        global.io.to(`user-${patient.userId}`).emit("notification:new", {
+          notification: {
+            id: patientNotification.id,
+            type: patientNotification.type,
+            title: patientNotification.title,
+            message: patientNotification.message,
+            priority: patientNotification.priority,
+            isRead: patientNotification.isRead,
+            createdAt: patientNotification.createdAt,
+            data: patientNotification.data,
+          },
+        });
+      }
+
+      // Create notification for doctor
+      const doctorNotification = await Notification.create({
+        user_id: doctor.userId,
+        type: "prescription_generated",
+        title: "Prescription Generated Successfully",
+        message: `Prescription for ${patient.user.name} has been generated and is ready for the patient.`,
+        priority: "medium",
+        data: {
+          prescriptionId: prescription.id,
+          consultationId: consultation.id,
+          category: "prescriptions",
+        },
+      });
+
+      // Emit real-time notification to doctor
+      if (global.io) {
+        global.io.to(`user-${doctor.userId}`).emit("notification:new", {
+          notification: {
+            id: doctorNotification.id,
+            type: doctorNotification.type,
+            title: doctorNotification.title,
+            message: doctorNotification.message,
+            priority: doctorNotification.priority,
+            isRead: doctorNotification.isRead,
+            createdAt: doctorNotification.createdAt,
+            data: doctorNotification.data,
+          },
+        });
+      }
+
+      // Send email to patient following system pattern
+      if (emailService && patient.user.email) {
+        try {
+          await emailService.sendEmail({
+            to: patient.user.email,
+            subject: "Your Prescription is Ready - DrogCine",
+            template: "prescription-ready",
+            data: {
+              patientName: patient.user.name,
+              doctorName: doctor.user.name,
+              prescriptionId: prescription.id,
+              diagnosis: prescription.diagnosis,
+              medications: prescription.medications,
+              portalUrl: `${process.env.FRONTEND_URL}/dashboard`,
+              prescriptionUrl: prescription.fileUrl,
+            },
+          });
+          logger.info(
+            `Prescription email sent to patient: ${patient.user.email}`
+          );
+        } catch (emailError) {
+          logger.warn("Failed to send prescription email:", emailError);
+        }
+      }
+
+      logger.info(
+        `Prescription notifications sent successfully: ${prescription.id}`
+      );
+    } catch (error) {
+      logger.error("Error sending prescription notifications:", error);
+      // Don't throw error here as this is a secondary operation
+    }
+  }
+
+  // Generate prescription HTML from basic data (for initial creation)
+  static generatePrescriptionHTMLFromData(prescriptionData) {
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Prescription - ${patient.user.name}</title>
+        <title>Medical Prescription</title>
         <style>
           body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -232,6 +640,7 @@ class PrescriptionService {
             padding: 20px; 
             color: #333;
             line-height: 1.6;
+            background-color: #ffffff;
           }
           .header { 
             text-align: center; 
@@ -251,12 +660,6 @@ class PrescriptionService {
             grid-template-columns: 1fr 1fr;
             gap: 20px;
           }
-          .patient-info, .doctor-info { 
-            padding: 15px;
-            background-color: #f8fafc;
-            border-radius: 8px;
-            border-left: 4px solid #2563eb;
-          }
           .medications { 
             margin-bottom: 30px; 
           }
@@ -267,6 +670,7 @@ class PrescriptionService {
             border-radius: 8px;
             background-color: #ffffff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            break-inside: avoid;
           }
           .footer { 
             margin-top: 50px; 
@@ -302,84 +706,85 @@ class PrescriptionService {
             border-left: 4px solid #f59e0b;
             margin-bottom: 20px;
           }
+          @media print {
+            body { margin: 0; padding: 15px; }
+            .header { page-break-after: avoid; }
+            .medication-item { page-break-inside: avoid; }
+          }
         </style>
       </head>
       <body>
         <div class="header">
-          <div class="logo">🏥 Online Consultation System</div>
+          <div class="logo">DrogCine Medical Platform</div>
           <h1>Medical Prescription</h1>
-          <p><strong>Date:</strong> ${new Date(prescription.createdAt).toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          <p><strong>Date:</strong> ${new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
           })}</p>
-          <p><strong>Prescription ID:</strong> #${prescription.id}</p>
+          <p><strong>Generated:</strong> ${new Date().toLocaleString("en-US")}</p>
         </div>
         
-        <div class="prescription-info">
-          <div class="patient-info">
-            <h3 class="section-title">👤 Patient Information</h3>
-            <p><strong>Full Name:</strong> ${patient.user.name}</p>
-            <p><strong>Age:</strong> ${patient.age || 'Not specified'} years</p>
-            <p><strong>Gender:</strong> ${patient.gender || 'Not specified'}</p>
-            <p><strong>Contact:</strong> ${patient.user.phoneNumber || 'Not provided'}</p>
-          </div>
-          
-          <div class="doctor-info">
-            <h3 class="section-title">👨‍⚕️ Prescribing Doctor</h3>
-            <p><strong>Name:</strong> Dr. ${doctor.user.name}</p>
-            <p><strong>Specialization:</strong> ${doctor.specialization || 'General Medicine'}</p>
-            <p><strong>License:</strong> ${doctor.licenseNumber || 'Not provided'}</p>
-            <p><strong>Contact:</strong> ${doctor.user.phoneNumber || 'Not provided'}</p>
-          </div>
-        </div>
-
         <div class="diagnosis-section">
-          <h3 class="section-title">🔍 Diagnosis</h3>
-          <p>${prescription.diagnosis || 'Not specified'}</p>
-          ${prescription.notes ? `<p><strong>Additional Notes:</strong> ${prescription.notes}</p>` : ''}
+          <h3 class="section-title">Diagnosis</h3>
+          <p><strong>${prescriptionData.diagnosis || "Not specified"}</strong></p>
+          ${prescriptionData.notes ? `<p><strong>Additional Notes:</strong> ${prescriptionData.notes}</p>` : ""}
         </div>
         
         <div class="medications">
-          <h3 class="section-title">💊 Prescribed Medications</h3>
-          ${prescription.medications.map((med, index) => `
+          <h3 class="section-title">Prescribed Medications</h3>
+          ${prescriptionData.medications
+            .map(
+              (med, index) => `
             <div class="medication-item">
               <div class="medication-header">${index + 1}. ${med.name}</div>
               <div class="medication-details">
-                <div><strong>Dosage:</strong> ${med.dosage || 'As prescribed'}</div>
-                <div><strong>Frequency:</strong> ${med.frequency || 'As needed'}</div>
-                <div><strong>Duration:</strong> ${med.duration || 'As prescribed'}</div>
-                <div><strong>Form:</strong> ${med.form || 'Tablet'}</div>
+                <div><strong>Dosage:</strong> ${med.dosage || "As prescribed"}</div>
+                <div><strong>Frequency:</strong> ${med.frequency || "As needed"}</div>
+                <div><strong>Duration:</strong> ${med.duration || "As prescribed"}</div>
+                <div><strong>Form:</strong> ${med.form || "Tablet"}</div>
               </div>
-              ${med.instructions ? `
+              ${
+                med.instructions
+                  ? `
                 <div style="margin-top: 10px; padding: 10px; background-color: #fef3c7; border-radius: 5px;">
                   <strong>Special Instructions:</strong> ${med.instructions}
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
-          `).join('')}
+          `
+            )
+            .join("")}
         </div>
         
         <div class="instructions">
-          <h3 class="section-title">📋 Treatment Instructions</h3>
+          <h3 class="section-title">Treatment Instructions</h3>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div><strong>Treatment Duration:</strong> ${prescription.duration || 'As prescribed'} days</div>
-            <div><strong>Number of Refills:</strong> ${prescription.refills || 0}</div>
+            <div><strong>Treatment Duration:</strong> ${prescriptionData.duration || "As prescribed"} days</div>
+            <div><strong>Number of Refills:</strong> ${prescriptionData.refills || 0}</div>
           </div>
-          ${prescription.instructions ? `
+          ${
+            prescriptionData.instructions
+              ? `
             <div style="padding: 15px; background-color: #dbeafe; border-radius: 8px;">
               <strong>General Instructions:</strong><br>
-              ${prescription.instructions}
+              ${prescriptionData.instructions}
             </div>
-          ` : ''}
+          `
+              : ""
+          }
         </div>
         
         <div class="footer">
-          <p>This prescription was generated electronically by the Online Consultation System</p>
-          <p><strong>Valid until:</strong> ${new Date(Date.now() + (prescription.duration || 30) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          <p>This prescription was generated electronically by DrogCine Medical Platform</p>
+          <p><strong>Valid until:</strong> ${new Date(
+            Date.now() + (prescriptionData.duration || 30) * 24 * 60 * 60 * 1000
+          ).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
           })}</p>
           <p style="margin-top: 10px; color: #dc2626;">
             <strong>Important:</strong> Please follow the prescribed dosage and consult your doctor if you experience any adverse effects.
@@ -388,154 +793,6 @@ class PrescriptionService {
       </body>
       </html>
     `;
-  }
-
-  // Upload prescription PDF to Cloudinary
-  static async uploadPrescriptionPDF(pdfBuffer, prescriptionId) {
-    try {
-      const uploadResult = await uploadToCloudinary(pdfBuffer, {
-        folder: "prescriptions",
-        resource_type: "raw",
-        format: "pdf",
-        public_id: `prescription_${prescriptionId}`,
-      });
-
-      logger.info(`Prescription PDF uploaded successfully: ${prescriptionId}`);
-      return uploadResult.secure_url;
-    } catch (error) {
-      logger.error("Error uploading prescription PDF:", error);
-      throw error;
-    }
-  }
-
-  // Update prescription with file URL
-  static async updatePrescriptionFileUrl(prescriptionId, fileUrl) {
-    try {
-      await this.updatePrescription(prescriptionId, { fileUrl });
-      logger.info(`Prescription file URL updated: ${prescriptionId}`);
-      return true;
-    } catch (error) {
-      logger.error("Error updating prescription file URL:", error);
-      throw error;
-    }
-  }
-
-  // Get prescription statistics
-  static async getPrescriptionStats(doctorId = null, patientId = null) {
-    try {
-      let whereClause = {};
-      
-      if (doctorId || patientId) {
-        // Get consultations that match the criteria
-        const consultationWhere = {};
-        if (doctorId || patientId) {
-          consultationWhere.include = [
-            {
-              model: Appointment,
-              as: "appointment",
-              where: {
-                ...(doctorId && { doctorId }),
-                ...(patientId && { patientId }),
-              },
-            },
-          ];
-        }
-        
-        const consultations = await Consultation.findAll({
-          where: consultationWhere,
-          attributes: ['id'],
-        });
-        
-        const consultationIds = consultations.map(c => c.id);
-        whereClause.consultationId = { [require('sequelize').Op.in]: consultationIds };
-      }
-
-      const totalPrescriptions = await Prescription.count({
-        where: whereClause,
-      });
-
-      const activePrescriptions = await Prescription.count({
-        where: { ...whereClause, status: "active" },
-      });
-
-      const completedPrescriptions = await Prescription.count({
-        where: { ...whereClause, status: "completed" },
-      });
-
-      return {
-        total: totalPrescriptions,
-        active: activePrescriptions,
-        completed: completedPrescriptions,
-      };
-    } catch (error) {
-      logger.error("Error fetching prescription statistics:", error);
-      throw error;
-    }
-  }
-
-  // Send prescription notifications following system patterns
-  static async sendPrescriptionNotifications(prescription) {
-    try {
-      const consultation = prescription.consultation;
-      const appointment = consultation.appointment;
-      const patient = appointment.patient;
-      const doctor = appointment.doctor;
-
-      // Create notification for patient
-      await Notification.create({
-        user_id: patient.userId,
-        type: 'prescription',
-        title: 'New Prescription Available',
-        message: `Your prescription has been generated by Dr. ${doctor.user.name}`,
-        priority: 'high',
-        data: {
-          prescriptionId: prescription.id,
-          consultationId: consultation.id,
-          category: 'prescriptions'
-        }
-      });
-
-      // Create notification for doctor
-      await Notification.create({
-        user_id: doctor.userId,
-        type: 'prescription',
-        title: 'Prescription Generated',
-        message: `Prescription for ${patient.user.name} has been generated successfully`,
-        priority: 'medium',
-        data: {
-          prescriptionId: prescription.id,
-          consultationId: consultation.id,
-          category: 'prescriptions'
-        }
-      });
-
-      // Send email to patient following system pattern
-      if (emailService && patient.user.email) {
-        try {
-          const emailInstance = new emailService();
-          await emailInstance.sendEmail({
-            to: patient.user.email,
-            subject: 'Your Prescription is Ready',
-            templateName: 'prescription-generated', // We'll need to create this template
-            templateData: {
-              patientName: patient.user.name,
-              doctorName: doctor.user.name,
-              prescriptionId: prescription.id,
-              diagnosis: prescription.diagnosis,
-              medications: prescription.medications
-            }
-          });
-          logger.info(`Prescription email sent to patient: ${patient.user.email}`);
-        } catch (emailError) {
-          logger.warn('Failed to send prescription email:', emailError);
-        }
-      }
-
-      logger.info(`Prescription notifications sent successfully: ${prescription.id}`);
-    } catch (error) {
-      logger.error("Error sending prescription notifications:", error);
-      // Don't throw error here as this is a secondary operation
-    }
   }
 }
 

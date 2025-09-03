@@ -17,7 +17,9 @@ const formatConsultationData = (consultation, options = {}) => {
 
   if (!consultation) return null;
 
-  const consultationData = consultation.toJSON ? consultation.toJSON() : consultation;
+  const consultationData = consultation.toJSON
+    ? consultation.toJSON()
+    : consultation;
 
   // Base consultation data
   const formattedConsultation = {
@@ -100,8 +102,12 @@ const formatConsultationData = (consultation, options = {}) => {
         email: patient.user.email,
         phoneNumber: patient.user.phoneNumber,
         gender: patient.user.gender,
+        address: patient.user.address,
+        age: patient.user.age,
         dob: patient.user.dob,
-        avatar: patient.user.avatar ? formatImageUrl(patient.user.avatar) : null,
+        avatar: patient.user.avatar
+          ? formatImageUrl(patient.user.avatar)
+          : null,
       };
     }
   }
@@ -136,6 +142,8 @@ const formatConsultationData = (consultation, options = {}) => {
         id: doctor.user.id,
         name: doctor.user.name,
         email: doctor.user.email,
+        address: doctor.user.address,
+        age: doctor.user.age,
         avatar: doctor.user.avatar ? formatImageUrl(doctor.user.avatar) : null,
       };
     }
@@ -157,38 +165,42 @@ const formatConsultationData = (consultation, options = {}) => {
 
   // Include consultation messages if requested
   if (includeMessages && consultationData.messages) {
-    formattedConsultation.messages = consultationData.messages.map((message) => ({
-      id: message.id,
-      consultationId: message.consultationId,
-      senderId: message.senderId,
-      senderRole: message.senderRole,
-      message: message.message,
-      messageType: message.messageType,
-      fileUrl: message.fileUrl ? formatImageUrl(message.fileUrl) : null,
-      fileName: message.fileName,
-      fileSize: message.fileSize,
-      mimeType: message.mimeType,
-      isRead: message.isRead,
-      createdAt: message.createdAt,
-      updatedAt: message.updatedAt,
-    }));
+    formattedConsultation.messages = consultationData.messages.map(
+      (message) => ({
+        id: message.id,
+        consultationId: message.consultationId,
+        senderId: message.senderId,
+        senderRole: message.senderRole,
+        message: message.message,
+        messageType: message.messageType,
+        fileUrl: message.fileUrl ? formatImageUrl(message.fileUrl) : null,
+        fileName: message.fileName,
+        fileSize: message.fileSize,
+        mimeType: message.mimeType,
+        isRead: message.isRead,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+      })
+    );
   }
 
   // Include prescriptions if requested
   if (includePrescriptions && consultationData.prescriptions) {
-    formattedConsultation.prescriptions = consultationData.prescriptions.map((prescription) => ({
-      id: prescription.id,
-      consultationId: prescription.consultationId,
-      patientId: prescription.patientId,
-      doctorId: prescription.doctorId,
-      diagnosis: prescription.diagnosis,
-      notes: prescription.notes,
-      status: prescription.status,
-      prescribedAt: prescription.prescribedAt,
-      validUntil: prescription.validUntil,
-      createdAt: prescription.createdAt,
-      updatedAt: prescription.updatedAt,
-    }));
+    formattedConsultation.prescriptions = consultationData.prescriptions.map(
+      (prescription) => ({
+        id: prescription.id,
+        consultationId: prescription.consultationId,
+        patientId: prescription.patientId,
+        doctorId: prescription.doctorId,
+        diagnosis: prescription.diagnosis,
+        notes: prescription.notes,
+        status: prescription.status,
+        prescribedAt: prescription.prescribedAt,
+        validUntil: prescription.validUntil,
+        createdAt: prescription.createdAt,
+        updatedAt: prescription.updatedAt,
+      })
+    );
   }
 
   return formattedConsultation;
@@ -202,8 +214,10 @@ const formatConsultationData = (consultation, options = {}) => {
  */
 const formatConsultationsData = (consultations, options = {}) => {
   if (!consultations || !Array.isArray(consultations)) return [];
-  
-  return consultations.map(consultation => formatConsultationData(consultation, options));
+
+  return consultations.map((consultation) =>
+    formatConsultationData(consultation, options)
+  );
 };
 
 /**
@@ -213,7 +227,11 @@ const formatConsultationsData = (consultations, options = {}) => {
  * @param {Object} options - Formatting options
  * @returns {Object} Formatted consultation list response
  */
-const formatConsultationListResponse = (consultations, pagination, options = {}) => {
+const formatConsultationListResponse = (
+  consultations,
+  pagination,
+  options = {}
+) => {
   return {
     consultations: formatConsultationsData(consultations, options),
     pagination: {

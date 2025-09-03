@@ -20,6 +20,18 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "prescriptionId",
         as: "drugOrders",
       });
+
+      // Prescription belongs to a doctor
+      Prescription.belongsTo(models.Doctor, {
+        foreignKey: "doctorId",
+        as: "doctor",
+      });
+
+      // Prescription belongs to a patient
+      Prescription.belongsTo(models.Patient, {
+        foreignKey: "patientId",
+        as: "patient",
+      });
     }
 
     // Instance method to check if prescription is active
@@ -71,8 +83,22 @@ module.exports = (sequelize, DataTypes) => {
           model: "Consultations",
           key: "id",
         },
-        onUpdate: "CASCADE",
-        onDelete: "SET NULL",
+      },
+      doctorId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Doctors",
+          key: "id",
+        },
+      },
+      patientId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Patients",
+          key: "id",
+        },
       },
       status: {
         type: DataTypes.ENUM("active", "completed", "cancelled", "expired"),
@@ -197,7 +223,7 @@ module.exports = (sequelize, DataTypes) => {
       fileUrl: {
         type: DataTypes.STRING,
         allowNull: true,
-        comment: 'URL to the generated PDF prescription file'
+        comment: "URL to the generated PDF prescription file",
       },
     },
     {
@@ -208,6 +234,12 @@ module.exports = (sequelize, DataTypes) => {
       indexes: [
         {
           fields: ["consultationId"],
+        },
+        {
+          fields: ["doctorId"],
+        },
+        {
+          fields: ["patientId"],
         },
         {
           fields: ["status"],

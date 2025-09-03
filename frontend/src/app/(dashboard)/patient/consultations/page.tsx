@@ -21,6 +21,7 @@ import {
 } from "@/components/ui";
 import { Consultation } from "@/types";
 import { Video, MessageSquare, Calendar, Stethoscope } from "lucide-react";
+import { toast } from "react-toastify";
 
 const PatientConsultationsPage: React.FC = () => {
   const router = useRouter();
@@ -39,9 +40,6 @@ const PatientConsultationsPage: React.FC = () => {
     pagination,
     actions,
   } = usePatientConsultations();
-
-  console.log("consultations: ", consultations);
-  console.log("activeConsultations: ", activeConsultations);
 
   // Combine active and regular consultations, with active ones first
   const allConsultations = [
@@ -112,7 +110,7 @@ const PatientConsultationsPage: React.FC = () => {
   };
 
   const handleRateConsultation = (consultation: Consultation) => {
-    router.push(`/patient/consultations/${consultation.id}?tab=rating`);
+    toast.info("Rating consultation is not implemented yet");
   };
 
   if (error) {

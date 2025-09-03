@@ -116,9 +116,10 @@ export const ConsultationProvider: React.FC<ConsultationProviderProps> = ({
           appointmentId
         );
 
+        console.log("Requesting for consultations: ", response);
+
         if (response.success && response.data) {
-          // getConsultationByAppointment calls the list endpoint, so we need to get the first consultation
-          const consultation = response.data.consultations?.[0];
+          const consultation = response.data;
           if (consultation) {
             dispatch({
               type: CONSULTATION_ACTIONS.SET_CONSULTATION,

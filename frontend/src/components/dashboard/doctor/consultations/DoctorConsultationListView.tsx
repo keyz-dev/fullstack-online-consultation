@@ -20,6 +20,7 @@ import {
   Play,
   FileText,
   Star,
+  Pill,
 } from "lucide-react";
 
 interface DoctorConsultationListViewProps {
@@ -27,6 +28,7 @@ interface DoctorConsultationListViewProps {
   onViewConsultation?: (consultation: Consultation) => void;
   onJoinConsultation?: (consultation: Consultation) => void;
   onViewNotes?: (consultation: Consultation) => void;
+  onGeneratePrescription?: (consultation: Consultation) => void;
 }
 
 const DoctorConsultationListView: React.FC<DoctorConsultationListViewProps> = ({
@@ -34,6 +36,7 @@ const DoctorConsultationListView: React.FC<DoctorConsultationListViewProps> = ({
   onViewConsultation,
   onJoinConsultation,
   onViewNotes,
+  onGeneratePrescription,
 }) => {
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "No date";
@@ -185,6 +188,15 @@ const DoctorConsultationListView: React.FC<DoctorConsultationListViewProps> = ({
             label: "View Notes",
             icon: <FileText className="w-5 h-5" />,
             onClick: () => onViewNotes?.(row),
+          });
+        }
+
+        // Add prescription generation action for completed consultations
+        if (row.status === "completed") {
+          actions.push({
+            label: "Generate Prescription",
+            icon: <Pill className="w-5 h-5" />,
+            onClick: () => onGeneratePrescription?.(row),
           });
         }
 

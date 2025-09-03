@@ -33,12 +33,6 @@ module.exports = (sequelize, DataTypes) => {
         as: "consultation",
       });
 
-      // Appointment has many prescriptions
-      Appointment.hasMany(models.Prescription, {
-        foreignKey: "appointmentId",
-        as: "prescriptions",
-      });
-
       // Appointment has many payments
       Appointment.hasMany(models.Payment, {
         foreignKey: "appointmentId",

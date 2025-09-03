@@ -100,6 +100,16 @@ router.get(
 router.get("/", consultationController.getConsultations);
 
 /**
+ * @desc    Get consultations for the authenticated doctor by appointment ID (SECURE)
+ * @route   GET /api/consultation/doctor
+ * @access  Private (Doctor only)
+ */
+router.get(
+  "/by-appointment",
+  consultationController.getConsultationByAppointment
+);
+
+/**
  * @desc    Get single consultation by ID (DEPRECATED - Use /patient/:id or /doctor/:id instead)
  * @route   GET /api/consultation/:id
  * @access  Private

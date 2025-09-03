@@ -13,7 +13,7 @@ import {
   Play,
   FileText,
   Star,
-  MoreHorizontal,
+  Pill,
 } from "lucide-react";
 
 interface DoctorConsultationGridViewProps {
@@ -21,6 +21,7 @@ interface DoctorConsultationGridViewProps {
   onViewConsultation?: (consultation: Consultation) => void;
   onJoinConsultation?: (consultation: Consultation) => void;
   onViewNotes?: (consultation: Consultation) => void;
+  onGeneratePrescription?: (consultation: Consultation) => void;
 }
 
 const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
@@ -28,6 +29,7 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
   onViewConsultation,
   onJoinConsultation,
   onViewNotes,
+  onGeneratePrescription,
 }) => {
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "No date";
@@ -180,13 +182,14 @@ const DoctorConsultationGridView: React.FC<DoctorConsultationGridViewProps> = ({
                   View Details
                 </Button>
               )}
-
-              {consultation.notes && (
+              
+              {/* Generate Prescription Button for completed consultations */}
+              {consultation.status === "completed" && (
                 <Button
-                  onClickHandler={() => onViewNotes?.(consultation)}
-                  additionalClasses="px-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClickHandler={() => onGeneratePrescription?.(consultation)}
+                  additionalClasses="px-3 bg-blue-600 hover:bg-blue-700 text-white border-0"
                 >
-                  <FileText className="w-4 h-4" />
+                  <Pill className="w-4 h-4" />
                 </Button>
               )}
             </div>

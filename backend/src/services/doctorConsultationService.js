@@ -12,13 +12,15 @@ const { Op, sequelize } = require("sequelize");
 const logger = require("../utils/logger");
 const {
   formatConsultationListResponse,
+  formatConsultationsData,
 } = require("../utils/returnFormats/consultationData");
+const { appointmentIncludes } = require("../utils/consultationIncludes");
 
 class DoctorConsultationService {
   /**
    * Get consultations for a specific doctor with proper isolation
    */
-  async getDoctorConsultations(doctorUserId, options = {}) {
+  async getDoctorConsultations(doctorId, options = {}) {
     const {
       page = 1,
       limit = 10,
@@ -38,55 +40,23 @@ class DoctorConsultationService {
       if (status && status !== "all") whereClause.status = status;
       if (type && type !== "all") whereClause.type = type;
 
-      // Build appointment filter - CRITICAL: Only show consultations for this doctor
-      const appointmentWhere = {};
-
       if (appointmentId) {
-        appointmentWhere["$appointment.id$"] = appointmentId;
+        whereClause.appointmentId = appointmentId;
       }
 
       // Count total consultations for this doctor only
       const count = await Consultation.count({
         where: {
           ...whereClause,
-          ...appointmentWhere,
         },
         include: [
           {
             model: Appointment,
             as: "appointment",
             where: {
-              doctorId: doctorUserId,
+              doctorId: doctorId,
             },
-            include: [
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "email", "avatar"],
-                  },
-                  {
-                    model: Specialty,
-                    as: "specialties",
-                    through: { attributes: [] },
-                  },
-                ],
-              },
-              {
-                model: Patient,
-                as: "patient",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "email", "avatar"],
-                  },
-                ],
-              },
-            ],
+            include: appointmentIncludes,
           },
         ],
       });
@@ -95,41 +65,15 @@ class DoctorConsultationService {
       const consultations = await Consultation.findAll({
         where: {
           ...whereClause,
-          ...appointmentWhere,
         },
         include: [
           {
             model: Appointment,
             as: "appointment",
-            include: [
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "email", "avatar"],
-                  },
-                  {
-                    model: Specialty,
-                    as: "specialties",
-                    through: { attributes: [] },
-                  },
-                ],
-              },
-              {
-                model: Patient,
-                as: "patient",
-                include: [
-                  {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "name", "email", "avatar"],
-                  },
-                ],
-              },
-            ],
+            where: {
+              doctorId: doctorId,
+            },
+            include: appointmentIncludes,
           },
         ],
         limit: parseInt(limit),
@@ -163,7 +107,7 @@ class DoctorConsultationService {
   /**
    * Get active consultations for a specific doctor
    */
-  async getDoctorActiveConsultations(doctorUserId) {
+  async getDoctorActiveConsultations(doctorId) {
     try {
       const whereClause = {
         status: {
@@ -179,20 +123,9 @@ class DoctorConsultationService {
             as: "appointment",
             where: {
               // Filter by doctor ID at the appointment level
-              doctorId: doctorUserId,
+              doctorId: doctorId,
             },
-            include: [
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [{ model: User, as: "user" }],
-              },
-              {
-                model: Patient,
-                as: "patient",
-                include: [{ model: User, as: "user" }],
-              },
-            ],
+            include: appointmentIncludes,
           },
         ],
         order: [
@@ -202,7 +135,13 @@ class DoctorConsultationService {
         ],
       });
 
-      return consultations;
+      const formattedConsultations = formatConsultationsData(consultations, {
+        includeAppointment: true,
+        includePatient: true,
+        includeDoctor: true,
+      });
+
+      return formattedConsultations;
     } catch (error) {
       logger.error("Error getting doctor active consultations:", error);
       throw error;
@@ -212,7 +151,7 @@ class DoctorConsultationService {
   /**
    * Get consultation statistics for a specific doctor
    */
-  async getDoctorConsultationStats(doctorUserId) {
+  async getDoctorConsultationStats(doctorId) {
     try {
       const totalConsultations = await Consultation.count({
         include: [
@@ -220,8 +159,7 @@ class DoctorConsultationService {
             model: Appointment,
             as: "appointment",
             where: {
-              // Filter by doctor ID at the appointment level
-              doctorId: doctorUserId,
+              doctorId,
             },
             include: [
               {
@@ -240,8 +178,7 @@ class DoctorConsultationService {
             model: Appointment,
             as: "appointment",
             where: {
-              // Filter by doctor ID at the appointment level
-              doctorId: doctorUserId,
+              doctorId,
             },
             include: [
               {
@@ -271,26 +208,14 @@ class DoctorConsultationService {
 
       // Get recent consultations for activity tracking
       const recentConsultations = await Consultation.findAll({
-        where: {
-          // Filter by doctor ID at the consultation level
-          "$appointment.doctor.user.id$": doctorUserId,
-        },
         include: [
           {
             model: Appointment,
             as: "appointment",
-            include: [
-              {
-                model: Doctor,
-                as: "doctor",
-                include: [{ model: User, as: "user" }],
-              },
-              {
-                model: Patient,
-                as: "patient",
-                include: [{ model: User, as: "user" }],
-              },
-            ],
+            where: {
+              doctorId,
+            },
+            include: appointmentIncludes,
           },
         ],
         limit: 5,

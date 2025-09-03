@@ -179,8 +179,9 @@ export const DoctorConsultationProvider: React.FC<{
   // Fetch active consultations
   const refreshActiveConsultations = useCallback(async () => {
     try {
-      const { activeConsultations } =
-        await consultationsAPI.getActiveConsultations("doctor");
+      const response = await consultationsAPI.getActiveConsultations("doctor");
+
+      const { activeConsultations } = response.data;
       dispatch({
         type: DOCTOR_CONSULTATION_ACTIONS.SET_ACTIVE_CONSULTATIONS,
         payload: activeConsultations,

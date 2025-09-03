@@ -416,9 +416,6 @@ const getUserPresence = async (req, res) => {
       isOnline = false;
     }
 
-    logger.info(user.name + " isOnline? ", isOnline);
-    logger.info(user.name + " isActive? ", user.isActive);
-
     res.json({
       success: true,
       data: {
