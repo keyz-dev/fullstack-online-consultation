@@ -158,7 +158,7 @@ const ProfileInfo: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
             ) : null}
 
             <button
-              onClick={() => router.push("/profile")}
+              onClick={() => router.push(user.role + "/profile")}
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
             >
               <User size={16} />
