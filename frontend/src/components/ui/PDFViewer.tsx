@@ -13,7 +13,7 @@ import {
 interface PDFViewerProps {
   url: string;
   onLoad?: (data: { totalPages: number }) => void;
-  onError?: (error: any) => void;
+  onError?: (error: unknown) => void;
   currentPage?: number;
   zoom?: number;
   rotation?: number;

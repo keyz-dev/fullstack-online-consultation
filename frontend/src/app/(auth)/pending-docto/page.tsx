@@ -14,7 +14,7 @@ import {
   Play,
 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { doctorAppApi, DoctorApplicationData } from "@/api/doctorApp";
+import { doctorAppApi } from "@/api/doctorApp";
 import { toast } from "react-toastify";
 
 interface ApplicationStatus {
@@ -51,7 +51,7 @@ const DoctorApplicationStatusPage = () => {
           rejectionReason: response.data.rejectionReason,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching application status:", error);
       toast.error("Failed to fetch application status");
     } finally {
@@ -323,7 +323,7 @@ const DoctorApplicationStatusPage = () => {
                     );
                     toast.success("Application resubmitted successfully!");
                     fetchApplicationStatus();
-                  } catch (error: any) {
+                  } catch (error: unknown) {
                     const errorMessage =
                       error instanceof Error
                         ? error.message
@@ -355,7 +355,7 @@ const DoctorApplicationStatusPage = () => {
                       });
                     }
                     router.push("/doctor");
-                  } catch (error: any) {
+                  } catch (error: unknown) {
                     const errorMessage =
                       error instanceof Error
                         ? error.message

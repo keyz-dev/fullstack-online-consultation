@@ -197,7 +197,7 @@ export const consultationsAPI = {
    */
   async getSessionStatus(
     consultationId: string
-  ): Promise<{ success: boolean; data: any }> {
+  ): Promise<{ success: boolean; data: unknown }> {
     const response = await api.get(
       `/consultation/${consultationId}/session-status`
     );

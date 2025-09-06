@@ -9,13 +9,13 @@ export const profileApi = {
   },
 
   // Update user profile
-  updateProfile: async (profileData: any) => {
+  updateProfile: async (profileData: unknown) => {
     const response = await api.put("/profile/profile", profileData);
     return response.data;
   },
 
   // Update user password
-  updatePassword: async (passwordData: any) => {
+  updatePassword: async (passwordData: unknown) => {
     const response = await api.put("/profile/password", passwordData);
     return response.data;
   },
@@ -44,7 +44,7 @@ export const profileApi = {
   },
 
   // Update user preferences
-  updatePreferences: async (preferences: any) => {
+  updatePreferences: async (preferences: unknown) => {
     const response = await api.put("/profile/preferences", { preferences });
     return response.data;
   },

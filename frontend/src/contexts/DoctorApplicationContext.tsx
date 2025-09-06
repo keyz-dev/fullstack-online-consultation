@@ -31,7 +31,7 @@ interface DoctorData {
   operationalHospital: string;
 
   // Step 6: Documents
-  documents: any[];
+  documents: unknown[];
 
   // Step 7: Payment Setup
   consultationFee: string;
@@ -52,7 +52,7 @@ interface DoctorApplicationContextType {
   STEPS: Record<string, number>;
 
   // Actions
-  updateField: (field: string, value: any) => void;
+  updateField: (field: string, value: unknown) => void;
   updateFormData: (stepData: Partial<DoctorData>) => void;
   setDoctorData: React.Dispatch<React.SetStateAction<DoctorData>>;
   nextStep: () => void;
@@ -61,7 +61,7 @@ interface DoctorApplicationContextType {
   submitStep1: () => Promise<{ success: boolean; error?: string }>;
   submitDoctorApplication: () => Promise<{
     success: boolean;
-    data?: any;
+    data?: unknown;
     error?: string;
   }>;
 
@@ -179,7 +179,7 @@ export const DoctorApplicationProvider: React.FC<{
   }, [user]);
 
   // Update form data for a specific field
-  const updateField = (field: string, value: any) => {
+  const updateField = (field: string, value: unknown) => {
     setDoctorData((prev) => ({ ...prev, [field]: value }));
     // Clear field error when user starts typing
     if (errors[field]) {
@@ -276,7 +276,7 @@ export const DoctorApplicationProvider: React.FC<{
           error: errorMessage || "Failed to submit basic information",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       return { success: false, error: errorMessage };
     } finally {
@@ -326,7 +326,7 @@ export const DoctorApplicationProvider: React.FC<{
           error: response.message || "Failed to submit application",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||

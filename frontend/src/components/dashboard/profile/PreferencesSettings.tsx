@@ -77,7 +77,7 @@ const PreferencesSettings: React.FC<PreferencesSettingsProps> = ({
 
   const handlePrivacyChange = async (
     key: keyof typeof preferences.privacy,
-    value: any
+    value: unknown
   ) => {
     const newPreferences = {
       ...preferences,
@@ -104,7 +104,7 @@ const PreferencesSettings: React.FC<PreferencesSettingsProps> = ({
 
   const handleGeneralChange = async (
     key: keyof UserPreferences,
-    value: any
+    value: unknown
   ) => {
     const newPreferences = {
       ...preferences,

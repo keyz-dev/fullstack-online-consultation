@@ -57,7 +57,7 @@ export const usePrescriptions = (): UsePrescriptionsReturn => {
         message: response.message,
         prescription: response.data.prescription
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to create prescription";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -75,7 +75,7 @@ export const usePrescriptions = (): UsePrescriptionsReturn => {
       const response = await prescriptionsApi.getPrescriptionsByConsultation(consultationId);
       setPrescriptions(response.data.prescriptions);
       return response.data.prescriptions;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to fetch prescriptions";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -92,7 +92,7 @@ export const usePrescriptions = (): UsePrescriptionsReturn => {
     try {
       const response = await prescriptionsApi.getPrescriptionById(prescriptionId);
       return response.data.prescription;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to fetch prescription";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -121,7 +121,7 @@ export const usePrescriptions = (): UsePrescriptionsReturn => {
         message: response.message,
         prescription: response.data.prescription
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to update prescription";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -144,7 +144,7 @@ export const usePrescriptions = (): UsePrescriptionsReturn => {
       setPrescriptions(prev => prev.filter(p => p.id !== prescriptionId));
       
       return { success: true, message: response.message };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete prescription";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -164,7 +164,7 @@ export const usePrescriptions = (): UsePrescriptionsReturn => {
       toast.success(response.message);
       
       return { success: true, message: response.message };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to generate prescription PDF";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -181,7 +181,7 @@ export const usePrescriptions = (): UsePrescriptionsReturn => {
     try {
       const response = await prescriptionsApi.getPrescriptionStats(doctorId, patientId);
       setPrescriptionStats(response.data.stats);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to fetch prescription statistics";
       setError(errorMessage);
       toast.error(errorMessage);

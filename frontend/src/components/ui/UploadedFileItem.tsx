@@ -16,7 +16,7 @@ interface UploadedFileItemProps {
   error?: string;
   onNameChange: (documentId: string, name: string) => void;
   onRemove: (documentId: string) => void;
-  onPreview: (file: any) => void;
+  onPreview: (file: unknown) => void;
   isNewlyUploaded?: boolean;
 }
 

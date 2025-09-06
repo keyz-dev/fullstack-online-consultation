@@ -4,8 +4,8 @@ import React, { createContext, useContext } from "react";
 import { useSocket } from "@/hooks/useSocket";
 
 interface SocketContextType {
-  socket: any;
-  emit: (event: string, data: any) => void;
+  socket: unknown;
+  emit: (event: string, data: unknown) => void;
   connect: () => void;
   disconnect: () => void;
 }

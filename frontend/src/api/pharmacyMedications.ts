@@ -91,7 +91,7 @@ class PharmacyMedicationsApi {
 
       const response = await api.get(`/pharmacyDrugs?${params.toString()}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -101,7 +101,7 @@ class PharmacyMedicationsApi {
     try {
       const response = await api.get('/pharmacyDrugs/stats');
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -111,7 +111,7 @@ class PharmacyMedicationsApi {
     try {
       const response = await api.get(`/pharmacyDrugs/${id}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -125,7 +125,7 @@ class PharmacyMedicationsApi {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -139,7 +139,7 @@ class PharmacyMedicationsApi {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -149,7 +149,7 @@ class PharmacyMedicationsApi {
     try {
       const response = await api.delete(`/pharmacyDrugs/${id}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -161,7 +161,7 @@ class PharmacyMedicationsApi {
         stockQuantity,
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -178,13 +178,13 @@ class PharmacyMedicationsApi {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
 
   // Bulk create medications from processed data
-  async bulkCreateMedications(medications: any[]): Promise<BulkImportResponse> {
+  async bulkCreateMedications(medications: unknown[]): Promise<BulkImportResponse> {
     try {
       const response = await api.post('/pharmacyDrugs/bulk-create', {
         medications: medications
@@ -194,7 +194,7 @@ class PharmacyMedicationsApi {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -206,7 +206,7 @@ class PharmacyMedicationsApi {
         responseType: 'blob',
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }

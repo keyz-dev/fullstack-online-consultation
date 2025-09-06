@@ -41,7 +41,7 @@ import { format, addDays, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface AppointmentBookingProps {
-  onBookingComplete?: (appointment: any) => void;
+  onBookingComplete?: (appointment: unknown) => void;
   onCancel?: () => void;
 }
 

@@ -8,7 +8,7 @@ export interface AddressComponents {
 }
 
 export const extractAddressComponents = (
-  geocodingResult: any
+  geocodingResult: unknown
 ): AddressComponents => {
   const address = geocodingResult.address || {};
 

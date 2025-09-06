@@ -20,7 +20,7 @@ interface Suggestion {
   display_name: string;
   lat: string;
   lon: string;
-  address: any;
+  address: unknown;
 }
 
 interface MapSelectorProps {
@@ -171,12 +171,12 @@ const MapSelector: React.FC<MapSelectorProps> = ({
     handleUseCurrentLocation();
   };
 
-  const handleManualEntryFromError = (addressData: any) => {
+  const handleManualEntryFromError = (addressData: unknown) => {
     setLocationError(null);
     handleManualEntry(addressData);
   };
 
-  const handleManualEntry = (addressData: any) => {
+  const handleManualEntry = (addressData: unknown) => {
     setCoordinates(addressData.coordinates);
     setAddress(addressData.address);
 

@@ -33,15 +33,15 @@ export interface ApplicationDoctor {
   licenseNumber: string;
   experience: number;
   bio?: string;
-  education?: any[];
+  education?: unknown[];
   languages?: string[];
-  specialties?: any[];
-  clinicAddress?: any;
+  specialties?: unknown[];
+  clinicAddress?: unknown;
   operationalHospital?: string;
-  contactInfo?: any;
-  consultationFee?: number;
+  contactInfo?: unknown;
+  consultationFee?: unknown;
   consultationDuration?: number;
-  paymentMethods?: any[];
+  paymentMethods?: unknown[];
 }
 
 export interface ApplicationPharmacy {
@@ -51,10 +51,10 @@ export interface ApplicationPharmacy {
   description?: string;
   logo?: string;
   images?: string[];
-  address?: any;
-  contactInfo?: any;
-  operatingHours?: any;
-  paymentMethods?: any[];
+  address?: unknown;
+  contactInfo?: unknown;
+  operatingHours?: unknown;
+  paymentMethods?: unknown[];
 }
 
 export interface Application {
@@ -64,7 +64,7 @@ export interface Application {
   typeId: number;
   status: "pending" | "under_review" | "approved" | "rejected" | "suspended";
   applicationVersion: number;
-  adminReview?: any;
+  adminReview?: unknown;
   adminNotes?: string;
   submittedAt: string;
   reviewedAt?: string;

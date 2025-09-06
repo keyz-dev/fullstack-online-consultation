@@ -55,7 +55,7 @@ const TimeSlotSelector: React.FC = () => {
           }/time-slots?${queryParams.toString()}`
         );
         setTimeSlots(response.data.timeSlots || []);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error fetching time slots:", error);
         toast.error(
           error.response?.data?.message || "Failed to load available time slots"

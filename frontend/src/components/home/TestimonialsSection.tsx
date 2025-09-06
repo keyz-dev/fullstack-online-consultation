@@ -66,7 +66,7 @@ const TestimonialsSection = () => {
               </div>
 
               <p className="text-secondary dark:text-gray-300 mb-4 leading-relaxed">
-                "{testimonial.message}"
+                &ldquo;{testimonial.message}&rdquo;
               </p>
 
               <div className="flex items-center">

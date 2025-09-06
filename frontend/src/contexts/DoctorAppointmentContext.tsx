@@ -247,7 +247,7 @@ export const DoctorAppointmentProvider: React.FC<{
     if (!socket?.socket) return;
 
     // Listen for payment confirmations only
-    socket.socket.on("payment-confirmed", (data: any) => {
+    socket.socket.on("payment-confirmed", (data: unknown) => {
       console.log("💰 Payment confirmed:", data);
       toast.success(
         `New confirmed appointment with ${data.patientName} on ${data.appointmentDate}`
@@ -259,7 +259,7 @@ export const DoctorAppointmentProvider: React.FC<{
     });
 
     // // Listen for appointment status updates (for cancellations, completions, etc.)
-    // socket.socket.on("appointment-status-updated", (data: any) => {
+    // socket.socket.on("appointment-status-updated", (data: unknown) => {
     //   console.log("🔄 Appointment status updated:", data);
     //   toast.info(`Appointment status updated: ${data.status}`);
     //   // Refresh appointments list

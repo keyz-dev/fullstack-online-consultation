@@ -5,12 +5,10 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import {
   Star,
-  MapPin,
   Clock,
   Phone,
   Mail,
   Calendar,
-  Award,
   GraduationCap,
   Languages,
   Building,
@@ -33,7 +31,7 @@ const DoctorDetailPage = () => {
         setLoading(true);
         const response = await doctorsApi.getDoctorById(parseInt(doctorId));
         setDoctor(response.data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching doctor:", err);
         setError(
           err?.response?.data?.message || "Failed to load doctor details"

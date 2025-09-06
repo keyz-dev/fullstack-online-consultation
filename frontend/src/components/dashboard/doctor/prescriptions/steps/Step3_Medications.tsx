@@ -13,7 +13,7 @@ interface Medication {
 }
 
 interface Step3_MedicationsProps {
-  medications: any[];
+  medications: unknown[];
   onUpdate: (updates: Partial<CreatePrescriptionData>) => void;
   onContinue: () => void;
 }

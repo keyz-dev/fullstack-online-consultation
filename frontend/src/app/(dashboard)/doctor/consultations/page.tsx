@@ -10,7 +10,6 @@ import {
 } from "@/components/dashboard/doctor/consultations";
 import PrescriptionGenerationModal from "@/components/dashboard/doctor/prescriptions/PrescriptionGenerationModal";
 import {
-  Button,
   AdvancedFilters,
   Pagination,
   EmptyState,
@@ -21,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui";
 import { Consultation } from "@/types";
-import { Video, MessageSquare, Plus, Filter } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
 const DoctorConsultationsPage: React.FC = () => {
   const router = useRouter();
@@ -87,7 +86,7 @@ const DoctorConsultationsPage: React.FC = () => {
   ];
 
   // Handle filter changes
-  const handleFilterChange = (newFilters: any) => {
+  const handleFilterChange = (newFilters: unknown) => {
     actions.setFilters(newFilters);
   };
 

@@ -1,4 +1,4 @@
-import { apiClient } from "./index";
+import api from "./index";
 
 export interface ContactInformation {
   id: number;
@@ -26,13 +26,15 @@ export interface CreateContactInformationData {
 }
 
 export interface UpdateContactInformationData
-  extends Partial<CreateContactInformationData> {}
+  extends Partial<CreateContactInformationData> {
+  id?: number;
+}
 
 // Get all active contact information options (public)
 export const getContactInformationOptions = async (): Promise<
   ContactInformation[]
 > => {
-  const response = await apiClient.get("/contactInformation/options");
+  const response = await api.get("/contactInformation/options");
   return response.data.data;
 };
 
@@ -40,21 +42,21 @@ export const getContactInformationOptions = async (): Promise<
 export const getAllContactInformation = async (): Promise<
   ContactInformation[]
 > => {
-  const response = await apiClient.get("/contactInformation");
+  const response = await api.get("/contactInformation");
   return response.data.data;
 };
 
 export const getContactInformationById = async (
   id: number
 ): Promise<ContactInformation> => {
-  const response = await apiClient.get(`/contactInformation/${id}`);
+  const response = await api.get(`/contactInformation/${id}`);
   return response.data.data;
 };
 
 export const createContactInformation = async (
   data: CreateContactInformationData
 ): Promise<ContactInformation> => {
-  const response = await apiClient.post("/contactInformation", data);
+  const response = await api.post("/contactInformation", data);
   return response.data.data;
 };
 
@@ -62,10 +64,10 @@ export const updateContactInformation = async (
   id: number,
   data: UpdateContactInformationData
 ): Promise<ContactInformation> => {
-  const response = await apiClient.put(`/contactInformation/${id}`, data);
+  const response = await api.put(`/contactInformation/${id}`, data);
   return response.data.data;
 };
 
 export const deleteContactInformation = async (id: number): Promise<void> => {
-  await apiClient.delete(`/contactInformation/${id}`);
+  await api.delete(`/contactInformation/${id}`);
 };

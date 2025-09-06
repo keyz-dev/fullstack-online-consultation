@@ -17,7 +17,7 @@ import {
   DeleteModal,
 } from "@/components/ui";
 import { PatientAppointment } from "@/api/appointments";
-import { Plus, Video, Phone, MessageSquare, MapPin } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useBookingPayment } from "@/hooks/useBookingPayment";
 import { toast } from "react-toastify";
 

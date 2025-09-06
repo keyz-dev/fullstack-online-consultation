@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 interface AdminProfileStatsProps {
-  stats: any;
+  stats: unknown;
 }
 
 const AdminProfileStats: React.FC<AdminProfileStatsProps> = ({ stats }) => {

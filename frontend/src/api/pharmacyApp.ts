@@ -73,7 +73,7 @@ class PharmacyAppApi {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -87,7 +87,7 @@ class PharmacyAppApi {
         `/userApplications/${applicationId}/status`
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -97,7 +97,7 @@ class PharmacyAppApi {
     try {
       const response = await api.get("/userApplications/user");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -111,7 +111,7 @@ class PharmacyAppApi {
         `/userApplications/${applicationId}/reapply`
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -125,7 +125,7 @@ class PharmacyAppApi {
         `/userApplications/${applicationId}/activate`
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -137,7 +137,7 @@ class PharmacyAppApi {
     try {
       const response = await api.delete(`/userApplications/${applicationId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }

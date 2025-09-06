@@ -58,7 +58,7 @@ export interface BookingState {
   appointmentDate: string | null;
   appointmentTime: string | null;
   notes: string;
-  medicalDocuments: any[];
+  medicalDocuments: unknown[];
 
   // Loading states
   isLoading: boolean;
@@ -97,8 +97,8 @@ export type BookingAction =
   | { type: "SET_APPOINTMENT_DATE"; payload: string | null }
   | { type: "SET_APPOINTMENT_TIME"; payload: string | null }
   | { type: "SET_NOTES"; payload: string }
-  | { type: "SET_MEDICAL_DOCUMENTS"; payload: any[] }
-  | { type: "ADD_MEDICAL_DOCUMENTS"; payload: any[] }
+  | { type: "SET_MEDICAL_DOCUMENTS"; payload: unknown[] }
+  | { type: "ADD_MEDICAL_DOCUMENTS"; payload: unknown[] }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_CREATING_APPOINTMENT"; payload: boolean }
   | { type: "SET_INITIATING_PAYMENT"; payload: boolean }

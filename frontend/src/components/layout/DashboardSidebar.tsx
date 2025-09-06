@@ -179,7 +179,7 @@ const DashboardSidebar = () => {
           className="flex-1 p-3 lg:p-4 space-y-1 lg:space-y-2 overflow-y-auto"
           role="list"
         >
-          {roleConfig.navItems.map((item: any) => {
+          {roleConfig.navItems.map((item: unknown) => {
             const IconComponent = (Icons as any)[item.icon] || Icons.Circle;
             const isExternalLink = item.external || item.path === "home";
             const fullPath = isExternalLink

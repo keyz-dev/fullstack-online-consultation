@@ -33,7 +33,7 @@ const DetailsEntry: React.FC = () => {
     return () => {
       // Clean up all object URLs when component unmounts
       if (state.medicalDocuments) {
-        state.medicalDocuments.forEach((doc: any) => {
+        state.medicalDocuments.forEach((doc: unknown) => {
           if (doc.preview && doc.preview.startsWith("blob:")) {
             URL.revokeObjectURL(doc.preview);
           }
@@ -103,7 +103,7 @@ const DetailsEntry: React.FC = () => {
   const handleRemoveFile = (documentId: string) => {
     // Find the document to get its preview URL for cleanup
     const documentToRemove = state.medicalDocuments.find(
-      (doc: any) => doc.id === documentId
+      (doc: unknown) => doc.id === documentId
     );
 
     // Clean up the object URL if it exists
@@ -115,7 +115,7 @@ const DetailsEntry: React.FC = () => {
     }
 
     const updatedDocuments = state.medicalDocuments.filter(
-      (doc: any) => doc.id !== documentId
+      (doc: unknown) => doc.id !== documentId
     );
     dispatch({
       type: "SET_MEDICAL_DOCUMENTS",
@@ -136,7 +136,7 @@ const DetailsEntry: React.FC = () => {
   };
 
   const handleDocumentNameChange = (documentId: string, name: string) => {
-    const updatedDocuments = state.medicalDocuments.map((doc: any) =>
+    const updatedDocuments = state.medicalDocuments.map((doc: unknown) =>
       doc.id === documentId ? { ...doc, documentName: name } : doc
     );
     dispatch({
@@ -217,7 +217,7 @@ const DetailsEntry: React.FC = () => {
               Uploaded Documents ({state.medicalDocuments.length}/5)
             </h4>
 
-            {state.medicalDocuments.map((doc: any) => (
+            {state.medicalDocuments.map((doc: unknown) => (
               <EnhancedUploadedFileItem
                 key={doc.id}
                 file={doc}

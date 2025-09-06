@@ -67,7 +67,7 @@ const ImageUploadStep = ({
           <p className="text-secondary dark:text-gray-400">Confirm images</p>
         ) : (
           <p className="text-secondary dark:text-gray-400">
-            You'll need at least 3 photos to get started. You can add more or
+            You&apos;ll need at least 3 photos to get started. You can add more or
             make changes later
           </p>
         )}

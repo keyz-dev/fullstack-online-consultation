@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useBooking } from "@/contexts/BookingContext";
 import { useDoctor } from "@/contexts/DoctorContext";
-import { Doctor } from "@/types/doctor";
-import { Search, Filter, Star, MapPin, Clock, DollarSign } from "lucide-react";
+import { Doctor } from "@/types";
+import { Search, Star, MapPin, Clock } from "lucide-react";
 import Loader from "@/components/ui/Loader";
-import { Button } from "../ui";
 
 const DoctorSelector: React.FC = () => {
   const { state, dispatch } = useBooking();
@@ -21,7 +20,7 @@ const DoctorSelector: React.FC = () => {
 
   // Initialize with symptoms/specialty filters if available
   useEffect(() => {
-    const filters: any = {};
+    const filters: unknown = {};
 
     if (state.symptomIds?.length) {
       filters.symptomIds = state.symptomIds;

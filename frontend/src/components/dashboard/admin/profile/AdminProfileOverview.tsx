@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 
 interface AdminProfileOverviewProps {
-  user: any;
-  stats: any;
+  user: unknown;
+  stats: unknown;
 }
 
 const AdminProfileOverview: React.FC<AdminProfileOverviewProps> = ({

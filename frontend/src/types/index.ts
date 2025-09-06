@@ -514,7 +514,7 @@ export interface PhoneInputProps {
 export interface PDFViewerProps {
   url: string;
   onLoad?: (data: { totalPages: number }) => void;
-  onError?: (error: any) => void;
+  onError?: (error: unknown) => void;
   currentPage?: number;
   zoom?: number;
   rotation?: number;
@@ -539,7 +539,7 @@ export interface NotificationItemProps {
     priority: string;
     isRead: boolean;
     createdAt: string;
-    relatedId?: any;
+    relatedId?: unknown;
     relatedModel?: string;
   };
   onMarkAsRead: (id: string) => void;
@@ -671,7 +671,7 @@ export interface DocumentCardProps {
     adminRemarks?: string;
   };
   status?: string;
-  onPreview?: (document: any) => void;
+  onPreview?: (document: unknown) => void;
   showActions?: boolean;
   showStatus?: boolean;
   compact?: boolean;
@@ -706,11 +706,11 @@ export interface TableProps {
   columns: Array<{
     Header: string;
     accessor: string;
-    Cell?: ({ row }: { row: any }) => React.ReactNode;
+    Cell?: ({ row }: { row: unknown }) => React.ReactNode;
   }>;
-  data: any[];
+  data: unknown[];
   emptyStateMessage?: string;
-  onRowClick?: (row: any) => void;
+  onRowClick?: (row: unknown) => void;
   clickableRows?: boolean;
   isLoading?: boolean;
 }

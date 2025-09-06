@@ -1,4 +1,4 @@
-import api, { API_BASE_URL } from "./index";
+import api from "./index";
 
 export interface Address {
   street?: string;
@@ -131,7 +131,7 @@ export interface PatientRegisterRequest extends BaseUserData {
     relationship: string;
   };
   contactInfo?: ContactInfo[];
-  documents?: any[];
+  documents?: unknown[];
 }
 
 export interface DoctorRegisterRequest extends BaseUserData {
@@ -172,7 +172,7 @@ export interface DoctorApplicationData {
   consultationFee: number;
   consultationDuration?: number;
   paymentMethods?: PaymentMethod[];
-  documents?: any;
+  documents?: unknown;
 }
 
 export interface PharmacyRegisterRequest extends BaseUserData {
@@ -447,7 +447,7 @@ class AuthAPI {
 
     // Files
     if (doctorData.documents) {
-      doctorData.documents.forEach((doc: any, index: number) => {
+      doctorData.documents.forEach((doc: unknown) => {
         formData.append(`doctorDocument`, doc.file);
         formData.append("documentNames", doc.documentName);
       });
@@ -515,7 +515,7 @@ class AuthAPI {
 
     // Files
     if (pharmacyData.pharmacyDocument) {
-      pharmacyData.pharmacyDocument.forEach((doc: any, index: number) => {
+      pharmacyData.pharmacyDocument.forEach((doc: unknown) => {
         formData.append(`pharmacyDocument`, doc.file);
         formData.append("documentNames", doc.documentName);
       });
@@ -607,4 +607,5 @@ class AuthAPI {
   }
 }
 
-export default new AuthAPI();
+const authAPI = new AuthAPI();
+export default authAPI;

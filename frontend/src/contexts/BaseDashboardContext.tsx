@@ -5,7 +5,7 @@ import { useAuth } from "./AuthContext";
 import { ROLE_CONFIGS } from "../config/userRoles";
 
 interface BaseDashboardContextType {
-  roleConfig: any;
+  roleConfig: unknown;
   pageTitle: string;
   activeNavItem: string;
   sidebarCollapsed: boolean;
@@ -37,7 +37,7 @@ export const BaseDashboardProvider: React.FC<{ children: ReactNode }> = ({
       .replace(roleConfig.basePath, "")
       .replace(/^\//, "");
     const navItem = roleConfig.navItems.find(
-      (item: any) => item.path === relativePath
+      (item: unknown) => item.path === relativePath
     );
 
     if (navItem) {

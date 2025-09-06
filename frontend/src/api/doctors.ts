@@ -37,12 +37,12 @@ export interface Doctor {
   bio?: string;
   education?: string[];
   languages?: string[];
-  clinicAddress?: any;
+  clinicAddress?: unknown;
   operationalHospital?: string;
-  contactInfo?: any;
+  contactInfo?: unknown;
   consultationFee: number;
   consultationDuration: number;
-  paymentMethods?: any;
+  paymentMethods?: unknown;
   isVerified: boolean;
   isActive: boolean;
   averageRating?: number;

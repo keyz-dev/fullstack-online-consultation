@@ -75,7 +75,7 @@ const DOCTOR_CONSULTATION_ACTIONS = {
 };
 
 // Reducer
-function doctorConsultationReducer(state: typeof initialState, action: any) {
+function doctorConsultationReducer(state: typeof initialState, action: unknown) {
   switch (action.type) {
     case DOCTOR_CONSULTATION_ACTIONS.SET_LOADING:
       return { ...state, loading: action.payload };
@@ -254,7 +254,7 @@ export const DoctorConsultationProvider: React.FC<{
   useEffect(() => {
     if (!socket) return;
 
-    const handleConsultationUpdate = (data: any) => {
+    const handleConsultationUpdate = (data: unknown) => {
       refreshConsultations();
       refreshActiveConsultations();
     };

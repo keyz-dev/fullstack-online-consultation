@@ -61,7 +61,7 @@ const DOCTOR_ACTIONS = {
 };
 
 // Reducer
-const doctorReducer = (state: any, action: any) => {
+const doctorReducer = (state: unknown, action: unknown) => {
   switch (action.type) {
     case DOCTOR_ACTIONS.SET_LOADING:
       return { ...state, loading: action.payload };
@@ -150,7 +150,7 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({
           totalPages: response.data.pagination.totalPages,
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching doctors:", err);
       const errorMessage =
         err?.response?.data?.message ||
@@ -171,7 +171,7 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({
         type: DOCTOR_ACTIONS.SET_SPECIALTIES,
         payload: fetchedSpecialties,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching specialties:", err);
       dispatch({
         type: DOCTOR_ACTIONS.SET_SPECIALTIES_LOADING,
@@ -192,7 +192,7 @@ export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({
         type: DOCTOR_ACTIONS.SET_SYMPTOMS,
         payload: fetchedSymptoms,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching symptoms:", err);
       dispatch({ type: DOCTOR_ACTIONS.SET_SYMPTOMS_LOADING, payload: false });
     }

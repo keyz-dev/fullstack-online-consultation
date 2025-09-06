@@ -8,7 +8,7 @@ export interface User {
   role: string;
   gender?: string;
   dob?: string;
-  address?: any;
+  address?: unknown;
   phoneNumber?: string;
   avatar?: string;
   isActive: boolean;
@@ -36,11 +36,11 @@ export interface User {
     specialties?: string[];
     clinicAddress?: string;
     operationalHospital?: string;
-    contactInfo?: any;
+    contactInfo?: unknown;
     consultationFee?: number;
     consultationDuration?: number;
     paymentMethods?: string[];
-    documents?: any;
+    documents?: unknown;
     isVerified?: boolean;
     isApproved?: boolean;
     averageRating?: number;
@@ -53,11 +53,11 @@ export interface User {
     description?: string;
     logo?: string;
     images?: string[];
-    address?: any;
-    contactInfo?: any;
-    deliveryInfo?: any;
+    address?: unknown;
+    contactInfo?: unknown;
+    deliveryInfo?: unknown;
     paymentMethods?: string[];
-    documents?: any;
+    documents?: unknown;
     isVerified?: boolean;
     isApproved?: boolean;
     averageRating?: number;

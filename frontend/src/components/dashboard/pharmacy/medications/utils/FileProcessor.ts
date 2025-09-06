@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { FileValidator } from './FileValidator';
 
 export class FileProcessor {
-    static handleCSVFile(selectedFile: File, onSuccess: (medications: any[]) => void, onError: (error: string) => void) {
+    static handleCSVFile(selectedFile: File, onSuccess: (medications: unknown[]) => void, onError: (error: string) => void) {
         Papa.parse(selectedFile, {
             header: true,
             skipEmptyLines: true,
@@ -26,7 +26,7 @@ export class FileProcessor {
         });
     }
 
-    static handleExcelFile(selectedFile: File, onSuccess: (medications: any[]) => void, onError: (error: string) => void) {
+    static handleExcelFile(selectedFile: File, onSuccess: (medications: unknown[]) => void, onError: (error: string) => void) {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
@@ -46,9 +46,9 @@ export class FileProcessor {
                 }
 
                 // Convert to object format with headers
-                const headers = jsonData[0].map((h: any) => String(h).trim());
-                const dataRows = jsonData.slice(1).map((row: any) => {
-                    const obj: any = {};
+                const headers = jsonData[0].map((h: unknown) => String(h).trim());
+                const dataRows = jsonData.slice(1).map((row: unknown) => {
+                    const obj: unknown = {};
                     headers.forEach((header, index) => {
                         obj[header] = row[index] || '';
                     });
@@ -73,7 +73,7 @@ export class FileProcessor {
         reader.readAsArrayBuffer(selectedFile);
     }
 
-    static processFile(selectedFile: File, onSuccess: (medications: any[]) => void, onError: (error: string) => void) {
+    static processFile(selectedFile: File, onSuccess: (medications: unknown[]) => void, onError: (error: string) => void) {
         if (selectedFile.name.endsWith('.csv')) {
             this.handleCSVFile(selectedFile, onSuccess, onError);
         } else if (selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls')) {

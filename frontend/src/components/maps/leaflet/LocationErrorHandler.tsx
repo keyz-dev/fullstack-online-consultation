@@ -9,7 +9,7 @@ interface LocationError {
 interface LocationErrorHandlerProps {
   error: LocationError | null;
   onRetry: () => void;
-  onManualEntry: (addressData: any) => void;
+  onManualEntry: (addressData: unknown) => void;
   onDismiss: () => void;
 }
 

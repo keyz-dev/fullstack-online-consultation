@@ -5,9 +5,9 @@ export interface Prescription {
   consultationId: number;
   status: 'active' | 'completed' | 'cancelled' | 'expired';
   diagnosis?: string;
-  medications: any[];
+  medications: unknown[];
   instructions?: string;
-  dosage?: any;
+  dosage?: unknown;
   duration?: number;
   startDate: string;
   endDate?: string;
@@ -24,9 +24,9 @@ export interface Prescription {
 export interface CreatePrescriptionData {
   consultationId: number;
   diagnosis?: string;
-  medications: any[];
+  medications: unknown[];
   instructions?: string;
-  dosage?: any;
+  dosage?: unknown;
   duration?: number;
   refills?: number;
   notes?: string;
@@ -67,7 +67,7 @@ class PrescriptionsApi {
     try {
       const response = await api.post('/prescriptions', data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -77,7 +77,7 @@ class PrescriptionsApi {
     try {
       const response = await api.get(`/prescriptions/${prescriptionId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -87,7 +87,7 @@ class PrescriptionsApi {
     try {
       const response = await api.get(`/prescriptions/consultation/${consultationId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -97,7 +97,7 @@ class PrescriptionsApi {
     try {
       const response = await api.put(`/prescriptions/${prescriptionId}`, data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -107,7 +107,7 @@ class PrescriptionsApi {
     try {
       const response = await api.delete(`/prescriptions/${prescriptionId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -117,7 +117,7 @@ class PrescriptionsApi {
     try {
       const response = await api.post(`/prescriptions/${prescriptionId}/generate-pdf`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -131,7 +131,7 @@ class PrescriptionsApi {
 
       const response = await api.get(`/prescriptions/stats?${params.toString()}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }

@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 interface ApplicationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  application: any; // Using any for now, can be properly typed later
+  application: unknown; // Using any for now, can be properly typed later
 }
 
 const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = ({

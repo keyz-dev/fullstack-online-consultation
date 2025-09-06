@@ -9,7 +9,7 @@ const MedicationGrid: React.FC = () => {
           💊 Coming Soon
         </div>
         <p className="text-gray-600 dark:text-gray-400 mb-8">
-          Our comprehensive medication database is under development. You'll
+          Our comprehensive medication database is under development. You&apos;ll
           soon be able to browse, search, and order medications with detailed
           information.
         </p>

@@ -77,9 +77,9 @@ export interface PatientAppointment {
     status: string;
     paymentMethod: string;
     transactionId?: string;
-    gatewayResponse?: any;
+    gatewayResponse?: unknown;
     description?: string;
-    metadata?: any;
+    metadata?: unknown;
     createdAt: string;
     updatedAt: string;
   };
@@ -203,9 +203,9 @@ export interface Appointment {
     status: string;
     paymentMethod: string;
     transactionId?: string;
-    gatewayResponse?: any;
+    gatewayResponse?: unknown;
     description?: string;
-    metadata?: any;
+    metadata?: unknown;
     createdAt: string;
     updatedAt: string;
   };
@@ -330,9 +330,9 @@ export interface DoctorAppointment {
     status: string;
     paymentMethod: string;
     transactionId?: string;
-    gatewayResponse?: any;
+    gatewayResponse?: unknown;
     description?: string;
-    metadata?: any;
+    metadata?: unknown;
     createdAt: string;
     updatedAt: string;
   };

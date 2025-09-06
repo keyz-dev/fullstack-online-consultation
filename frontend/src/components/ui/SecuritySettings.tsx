@@ -16,7 +16,7 @@ import {
 
 interface SecuritySettingsProps {
   onPasswordUpdate: (data: PasswordUpdateData) => Promise<void>;
-  onPreferencesUpdate: (preferences: any) => Promise<void>;
+  onPreferencesUpdate: (preferences: unknown) => Promise<void>;
   loading?: boolean;
   error?: string | null;
   user?: {
@@ -82,7 +82,7 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({
     }
   };
 
-  const handlePreferenceChange = async (key: string, value: any) => {
+  const handlePreferenceChange = async (key: string, value: unknown) => {
     const newPreferences = {
       ...securityPreferences,
       [key]: value,

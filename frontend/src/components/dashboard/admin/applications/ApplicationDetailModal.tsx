@@ -700,7 +700,7 @@ const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                           No documents uploaded
                         </p>
                         <p className="text-sm">
-                          This application doesn't have any supporting
+                          This application doesn&apos;t have any supporting
                           documents.
                         </p>
                       </div>

@@ -32,9 +32,9 @@ interface ChatMessage {
 interface VideoCallData {
   fromUserId: number;
   fromUserName: string;
-  offer?: any;
-  answer?: any;
-  candidate?: any;
+  offer?: unknown;
+  answer?: unknown;
+  candidate?: unknown;
 }
 
 export const useSocket = () => {
@@ -164,7 +164,7 @@ export const useSocket = () => {
     setSocket(null);
   }, []);
 
-  const emit = useCallback((event: string, data: any) => {
+  const emit = useCallback((event: string, data: unknown) => {
     if (socketRef.current) {
       socketRef.current.emit(event, data);
     }

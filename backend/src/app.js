@@ -10,12 +10,16 @@ require("./config/database.js");
 const port = process.env.PORT || 4500;
 const app = express();
 
-// CORS configuration for local network testing
+// CORS configuration for local network testing and production
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:3000",
   "http://localhost:3000", // Local development
+  "https://localhost:3000", // Local development with HTTPS
   /^http:\/\/192\.168\.\d+\.\d+:3000$/, // Local network IPs
   /^http:\/\/10\.\d+\.\d+\.\d+:3000$/, // Private network range
+  /^https:\/\/.*\.onrender\.com$/, // Render frontend deployments
+  /^https:\/\/.*\.vercel\.app$/, // Vercel frontend deployments
+  /^https:\/\/.*\.netlify\.app$/, // Netlify frontend deployments
 ];
 
 app.use(
@@ -56,11 +60,18 @@ app.use("/api", apiRoutes);
 app.use(
   "/uploads",
   (req, res, next) => {
-    // Add CORS headers for uploads
-    res.header(
-      "Access-Control-Allow-Origin",
-      process.env.FRONTEND_URL || "http://localhost:3000"
-    );
+    // Add CORS headers for uploads - allow all origins for now
+    const origin = req.headers.origin;
+    if (origin && (
+      origin.includes('localhost:3000') || 
+      origin.includes('onrender.com') || 
+      origin.includes('vercel.app') || 
+      origin.includes('netlify.app')
+    )) {
+      res.header("Access-Control-Allow-Origin", origin);
+    } else {
+      res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL || "http://localhost:3000");
+    }
     res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.header("Access-Control-Allow-Credentials", "true");

@@ -9,11 +9,9 @@ import {
   CalendarCheck,
   MessageSquare,
   TrendingUp,
-  DollarSign,
   FolderOpen,
   Thermometer,
   Package,
-  Bell,
 } from "lucide-react";
 
 const AdminOverviewPage: React.FC = () => {
@@ -100,7 +98,7 @@ const AdminOverviewPage: React.FC = () => {
           Welcome back, Administrator!
         </h1>
         <p className="text-gray-600">
-          Here's what's happening with your online consultation platform today.
+          Here&apos;s what&apos;s happening with your online consultation platform today.
         </p>
       </div>
 

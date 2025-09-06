@@ -101,7 +101,7 @@ const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
       toast.success(`Application ${action}d successfully`);
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Review submission failed:", error);
       const errorMessage =
         error instanceof Error

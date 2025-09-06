@@ -31,7 +31,7 @@ const AppointmentDocumentsTab: React.FC<AppointmentDocumentsTabProps> = ({
         />
         <p className="text-lg font-medium mb-2">No documents uploaded</p>
         <p className="text-sm">
-          This appointment doesn't have any supporting documents.
+          This appointment doesn&apos;t have any supporting documents.
         </p>
       </div>
     );
@@ -107,7 +107,7 @@ const AppointmentDocumentsTab: React.FC<AppointmentDocumentsTabProps> = ({
           />
           <p className="text-lg font-medium mb-2">No documents uploaded</p>
           <p className="text-sm">
-            This appointment doesn't have any supporting documents.
+            This appointment doesn&apos;t have any supporting documents.
           </p>
         </div>
       )}

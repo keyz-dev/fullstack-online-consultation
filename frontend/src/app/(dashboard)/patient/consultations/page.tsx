@@ -9,7 +9,6 @@ import {
   PatientConsultationDetailsModal,
 } from "@/components/dashboard/patient/consultations";
 import {
-  Button,
   AdvancedFilters,
   Pagination,
   EmptyState,
@@ -20,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui";
 import { Consultation } from "@/types";
-import { Video, MessageSquare, Calendar, Stethoscope } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 import { toast } from "react-toastify";
 
 const PatientConsultationsPage: React.FC = () => {
@@ -86,7 +85,7 @@ const PatientConsultationsPage: React.FC = () => {
   ];
 
   // Handle filter changes
-  const handleFilterChange = (newFilters: any) => {
+  const handleFilterChange = (newFilters: unknown) => {
     actions.setFilters(newFilters);
   };
 

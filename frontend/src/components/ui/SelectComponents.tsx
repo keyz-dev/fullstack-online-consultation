@@ -49,7 +49,9 @@ const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
 );
 SelectValue.displayName = "SelectValue";
 
-interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  children?: React.ReactNode;
+}
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => (

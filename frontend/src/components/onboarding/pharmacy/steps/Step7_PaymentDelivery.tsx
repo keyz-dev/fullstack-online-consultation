@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { usePharmacyApplication } from "../../../../contexts/PharmacyApplicationContext";
 import { StepNavButtons } from "../../../ui";
 import { PaymentMethodsSection } from "../../../payment";
 import { ShippingConfiguration } from "../../../shipping";
 import { usePaymentMethods } from "../../../../hooks/usePaymentMethods";
 import { PaymentMethod } from "@/api";
-import { CreditCard, Truck, Info } from "lucide-react";
 
 const Step7_PaymentDelivery = () => {
   const {
@@ -18,8 +17,6 @@ const Step7_PaymentDelivery = () => {
   } = usePharmacyApplication();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isPaymentInfoOpen, setIsPaymentInfoOpen] = useState(false);
-  const [isShippingInfoOpen, setIsShippingInfoOpen] = useState(false);
 
   // Initialize payment methods from existing data
   const initializePaymentMethods = () => {
@@ -70,7 +67,7 @@ const Step7_PaymentDelivery = () => {
     }
   };
 
-  const handleShippingChange = (shipping: any) => {
+  const handleShippingChange = (shipping: unknown) => {
     updateField("shipping", shipping);
   };
 

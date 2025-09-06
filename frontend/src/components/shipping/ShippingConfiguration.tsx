@@ -29,7 +29,7 @@ interface ShippingConfigurationProps {
     // Processing time
     processingTime: string;
   };
-  onShippingChange: (shipping: any) => void;
+  onShippingChange: (shipping: unknown) => void;
   errors?: Record<string, string>;
 }
 
@@ -40,7 +40,7 @@ const ShippingConfiguration: React.FC<ShippingConfigurationProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const updateShipping = (field: string, value: any) => {
+  const updateShipping = (field: string, value: unknown) => {
     onShippingChange({ ...shipping, [field]: value });
   };
 

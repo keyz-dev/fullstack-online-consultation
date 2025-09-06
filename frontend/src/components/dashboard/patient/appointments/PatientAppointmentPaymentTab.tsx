@@ -9,7 +9,6 @@ import {
   Calendar,
   Receipt,
   RefreshCw,
-  Info,
 } from "lucide-react";
 import { PatientAppointment } from "@/api/appointments";
 import { formatAmount } from "@/utils/formatters";
@@ -193,7 +192,7 @@ const PatientAppointmentPaymentTab: React.FC<
               <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
                 Your previous payment was unsuccessful, but you can retry the
                 payment. The appointment slot is still available and the date
-                hasn't passed.
+                hasn&apos;t passed.
               </p>
               <Button
                 onClick={handleRetryPayment}

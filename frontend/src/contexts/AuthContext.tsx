@@ -299,7 +299,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error(data.message || "Login failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       setAuthError(errorMessage);
       throw error;
@@ -315,7 +315,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const data = await authAPI.registerAdmin(userData);
       return { success: true, user: data.data.user };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       setAuthError(errorMessage);
       throw error;
@@ -331,7 +331,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const data = await authAPI.registerPatient(userData);
       return { success: true, user: data.data.user };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       setAuthError(errorMessage);
       throw errorMessage;
@@ -347,7 +347,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const data = await authAPI.registerDoctor(userData);
       return { success: true, user: data.data.user };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       setAuthError(errorMessage);
       throw error;
@@ -363,7 +363,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const data = await authAPI.registerPharmacy(userData);
       return { success: true, user: data.data.user };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       setAuthError(errorMessage);
       throw error;
@@ -382,7 +382,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const data = await authAPI.initiateRegistration(userData, role);
       return { success: true, user: data.data.user };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       setAuthError(errorMessage);
       throw error;
@@ -482,7 +482,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const data = await authAPI.forgotPassword(emailData);
       return { success: true, message: data.message };
-    } catch (error: any) {
+    } catch (error: unknown) {
       setAuthError(error.message);
       throw error;
     } finally {
@@ -497,7 +497,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const data = await authAPI.resetPassword(resetData);
       return { success: true, message: data.message };
-    } catch (error: any) {
+    } catch (error: unknown) {
       setAuthError(error.message);
       throw error;
     } finally {
@@ -514,7 +514,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserAndToken(data.data.user, data.data.token);
 
       return { success: true, message: data.message, user: data.data.user };
-    } catch (error: any) {
+    } catch (error: unknown) {
       setAuthError(error.message);
       throw error;
     } finally {

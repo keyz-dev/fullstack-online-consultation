@@ -112,7 +112,7 @@ const DoctorGrid: React.FC = () => {
       {!hasMore && doctors.length > 0 && (
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            You've reached the end of the results
+            You&apos;ve reached the end of the results
           </p>
         </div>
       )}

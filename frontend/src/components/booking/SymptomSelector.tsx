@@ -227,7 +227,7 @@ const SymptomSelector: React.FC = () => {
           💡 Tip
         </h3>
         <p className="text-sm text-blue-700 dark:text-blue-300">
-          Select all symptoms you're experiencing. This helps us match you with
+          Select all symptoms you&apos;re experiencing. This helps us match you with
           the most appropriate doctor for your condition.
         </p>
       </div>

@@ -65,7 +65,7 @@ export const usePharmacyMedications = () => {
       console.log("Medications response:", response);
       setMedications(response.data.medications);
       setPagination(response.data.pagination);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to fetch medications";
       console.error("Error fetching medications:", err);
       setError(errorMessage);
@@ -79,7 +79,7 @@ export const usePharmacyMedications = () => {
     try {
       const response = await pharmacyMedicationsApi.getMedicationStats();
       setMedicationStats(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to fetch medication stats";
       console.error(errorMessage);
     }
@@ -102,7 +102,7 @@ export const usePharmacyMedications = () => {
       await fetchMedicationStats();
       
       return { success: true, message: response.message };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to create medication";
       console.error("Error creating medication:", err);
       setError(errorMessage);
@@ -127,7 +127,7 @@ export const usePharmacyMedications = () => {
       await fetchMedicationStats();
       
       return { success: true, message: response.message };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to update medication";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -148,7 +148,7 @@ export const usePharmacyMedications = () => {
       await fetchMedicationStats();
       
       return { success: true, message: response.message };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete medication";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -176,7 +176,7 @@ export const usePharmacyMedications = () => {
         imported: response.data.imported,
         errors: response.data.errors
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to import medications";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -186,7 +186,7 @@ export const usePharmacyMedications = () => {
     }
   }, [fetchMedications, fetchMedicationStats, pagination.currentPage]);
 
-  const bulkCreateMedications = useCallback(async (medications: any[]) => {
+  const bulkCreateMedications = useCallback(async (medications: unknown[]) => {
     setLoading(true);
     setError(null);
 
@@ -204,7 +204,7 @@ export const usePharmacyMedications = () => {
         imported: response.data.imported,
         errors: response.data.errors
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to create medications";
       setError(errorMessage);
       toast.error(errorMessage);
@@ -225,7 +225,7 @@ export const usePharmacyMedications = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to download template";
       toast.error(errorMessage);
     }

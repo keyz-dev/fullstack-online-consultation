@@ -91,7 +91,7 @@ const DoctorAppointmentsPage: React.FC = () => {
   ];
 
   // Handle filter changes
-  const handleFilterChange = (newFilters: any) => {
+  const handleFilterChange = (newFilters: unknown) => {
     setFilters(newFilters);
   };
 

@@ -31,7 +31,7 @@ export interface PharmacyData {
 
   // Step 5: Documents
   pharmacyLogo?: File | null;
-  pharmacyDocuments: any[];
+  pharmacyDocuments: unknown[];
   contactInfo?: ContactInfo[];
 
   // Step 6: Images
@@ -94,12 +94,12 @@ interface PharmacyApplicationContextType {
   prevStep: () => void;
   goToStep: (step: STEPS) => void;
   updatePharmacyData: (data: Partial<PharmacyData>) => void;
-  updateField: (field: string, value: any) => void;
+  updateField: (field: string, value: unknown) => void;
   // Step-specific actions
   submitStep1: () => Promise<{ success: boolean; error?: string }>;
   submitPharmacyApplication: () => Promise<{
     success: boolean;
-    data?: any;
+    data?: unknown;
     error?: string;
   }>;
 
@@ -261,7 +261,7 @@ export const PharmacyApplicationProvider: React.FC<{
   };
 
   // Update form data for a specific field
-  const updateField = (field: string, value: any) => {
+  const updateField = (field: string, value: unknown) => {
     setPharmacyData((prev) => ({ ...prev, [field]: value }));
     // Clear field error when user starts typing
     if (errors[field]) {
@@ -352,7 +352,7 @@ export const PharmacyApplicationProvider: React.FC<{
           error: errorMessage || "Failed to submit basic information",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error);
       return { success: false, error: errorMessage };
     } finally {
@@ -396,7 +396,7 @@ export const PharmacyApplicationProvider: React.FC<{
       } else {
         return { success: false, error: result.message };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         error: error.message || "Application submission failed",

@@ -3,7 +3,7 @@ import { Button, Input, TextArea, FileUploader } from "@/components/ui";
 import { Save, User, Mail, Calendar, MapPin, Upload } from "lucide-react";
 
 interface AdminProfileEditProps {
-  user: any;
+  user: unknown;
 }
 
 const AdminProfileEdit: React.FC<AdminProfileEditProps> = ({ user }) => {

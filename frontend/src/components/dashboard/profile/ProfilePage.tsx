@@ -44,7 +44,7 @@ const ProfilePage: React.FC = () => {
     fetchStats();
   }, [getUserStats, userStats]);
 
-  const handleProfileUpdate = async (data: any) => {
+  const handleProfileUpdate = async (data: unknown) => {
     try {
       await updateProfile(data);
       // Refresh stats after profile update
@@ -70,7 +70,7 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handlePasswordUpdate = async (data: any) => {
+  const handlePasswordUpdate = async (data: unknown) => {
     try {
       await updatePassword(data);
     } catch (error) {
@@ -78,7 +78,7 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handlePreferencesUpdate = async (preferences: any) => {
+  const handlePreferencesUpdate = async (preferences: unknown) => {
     try {
       await updatePreferences(preferences);
     } catch (error) {

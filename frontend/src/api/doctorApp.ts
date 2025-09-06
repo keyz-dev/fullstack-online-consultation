@@ -124,7 +124,7 @@ class DoctorAppApi {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -138,7 +138,7 @@ class DoctorAppApi {
         `/userApplications/${applicationId}/status`
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -148,7 +148,7 @@ class DoctorAppApi {
     try {
       const response = await api.get("/userApplications/user");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -162,7 +162,7 @@ class DoctorAppApi {
         `/userApplications/${applicationId}/reapply`
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -176,7 +176,7 @@ class DoctorAppApi {
         `/userApplications/${applicationId}/activate`
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -188,7 +188,7 @@ class DoctorAppApi {
     try {
       const response = await api.delete(`/userApplications/${applicationId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }

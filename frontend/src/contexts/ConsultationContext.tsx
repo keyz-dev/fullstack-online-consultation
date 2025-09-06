@@ -17,7 +17,7 @@ import { useAuth } from "./AuthContext";
 interface ConsultationState {
   loading: boolean;
   error: string | null;
-  currentConsultation: any;
+  currentConsultation: unknown;
   patientPresence: {
     isOnline: boolean;
     lastSeen?: string;
@@ -61,7 +61,7 @@ const CONSULTATION_ACTIONS = {
 // Reducer
 const consultationReducer = (
   state: ConsultationState,
-  action: any
+  action: unknown
 ): ConsultationState => {
   switch (action.type) {
     case CONSULTATION_ACTIONS.SET_LOADING:

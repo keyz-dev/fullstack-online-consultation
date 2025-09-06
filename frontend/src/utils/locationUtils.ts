@@ -33,7 +33,7 @@ export const reverseGeocode = async (latitude: number, longitude: number) => {
 };
 
 // Global address formatter that works anywhere in the world
-export const formatGlobalAddress = (geocodeData: any) => {
+export const formatGlobalAddress = (geocodeData: unknown) => {
   if (!geocodeData || !geocodeData.address) {
     throw new Error("Invalid geocoding data");
   }
@@ -88,7 +88,7 @@ export const formatGlobalAddress = (geocodeData: any) => {
 };
 
 // Enhanced error messages for geolocation
-export const getLocationErrorMessage = (error: any) => {
+export const getLocationErrorMessage = (error: unknown) => {
   switch (error.code) {
     case 1:
       return "Location access denied. Please allow location access in your browser settings.";

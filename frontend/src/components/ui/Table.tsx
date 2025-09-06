@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 interface Column {
   Header: string;
   accessor: string;
-  Cell?: ({ row }: { row: any }) => React.ReactNode;
+  Cell?: ({ row }: { row: unknown }) => React.ReactNode;
 }
 
 interface TableProps {
   columns: Column[];
-  data: any[];
+  data: unknown[];
   emptyStateMessage?: string;
-  onRowClick?: (row: any) => void;
+  onRowClick?: (row: unknown) => void;
   clickableRows?: boolean;
   isLoading?: boolean;
 }

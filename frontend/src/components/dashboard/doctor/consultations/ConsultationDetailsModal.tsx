@@ -298,7 +298,7 @@ const ConsultationDetailsModal: React.FC<ConsultationDetailsModalProps> = ({
                       {consultation.review && (
                         <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 max-w-md mx-auto">
                           <p className="text-gray-700 dark:text-gray-300 italic">
-                            "{consultation.review}"
+                            &ldquo;{consultation.review}&rdquo;
                           </p>
                         </div>
                       )}

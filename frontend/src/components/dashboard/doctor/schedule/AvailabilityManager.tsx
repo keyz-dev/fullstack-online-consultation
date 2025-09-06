@@ -84,7 +84,7 @@ export const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({
         await availabilityApi.deleteAvailability(availability.id);
         toast.success("Availability session deleted successfully");
         await loadAvailabilities();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Delete failed, checking if invalidation is needed:", error);
         
         // If delete failed due to bookings, offer invalidation

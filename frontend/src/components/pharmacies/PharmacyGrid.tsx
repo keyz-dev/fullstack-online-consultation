@@ -9,7 +9,7 @@ const PharmacyGrid: React.FC = () => {
           🏥 Coming Soon
         </div>
         <p className="text-gray-600 dark:text-gray-400 mb-8">
-          Our pharmacy directory is under development. You'll soon be able to
+          Our pharmacy directory is under development. You&apos;ll soon be able to
           find trusted pharmacies near you with verified medications.
         </p>
 

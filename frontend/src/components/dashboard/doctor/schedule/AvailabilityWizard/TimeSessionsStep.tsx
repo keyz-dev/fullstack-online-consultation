@@ -168,7 +168,7 @@ export const TimeSessionsStep: React.FC<TimeSessionsStepProps> = ({
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No time sessions added yet</p>
-                  <p className="text-sm">Click "Add Session" to get started</p>
+                  <p className="text-sm">Click &ldquo;Add Session&rdquo; to get started</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -264,7 +264,7 @@ export const TimeSessionsStep: React.FC<TimeSessionsStepProps> = ({
       <div className="text-center text-sm text-gray-500 dark:text-gray-400">
         <p>
           Gaps between sessions will automatically become break times. Patients
-          won't be able to book during breaks.
+          won&apos;t be able to book during breaks.
         </p>
       </div>
     </div>

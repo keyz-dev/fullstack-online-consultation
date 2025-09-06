@@ -57,7 +57,7 @@ export const DaySelectionStep: React.FC<DaySelectionStepProps> = ({
           Which days are you available?
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Select the days of the week when you'll be available for consultations
+          Select the days of the week when you&apos;ll be available for consultations
         </p>
       </div>
 

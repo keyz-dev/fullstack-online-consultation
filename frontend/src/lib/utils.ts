@@ -23,7 +23,7 @@ export function formatDateTime(date: Date | string) {
   });
 }
 
-export function extractErrorMessage(error: any): string {
+export function extractErrorMessage(error: unknown): string {
   if (typeof error === "string") return error;
 
   if (error?.response?.data?.message) {

@@ -51,7 +51,7 @@ const PharmacyApplicationStatusPage = () => {
           rejectionReason: response.data.rejectionReason,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching application status:", error);
       toast.error("Failed to fetch application status");
     } finally {
@@ -310,7 +310,7 @@ const PharmacyApplicationStatusPage = () => {
                     );
                     toast.success("Application resubmitted successfully!");
                     fetchApplicationStatus();
-                  } catch (error: any) {
+                  } catch (error: unknown) {
                     const errorMessage =
                       error instanceof Error
                         ? error.message
@@ -342,7 +342,7 @@ const PharmacyApplicationStatusPage = () => {
                       });
                     }
                     router.push("/pharmacy");
-                  } catch (error: any) {
+                  } catch (error: unknown) {
                     const errorMessage =
                       error instanceof Error
                         ? error.message

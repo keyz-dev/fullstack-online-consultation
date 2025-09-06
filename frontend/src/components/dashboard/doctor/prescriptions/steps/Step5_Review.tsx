@@ -86,7 +86,7 @@ const Step5_Review: React.FC<Step5_ReviewProps> = ({
           </div>
           <div className="space-y-3">
             {prescriptionData.medications.map(
-              (medication: any, index: number) => (
+              (medication: unknown, index: number) => (
                 <div key={index} className="bg-white rounded-md p-4 border">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <div>

@@ -365,7 +365,7 @@ const PatientConsultationDetailsModal: React.FC<
                                 </h5>
                                 <div className="space-y-2">
                                   {prescription.medications.map(
-                                    (med: any, index: number) => (
+                                    (med: unknown, index: number) => (
                                       <div
                                         key={index}
                                         className="bg-white dark:bg-gray-800 p-3 rounded border"
@@ -445,14 +445,14 @@ const PatientConsultationDetailsModal: React.FC<
                       {consultation.review && (
                         <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 max-w-md mx-auto">
                           <p className="text-gray-700 dark:text-gray-300 italic">
-                            "{consultation.review}"
+                            &ldquo;{consultation.review}&rdquo;
                           </p>
                         </div>
                       )}
                     </div>
                   ) : (
                     <div className="text-gray-500 dark:text-gray-400">
-                      <p>You haven't rated this consultation yet.</p>
+                      <p>You haven&apos;t rated this consultation yet.</p>
                     </div>
                   )}
                 </div>

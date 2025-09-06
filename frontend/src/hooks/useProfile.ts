@@ -205,7 +205,7 @@ export const useProfile = () => {
       setError(null);
       const response = await profileApi.getProfile();
       setUser(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Failed to fetch profile");
       console.error("Error fetching profile:", err);
     } finally {
@@ -220,7 +220,7 @@ export const useProfile = () => {
       const stats = response.data;
       setUserStats(stats);
       return stats;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
         err.response?.data?.message || "Failed to fetch user statistics"
       );
@@ -237,7 +237,7 @@ export const useProfile = () => {
       const response = await profileApi.updateProfile(profileData);
       setUser(response.data);
       return response.data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Failed to update profile");
       console.error("Error updating profile:", err);
       throw err;
@@ -254,7 +254,7 @@ export const useProfile = () => {
         setError(null);
         const response = await profileApi.updatePassword(passwordData);
         return response.data;
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.response?.data?.message || "Failed to update password");
         console.error("Error updating password:", err);
         throw err;
@@ -276,7 +276,7 @@ export const useProfile = () => {
           setUser({ ...user, avatar: response.data.avatar });
         }
         return response.data;
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.response?.data?.message || "Failed to update avatar");
         console.error("Error updating avatar:", err);
         throw err;
@@ -297,7 +297,7 @@ export const useProfile = () => {
         setUser({ ...user, avatar: undefined });
       }
       return response.data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Failed to delete avatar");
       console.error("Error deleting avatar:", err);
       throw err;
@@ -314,7 +314,7 @@ export const useProfile = () => {
         setError(null);
         const response = await profileApi.updatePreferences(preferences);
         return response.data;
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.response?.data?.message || "Failed to update preferences");
         console.error("Error updating preferences:", err);
         throw err;

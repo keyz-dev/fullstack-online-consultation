@@ -46,7 +46,7 @@ interface SidePanelProps {
   onFileRemove: (fileId: string) => void;
   isUploading: boolean;
   // Quick actions props
-  patientInfo?: any;
+  patientInfo?: unknown;
   onWritePrescription: () => void;
   onViewHistory: () => void;
   onEmergencyCall: () => void;

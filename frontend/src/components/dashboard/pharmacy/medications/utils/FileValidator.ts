@@ -17,7 +17,7 @@ export class FileValidator {
         'expiryDate'
     ];
 
-    static validateFileStructure(data: any[]): { isValid: boolean; error: string } {
+    static validateFileStructure(data: unknown[]): { isValid: boolean; error: string } {
         if (!data || data.length === 0) {
             return {
                 isValid: false,
@@ -107,9 +107,9 @@ export class FileValidator {
         return { isValid: true, error: '' };
     }
 
-    static processFileData(data: any[]): any[] {
+    static processFileData(data: unknown[]): unknown[] {
         return data.map(row => {
-            const processedRow: any = {
+            const processedRow: unknown = {
                 name: row.name?.trim() || '',
                 category: row.category?.trim() || '',
                 dosageForm: row.dosageForm?.trim() || '',

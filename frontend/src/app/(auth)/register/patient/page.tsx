@@ -136,7 +136,7 @@ const PatientRegisterPage = () => {
           `/verify-account?email=${encodeURIComponent(res.user.email)}`
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error);
     }
   };

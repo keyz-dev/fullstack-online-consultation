@@ -152,7 +152,7 @@ export const DoctorCallStatus: React.FC<DoctorCallStatusProps> = ({
               {callStatus === 'ringing' && ringDuration > 30 && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
                   <p className="text-yellow-800 dark:text-yellow-200 text-xs">
-                    Patient hasn't responded yet. Call will timeout in {60 - ringDuration} seconds.
+                    Patient hasn&apos;t responded yet. Call will timeout in {60 - ringDuration} seconds.
                   </p>
                 </div>
               )}

@@ -79,7 +79,7 @@ export const useSpecialties = (): UseSpecialtiesReturn => {
       setLoading(true);
       setError(null);
 
-      const params: any = {
+      const params: unknown = {
         ...filters,
       };
 
@@ -99,7 +99,7 @@ export const useSpecialties = (): UseSpecialtiesReturn => {
         total: response.total,
         totalPages: Math.ceil(response.total / prev.limit),
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Failed to fetch specialties");
       toast.error("Failed to fetch specialties");
     } finally {
@@ -115,7 +115,7 @@ export const useSpecialties = (): UseSpecialtiesReturn => {
 
       const response = await specialtiesAPI.getSpecialtyById(id);
       setSelectedSpecialty(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Failed to fetch specialty");
       toast.error("Failed to fetch specialty");
     } finally {
@@ -135,7 +135,7 @@ export const useSpecialties = (): UseSpecialtiesReturn => {
         toast.success("Specialty created successfully");
         await fetchSpecialties(); // Refresh the list
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         const errorMessage =
           err.response?.data?.message || "Failed to create specialty";
         setError(errorMessage);
@@ -160,7 +160,7 @@ export const useSpecialties = (): UseSpecialtiesReturn => {
         toast.success("Specialty updated successfully");
         await fetchSpecialties(); // Refresh the list
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         const errorMessage =
           err.response?.data?.message || "Failed to update specialty";
         setError(errorMessage);
@@ -185,7 +185,7 @@ export const useSpecialties = (): UseSpecialtiesReturn => {
         toast.success("Specialty deleted successfully");
         await fetchSpecialties(); // Refresh the list
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         const errorMessage =
           err.response?.data?.message || "Failed to delete specialty";
         setError(errorMessage);

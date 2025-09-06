@@ -37,7 +37,7 @@ const SPECIALTY_ACTIONS = {
 };
 
 // Reducer
-const specialtyReducer = (state: any, action: any) => {
+const specialtyReducer = (state: unknown, action: unknown) => {
   switch (action.type) {
     case SPECIALTY_ACTIONS.SET_LOADING:
       return { ...state, loading: action.payload };
@@ -105,7 +105,7 @@ export const BaseSpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
           totalPages: 1,
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching specialties:", err);
       const errorMessage =
         err?.response?.data?.message ||
@@ -163,7 +163,7 @@ export const BaseSpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Handle filter change
-  const handleFilterChange = useCallback((filters: any) => {
+  const handleFilterChange = useCallback((filters: unknown) => {
     dispatch({
       type: SPECIALTY_ACTIONS.SET_FILTERS,
       payload: filters,

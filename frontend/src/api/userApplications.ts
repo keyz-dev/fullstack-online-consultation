@@ -38,7 +38,7 @@ export interface UserApplicationData {
     specialties?: string[];
     clinicAddress?: string;
     operationalHospital?: string;
-    contactInfo?: any;
+    contactInfo?: unknown;
     consultationFee?: number;
     consultationDuration?: number;
     paymentMethods?: string[];
@@ -51,8 +51,8 @@ export interface UserApplicationData {
     logo?: string;
     images?: string[];
     address?: string;
-    contactInfo?: any;
-    operatingHours?: any;
+    contactInfo?: unknown;
+    operatingHours?: unknown;
     paymentMethods?: string[];
   };
   documents: Array<{
@@ -118,7 +118,7 @@ class UserApplicationsAPI {
     try {
       const response = await api.get("/userApplications/me");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: "Failed to fetch application",
@@ -132,7 +132,7 @@ class UserApplicationsAPI {
     try {
       const response = await api.post("/userApplications/me/refresh");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: "Failed to refresh application status",
@@ -146,7 +146,7 @@ class UserApplicationsAPI {
     try {
       const response = await api.post("/userApplications/me/activate");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: "Failed to activate account",
@@ -160,7 +160,7 @@ class UserApplicationsAPI {
     try {
       const response = await api.post("/userApplications/me/reapply");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: "Failed to reapply for application",
@@ -185,7 +185,7 @@ class UserApplicationsAPI {
     try {
       const response = await api.get("/userApplications/me/timeline");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: "Failed to fetch application timeline",
@@ -204,7 +204,7 @@ class UserApplicationsAPI {
         }
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new Error(
         error.response?.data?.message || "Failed to download document"
       );
@@ -227,7 +227,7 @@ class UserApplicationsAPI {
     try {
       const response = await api.get("/userApplications/me/stats");
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: "Failed to fetch application statistics",

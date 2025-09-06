@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "../../../components/ui";
-import { User, Stethoscope, Building2, Shield } from "lucide-react";
+import { User, Stethoscope, Building2 } from "lucide-react";
 
 const RegisterPage = () => {
   const router = useRouter();

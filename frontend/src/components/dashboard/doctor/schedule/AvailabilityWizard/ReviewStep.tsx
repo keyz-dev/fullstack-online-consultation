@@ -249,7 +249,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
               </li>
               <li>• You can modify your schedule anytime from the dashboard</li>
               <li>
-                • You'll receive notifications when patients book appointments
+                • You&apos;ll receive notifications when patients book appointments
               </li>
             </ul>
           </div>

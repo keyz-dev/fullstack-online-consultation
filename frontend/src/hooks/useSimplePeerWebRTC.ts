@@ -25,7 +25,7 @@ interface CallState {
   isInitiator: boolean;
   from?: number;
   name?: string;
-  signal?: any;
+  signal?: unknown;
 }
 
 export const useSimplePeerWebRTC = ({ 
@@ -96,7 +96,7 @@ export const useSimplePeerWebRTC = ({
 
     // Handle incoming call
     const handleIncomingCall = (data: { 
-      signal: any; 
+      signal: unknown; 
       from: number; 
       name: string; 
       roomId: string;
@@ -113,7 +113,7 @@ export const useSimplePeerWebRTC = ({
     };
 
     // Handle call accepted
-    const handleCallAccepted = (data: { signal: any; from: number; name: string }) => {
+    const handleCallAccepted = (data: { signal: unknown; from: number; name: string }) => {
       setCallAccepted(true);
       setIsConnected(true);
       

@@ -106,7 +106,7 @@ const MainView = ({ setView }: { setView: () => void }) => {
     }
   };
 
-  const handleDeleteMedication = (medication: any) => {
+  const handleDeleteMedication = (medication: unknown) => {
     setMedicationToDelete(medication);
     setIsDeleteModalOpen(true);
   };
@@ -121,7 +121,7 @@ const MainView = ({ setView }: { setView: () => void }) => {
     }
   };
 
-  const handleEditMedication = (medication: any) => {
+  const handleEditMedication = (medication: unknown) => {
     setSelectedMedication(medication);
     setIsUpdateModalOpen(true);
   };
@@ -130,7 +130,7 @@ const MainView = ({ setView }: { setView: () => void }) => {
     { 
       Header: "Name", 
       accessor: "name",
-      Cell: ({ row }: any) => (
+      Cell: ({ row }: unknown) => (
         <div className="flex items-center space-x-3">
           {row.imageUrl ? (
             <img 
@@ -153,25 +153,25 @@ const MainView = ({ setView }: { setView: () => void }) => {
       )
     },
     { Header: "Category", accessor: "category" },
-    { Header: "Price", accessor: "price", Cell: ({ row }: any) => `${row.price} XAF` },
+    { Header: "Price", accessor: "price", Cell: ({ row }: unknown) => `${row.price} XAF` },
     { Header: "Stock", accessor: "stockQuantity" },
     {
       Header: "Status",
       accessor: "isAvailable",
-      Cell: ({ row }: any) => (
+      Cell: ({ row }: unknown) => (
         <StatusPill status={row.isAvailable ? "available" : "unavailable"} />
       ),
     },
     {
       Header: "Prescription",
       accessor: "requiresPrescription",
-      Cell: ({ row }: any) => (
+      Cell: ({ row }: unknown) => (
         <StatusPill status={row.requiresPrescription ? "required" : "not_required"} />
       ),
     },
     {
       accessor: "actions",
-      Cell: ({ row }: any) => {
+      Cell: ({ row }: unknown) => {
         const items = [
           {
             label: "View Details",

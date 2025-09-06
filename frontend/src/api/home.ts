@@ -115,7 +115,7 @@ export const homeApi = {
   ): Promise<{
     success: boolean;
     data: {
-      doctors: any[];
+      doctors: unknown[];
       pagination: {
         page: number;
         limit: number;

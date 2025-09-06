@@ -46,7 +46,7 @@ const PatientAppointmentDocumentsTab: React.FC<
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  const handleDownload = (document: any) => {
+  const handleDownload = (document: unknown) => {
     const link = document.createElement("a");
     link.href = document.fileUrl;
     link.download = document.fileName || "document";
@@ -55,7 +55,7 @@ const PatientAppointmentDocumentsTab: React.FC<
     document.body.removeChild(link);
   };
 
-  const handlePreview = (document: any) => {
+  const handlePreview = (document: unknown) => {
     onPreviewDocument({
       id: document.id.toString(),
       url: document.fileUrl,
