@@ -81,7 +81,7 @@ const specialtyReducer = (state: unknown, action: unknown) => {
 };
 
 // Create context
-const BaseSpecialtyContext = createContext<any>(undefined);
+const BaseSpecialtyContext = createContext<unknown>(undefined);
 
 // Provider component
 export const BaseSpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({

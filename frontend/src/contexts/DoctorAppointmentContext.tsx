@@ -181,7 +181,7 @@ export const DoctorAppointmentProvider: React.FC<{
       });
     } catch (err: unknown) {
       console.error("Error fetching doctor appointments:", err);
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       dispatch({
         type: DOCTOR_APPOINTMENT_ACTIONS.SET_ERROR,
         payload: errorMessage,
@@ -200,7 +200,7 @@ export const DoctorAppointmentProvider: React.FC<{
       });
     } catch (err: unknown) {
       console.error("Error fetching doctor appointment stats:", err);
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       toast.error(`Error: ${errorMessage}`);
     }
   }, []);

@@ -41,7 +41,7 @@ export const HomeProvider: React.FC<HomeProviderProps> = ({ children }) => {
         setError("Failed to fetch home data");
       }
     } catch (err) {
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       setError(errorMessage);
       console.error("Error fetching home data:", err);
     } finally {

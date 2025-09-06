@@ -180,7 +180,7 @@ const DashboardSidebar = () => {
           role="list"
         >
           {roleConfig.navItems.map((item: unknown) => {
-            const IconComponent = (Icons as any)[item.icon] || Icons.Circle;
+            const IconComponent = (Icons as unknown)[item.icon] || Icons.Circle;
             const isExternalLink = item.external || item.path === "home";
             const fullPath = isExternalLink
               ? item.path === "home"

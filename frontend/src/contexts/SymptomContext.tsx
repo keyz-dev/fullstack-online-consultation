@@ -235,7 +235,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     } catch (err: unknown) {
       console.error("Error fetching symptoms:", err);
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
       toast.error("Failed to load symptoms");
     }
@@ -324,7 +324,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
         const response = await symptomsAPI.getSymptomById(id);
         return response.data;
       } catch (err: unknown) {
-        const errorMessage = extractErrorMessage(err as any);
+        const errorMessage = extractErrorMessage(err as unknown);
         dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
         toast.error("Failed to fetch symptom");
         return null;
@@ -350,7 +350,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return { success: true, message: "Symptom created successfully" };
     } catch (err: unknown) {
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
       throw new Error(errorMessage);
     } finally {
@@ -374,7 +374,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
 
         return { success: true, message: "Symptom updated successfully" };
       } catch (err: unknown) {
-        const errorMessage = extractErrorMessage(err as any);
+        const errorMessage = extractErrorMessage(err as unknown);
         dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
         throw new Error(errorMessage);
       } finally {
@@ -394,7 +394,7 @@ export const SymptomProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return { success: true, message: "Symptom deleted successfully" };
     } catch (err: unknown) {
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       dispatch({ type: SYMPTOM_ACTIONS.SET_ERROR, payload: errorMessage });
       throw new Error(errorMessage);
     } finally {

@@ -27,7 +27,7 @@ export default function PDFViewer({
   zoom = 100,
   rotation = 0,
 }: PDFViewerProps) {
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfDoc, setPdfDoc] = useState<unknown>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -405,9 +405,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             redirectBasedOnRole(user);
           }
         } catch (error: unknown) {
-          const errorMessage = extractErrorMessage(error as any);
+          const errorMessage = extractErrorMessage(error as unknown);
           setAuthError(
-            (error as any)?.response?.data?.message ||
+            (error as unknown)?.response?.data?.message ||
               errorMessage ||
               "Google login failed. Please try again."
           );
@@ -415,9 +415,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     },
     onError: (error: unknown) => {
-      const errorMessage = extractErrorMessage(error as any);
+      const errorMessage = extractErrorMessage(error as unknown);
       setAuthError(
-        (error as any)?.message ||
+        (error as unknown)?.message ||
           errorMessage ||
           "Google login failed. Please try again."
       );
@@ -457,7 +457,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Use extractErrorMessage for consistency
             const errorMessage = extractErrorMessage(error);
             setAuthError(
-              (error as any)?.response?.data?.message ||
+              (error as unknown)?.response?.data?.message ||
                 errorMessage ||
                 "Google sign up failed. Please try again."
             );
@@ -468,7 +468,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Use extractErrorMessage for consistency
         const errorMessage = extractErrorMessage(error);
         setAuthError(
-          (error as any)?.message ||
+          (error as unknown)?.message ||
             errorMessage ||
             "Google sign up failed. Please try again."
         );

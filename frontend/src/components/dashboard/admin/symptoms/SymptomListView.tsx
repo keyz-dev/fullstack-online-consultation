@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { Table, StatusPill, DropdownMenu } from "@/components/ui";
+import { Table, DropdownMenu } from "@/components/ui";
 import { Symptom } from "@/api/symptoms";
 import { formatDate } from "@/utils/dateUtils";
 import { Edit, Trash2 } from "lucide-react";
@@ -92,7 +92,7 @@ const SymptomListView: React.FC<SymptomListViewProps> = ({
 
   return (
     <Table
-      columns={columns as any}
+      columns={columns as unknown}
       data={symptoms}
       isLoading={loading}
       emptyStateMessage="No symptoms found. Try adjusting your filters or adding a new symptom."

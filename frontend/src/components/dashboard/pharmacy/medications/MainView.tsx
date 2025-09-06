@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useDebounce } from "@/hooks/useDebounce";
 import { usePharmacyMedications } from "@/hooks/usePharmacyMedications";
 
 // Import reusable UI components
@@ -30,8 +29,8 @@ const MainView = ({ setView }: { setView: () => void }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedMedication, setSelectedMedication] = useState<any>(null);
-  const [medicationToDelete, setMedicationToDelete] = useState<any>(null);
+  const [selectedMedication, setSelectedMedication] = useState<unknown>(null);
+  const [medicationToDelete, setMedicationToDelete] = useState<unknown>(null);
   const [showAddOptions, setShowAddOptions] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

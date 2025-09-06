@@ -227,7 +227,7 @@ export const SpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     } catch (err: unknown) {
       console.error("Error fetching specialties:", err);
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       dispatch({ type: SPECIALTY_ACTIONS.SET_ERROR, payload: errorMessage });
       toast.error("Failed to load specialties");
     }
@@ -321,7 +321,7 @@ export const SpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
         const response = await specialtiesAPI.getSpecialtyById(id);
         return response.data;
       } catch (err: unknown) {
-        const errorMessage = extractErrorMessage(err as any);
+        const errorMessage = extractErrorMessage(err as unknown);
         dispatch({ type: SPECIALTY_ACTIONS.SET_ERROR, payload: errorMessage });
         toast.error("Failed to fetch specialty");
         return null;
@@ -347,7 +347,7 @@ export const SpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return { success: true, message: "Specialty created successfully" };
     } catch (err: unknown) {
-      const errorMessage = extractErrorMessage(err as any);
+      const errorMessage = extractErrorMessage(err as unknown);
       dispatch({ type: SPECIALTY_ACTIONS.SET_ERROR, payload: errorMessage });
       throw new Error(errorMessage);
     } finally {
@@ -371,7 +371,7 @@ export const SpecialtyProvider: React.FC<{ children: React.ReactNode }> = ({
 
         return { success: true, message: "Specialty updated successfully" };
       } catch (err: unknown) {
-        const errorMessage = extractErrorMessage(err as any);
+        const errorMessage = extractErrorMessage(err as unknown);
         dispatch({ type: SPECIALTY_ACTIONS.SET_ERROR, payload: errorMessage });
         throw new Error(errorMessage);
       } finally {

@@ -18,7 +18,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   onLoad,
   onError,
 }) => {
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfDoc, setPdfDoc] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

@@ -28,7 +28,7 @@ const LeafletMapView: React.FC<LeafletMapViewProps> = ({
   markers = [],
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const mapInstanceRef = useRef<unknown>(null);
   const markersRef = useRef<any[]>([]);
 
   const defaultCenter: [number, number] = [4.0511, 9.7679]; // Douala, Cameroon

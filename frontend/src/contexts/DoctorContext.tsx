@@ -125,7 +125,7 @@ const doctorReducer = (state: unknown, action: unknown) => {
 };
 
 // Create context
-const DoctorContext = createContext<any>(undefined);
+const DoctorContext = createContext<unknown>(undefined);
 
 // Provider component
 export const DoctorProvider: React.FC<{ children: React.ReactNode }> = ({

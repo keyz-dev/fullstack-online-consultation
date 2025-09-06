@@ -262,7 +262,7 @@ const PatientAppointmentListView: React.FC<PatientAppointmentListViewProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       <Table
-        columns={columns as any}
+        columns={columns as unknown}
         data={appointments}
         isLoading={loading}
         emptyStateMessage="No appointments found. Book your first appointment to get started."

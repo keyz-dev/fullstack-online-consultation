@@ -108,7 +108,7 @@ const SpecialtyListView: React.FC<SpecialtyListViewProps> = ({
 
   return (
     <Table
-      columns={columns as any}
+      columns={columns as unknown}
       data={specialties}
       isLoading={loading}
       emptyStateMessage="No specialties found. Try adjusting your filters or adding a new specialty."

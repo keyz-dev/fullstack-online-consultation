@@ -66,7 +66,7 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
       socket.emit("video:accept-call", {
         consultationId: callData.consultationId,
         roomId: callData.roomId,
-        doctorId: (callData as any)?.doctorUserId,
+        doctorId: (callData as unknown)?.doctorUserId,
       });
     }
 
@@ -83,7 +83,7 @@ const IncomingCallNotification: React.FC<IncomingCallNotificationProps> = ({
       socket.emit("video:reject-call", {
         consultationId: callData.consultationId,
         roomId: callData.roomId,
-        doctorId: (callData as any)?.doctorUserId,
+        doctorId: (callData as unknown)?.doctorUserId,
       });
     }
 

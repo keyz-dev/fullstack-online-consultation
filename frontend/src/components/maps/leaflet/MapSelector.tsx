@@ -46,7 +46,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [locationError, setLocationError] = useState<any>(null);
+  const [locationError, setLocationError] = useState<unknown>(null);
   const [showManualModal, setShowManualModal] = useState(false);
 
   // Debounce search
