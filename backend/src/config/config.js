@@ -9,6 +9,7 @@ module.exports = {
   test: {
     url: process.env.DB_URL,
     dialect: "postgres",
+    logging: false,
     dialectOptions: {
       ssl: {
         rejectUnauthorized: false,
@@ -18,6 +19,7 @@ module.exports = {
   production: {
     url: process.env.DB_PROD_URL,
     dialect: "postgres",
+    logging: false,
     dialectOptions: {
       ssl: {
         require: true,
